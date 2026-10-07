@@ -2,6 +2,7 @@
 """Lee el Excel de pedidos del almacén y lo resume por día de pedido.
 
     python contabilidad/importar_almacen.py <export_almacen.xlsx> [--excluir 3503014,...] [--json salida.json]
+                                            [--incidencias incidencias.json]
 
 Solo saca totales por día (nunca nombres, teléfonos ni direcciones):
     p1, p2            pedidos confirmados de cada pack
@@ -31,6 +32,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("export")
 ap.add_argument("--excluir", default="", help="IDs de pedido a ignorar (tests), separados por comas")
 ap.add_argument("--json", help="guardar el resumen en este fichero")
+ap.add_argument("--incidencias", help="guardar los pedidos por estado para el tablero de incidencias "
+                                      "(lleva nombre y teléfono: solo al scratchpad, nunca al repo)")
 args = ap.parse_args()
 excluir = {s.strip() for s in args.excluir.split(",") if s.strip()}
 
@@ -55,6 +58,7 @@ def fecha_iso(v):
 
 dias = defaultdict(lambda: defaultdict(float))
 ignorados, avisos = [], []
+estados = {}  # ID pedido -> datos para el tablero de incidencias
 for f in filas:
     if not f or f[col["ID PEDIDO"]] is None:
         continue
@@ -76,6 +80,15 @@ for f in filas:
     if pack is None:
         avisos.append(f"pedido {pid}: {uds} uds no encaja con ningún pack (se cuenta como Pack 2)")
         pack = "2"
+    estados[pid] = {
+        "pedido": pid, "estado_almacen": str(f[col["ESTADO"]] or "").strip(), "fecha_pedido": fecha_iso(f[col["Fecha del pedido"]]),
+        "pack": int(pack), "pack_nombre": "Pack 1 ud" if pack == "1" else "Pack 2 uds", "importe": float(f[col["PRECIO"]] or 0),
+        "tracking": str(f[col["TRACKING"]] or "").strip() if "TRACKING" in col else "",
+        "nombre": str(f[col["NOMBRE COMPLETO"]] or "").strip(),
+        "telefono": str(f[col["TELF"]] or "").strip() if "TELF" in col else "",
+        "ciudad": str(f[col["CIUDAD"]] or "").strip() if "CIUDAD" in col else "",
+        "motivo": str(f[col["Motivo incidencia (si tiene)"]] or "").strip() if "Motivo incidencia (si tiene)" in col else "",
+    }
     envio = float(f[col["COSTE DE ENVÍO (SIN IVA)"]] or 0)
     dia[f"p{pack}"] += 1
     if estado in ENTREGADO:
@@ -104,6 +117,9 @@ for fecha, d in resumen.items():
 print(f"Ignorados (test): {', '.join(ignorados) or 'ninguno'}")
 for a in avisos:
     print("AVISO:", a)
+if args.incidencias:
+    with open(args.incidencias, "w", encoding="utf-8") as fh:
+        json.dump(estados, fh, ensure_ascii=False, indent=2)
 if args.json:
     with open(args.json, "w", encoding="utf-8") as fh:
         json.dump(resumen, fh, ensure_ascii=False, indent=2)

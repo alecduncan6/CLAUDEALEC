@@ -19,6 +19,17 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
       - `envio_ent`/`envio_pend`: suma del "Coste de envío (sin IVA)" real de entregados / pendientes.
         Sin ellos se usa la tarifa estándar de config (8,06 €).
     - `gastos/<id>`: `{fecha, concepto, categoria, importe}`.
+    - `incidencias/<ID pedido>`: tablero del equipo. `{pedido, tracking, fecha_pedido, pack, pack_nombre, importe,
+      nombre, telefono, ciudad, motivo, estado_almacen, abierta, primera_vez, resultado?, cerrada?}`.
+      Nombre y teléfono SOLO mientras está abierta: al cerrarse (Entregado/Devuelto) se borran.
+    - `acciones/<auto>`: gestiones del equipo `{pedido, tipo, nota, en, por (id usuario), autor (alias)}`;
+      tipo ∈ whatsapp | no_contesta | acordada | almacen | rechaza.
+    - `importaciones/ultima`: `{en, por, autor, pedidos, nuevas, cerradas}`.
+  - Reglas de acceso: todo es solo del dueño (read/write `owner`) salvo `incidencias`, `acciones` e
+    `importaciones` (read/write `interact`). El equipo se añade como Colaborador o Editor desde Compartir:
+    ve solo la pestaña Incidencias, nunca los números. Un Lector no ve nada de clientes.
+  - La página importa el Excel del almacén ella misma (botón "Subir Excel del almacén", SheetJS en el navegador):
+    actualiza `dias` (solo si lo sube el dueño) e `incidencias` (abre nuevas, cierra las entregadas/devueltas).
   - La página lee el gasto de Meta en directo (conector "Meta ADS", tool `ads_get_ad_entities`).
 - **Excel de contabilidad:** `contabilidad/CeraLux_Contabilidad.xlsx`, generado por `contabilidad/generar_excel.py`
   desde `contabilidad/datos.json`. Todo con fórmulas (Dashboard, Diario, Gastos, Config, Guía).
@@ -30,14 +41,19 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
   `filtering: [{"field":"campaign.name","operator":"CONTAIN","value":["CeraLux"]}]`,
   `time_range: {"since":..,"until":..}`, `time_increment: "1"`. Sumar `amount_spent.value` por `date_start`.
 
-## Cuando Alec pasa el Excel del almacén (lo normal)
+## Cuando Alec pasa el Excel del almacén
 
-1. Cópialo a una carpeta propia del scratchpad (tiene datos personales de clientes: NUNCA al repo ni a la base de datos).
+Lo normal es que lo suba él mismo en la pestaña Incidencias del dashboard. Si te lo pasa a ti:
+
+1. Cópialo a una carpeta propia del scratchpad (tiene datos personales de clientes: NUNCA al repo; a la base de
+   datos solo nombre/teléfono de incidencias abiertas).
 2. `python -I contabilidad/importar_almacen.py <export.xlsx> --excluir 3503014 --json <scratchpad>/resumen.json`
    (excluye tests por ID y cualquier cliente cuyo nombre empiece por "Test"; revisa los AVISO de estados desconocidos).
 3. Saca el gasto de Meta de esas fechas.
 4. `ArtifactData list dias` para tener las versiones y escribe con `batch` (`if_version` en los que existen),
    conservando `nota` y poniendo `ads` de Meta y `fuente: "export almacén <fecha>"`.
+   Incidencias: añade `--incidencias <scratchpad>/estados.json` al importador y aplica la misma lógica que la
+   página (abrir las INCIDENCIA nuevas; cerrar las abiertas que estén Entregado/Devuelto quitando nombre y teléfono).
 5. Regenera el Excel (abajo) y verifica: la "Liquidación almacén" debe cuadrar con Σ(PRECIO − COSTE TOTAL PEDIDO)
    de los entregados del export (diferencias de 1-2 céntimos por redondeo del almacén).
 
