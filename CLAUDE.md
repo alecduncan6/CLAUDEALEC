@@ -47,6 +47,14 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
     Diagnóstico frente a la media de la campaña: gancho (vídeo al 25% ÷ impresiones), CTR, llegada a la web, compra/clic.
 - **Excel de contabilidad:** `contabilidad/CeraLux_Contabilidad.xlsx`, generado por `contabilidad/generar_excel.py`
   desde `contabilidad/datos.json`. Todo con fórmulas (Dashboard, Diario, Gastos, Config, Guía).
+- **Excel de creativos (aparte de la app):** `creativos/CeraLux_Creativos.xlsx`, generado por
+  `creativos/generar_creativos.py` desde `creativos/biblioteca.json` (anuncios con ángulo, cuerpo, tipo/concepto/texto
+  del hook; cuerpos partidos en apertura · solución · mecanismo · prueba · oferta · CTA; ajustes) y
+  `creativos/historico.json` (Meta por anuncio y día + `pedidos_reales` por día de Shopify).
+  Hojas: Panel (periodo DESDE/HASTA, KPIs, veredictos, Top 5, por ángulo/cuerpo/concepto), Mapa (ángulo → cuerpo →
+  hooks), Creativos, Cuerpos, Matriz (concepto de hook × cuerpo; "—" = sin probar), Histórico, Pedidos, Config, Guía.
+  Mismos veredictos que la pestaña Creatividades. Al regenerar, el script recoge antes lo editado a mano en el Excel
+  (hooks, cuerpos, notas, ajustes, pedidos) y lo guarda en `biblioteca.json`; los anuncios nuevos de Meta se añaden solos.
 
 ## Meta Ads
 
@@ -83,6 +91,22 @@ gasto, CPA vs CPA break-even (~11,8 € con los datos actuales), beneficio proye
 2. `python contabilidad/desde_dashboard.py <scratchpad>/export`
 3. `python contabilidad/generar_excel.py` y recalcular con el `recalc.py` del skill xlsx (0 errores).
 4. Commit + push.
+
+## Cuando Alec dice "actualiza el Excel de creativos"
+
+1. Si te pasa su copia del Excel con cambios, cópiala encima de `creativos/CeraLux_Creativos.xlsx` (el script recoge
+   sus ediciones). Si trae guiones nuevos, añádelos a `biblioteca.json` (cuerpo nuevo = ID nuevo C4, C5…).
+2. Meta por anuncio y día desde el último día de `historico.json` (rehaz siempre el último, puede estar a medias):
+   `ads_get_ad_entities` con `level: "ad"`, `filtering: [{"field":"campaign_id","operator":"IN","value":[<IDs de las
+   campañas con "CeraLux">]}]`, `time_increment: "1"`, `limit: 500`, `fields: ["id","name","adset_name","campaign_name",
+   "effective_status","created_time","amount_spent","impressions","link_click","landing_page_view","omni_add_to_cart",
+   "omni_initiated_checkout","omni_purchase","video_p25_watched_actions","video_p50_watched_actions",
+   "video_thruplay_watched_actions","video_avg_time_watched_actions","frequency"]`. Sustituye en `filas` las de esas
+   fechas (`fecha, ad_id, nombre, conjunto, campana, gasto, impr, clics, lpv, atc, checkout, compras, v25, v50, thru,
+   tmedio, freq`).
+3. `pedidos_reales` por día: pedidos de Shopify no cancelados ni test (misma consulta que el dashboard).
+4. `python creativos/generar_creativos.py`, recalcular con `recalc.py` (0 errores), commit + push y pásale el xlsx.
+   Comprueba que Σ gasto del Panel = gasto de Meta del periodo.
 
 ## Modelo (igual en Excel y dashboard)
 
