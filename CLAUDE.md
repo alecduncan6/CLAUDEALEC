@@ -18,6 +18,8 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
       - `inc`: cuántos de los pendientes están en incidencia.
       - `envio_ent`/`envio_pend`: suma del "Coste de envío (sin IVA)" real de entregados / pendientes.
         Sin ellos se usa la tarifa estándar de config (8,06 €).
+      - `shopify_ids`: IDs de Shopify (legacyResourceId) de TODAS las filas del Excel del almacén ese día
+        (incluidos tests y cancelados). `shopify_test`: los de pedidos de test. Sirven para no contar dos veces.
     - `gastos/<id>`: `{fecha, concepto, categoria, importe}`.
     - `incidencias/<ID pedido>`: tablero del equipo. `{pedido, tracking, fecha_pedido, pack, pack_nombre, importe,
       nombre, telefono, ciudad, motivo, estado_almacen, abierta, primera_vez, resultado?, cerrada?}`.
@@ -30,7 +32,12 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
     ve solo la pestaña Incidencias, nunca los números. Un Lector no ve nada de clientes.
   - La página importa el Excel del almacén ella misma (botón "Subir Excel del almacén", SheetJS en el navegador):
     actualiza `dias` (solo si lo sube el dueño) e `incidencias` (abre nuevas, cierra las entregadas/devueltas).
-  - La página lee el gasto de Meta en directo (conector "Meta ADS", tool `ads_get_ad_entities`).
+  - La página lee el gasto de Meta en directo (conector "Meta ADS", tool `ads_get_ad_entities`), con compras del píxel por día.
+  - **Shopify en directo** (solo dueño): conector "Shopify", tool `graphql_query`, pedidos desde `fecha_inicio`
+    (máx. 60 días) con `legacyResourceId, createdAt, cancelledAt, test, subtotalLineItemsQuantity` (sin datos de clientes).
+    Fecha = día local de `createdAt`. Pack = 1 unidad → Pack 1; 2 o más → Pack 2. Los pedidos de Shopify cuyo ID no está
+    en ningún `shopify_ids` se suman al día como pendientes ("aún no en almacén"); los de `shopify_test` se ignoran.
+    Tabla "Cuadre": Shopify vs Meta (píxel) vs almacén por día y % que registra Meta. El #1158 es el pedido de test.
   - Pestaña **Creatividades** (solo dueño): lee de Meta en directo `ads_get_ad_entities` a nivel `ad` (gasto, impresiones,
     clics, visitas, compras, vídeo al 25%, ThruPlays, tiempo medio) y filtra por `meta_filtro_campana`.
     Corrige las compras de Meta con pedidos reales del periodo (×pedidos/compras), calcula CPA real y beneficio estimado

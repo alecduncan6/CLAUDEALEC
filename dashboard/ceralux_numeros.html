@@ -44,6 +44,7 @@ button, input, select { font: inherit; color: inherit; }
 .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
 .brand { display: grid; gap: 2px; }
 .brand p { margin: 0; font-size: 13px; color: var(--muted); }
+.lives { display: flex; flex-wrap: wrap; gap: 6px; }
 .live { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
 .live[data-s="ok"] .dot { background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
@@ -218,7 +219,10 @@ details.panel[open] > summary { margin-bottom: 14px; }
       <h1>CeraLux · Números</h1>
       <p>Spray reparación de arañazos · contra reembolso · Meta Ads</p>
     </div>
-    <div class="live" id="live" data-s="idle"><span class="dot"></span><span id="liveTxt">Conectando…</span></div>
+    <div class="lives" id="lives">
+      <div class="live" id="live" data-s="idle"><span class="dot"></span><span id="liveTxt">Conectando…</span></div>
+      <div class="live" id="liveShop" data-s="idle"><span class="dot"></span><span id="liveShopTxt">Shopify: esperando</span></div>
+    </div>
   </header>
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones">
@@ -281,6 +285,17 @@ details.panel[open] > summary { margin-bottom: 14px; }
     <h2>Últimos 14 días</h2>
     <div id="chart"></div>
     <div class="legend"><span><i style="background:var(--good)"></i>Beneficio proyectado del día</span><span><i style="background:var(--accent)"></i>Gasto en Ads</span></div>
+  </section>
+
+  <section>
+    <h2>Cuadre de pedidos: Shopify · Meta · almacén</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Shopify</th><th>Meta (píxel)</th><th>Almacén</th><th>Cancelados</th><th>Aún no en almacén</th><th>Meta registra</th></tr></thead>
+        <tbody id="cuadre"><tr><td colspan="7" class="empty">Leyendo Shopify…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="small muted" id="cuadreTxt" style="margin:10px 0 0">Shopify recibe cada pedido al momento. Los que aún no están en el Excel del almacén cuentan ya en tus números como pendientes.</p>
   </section>
 
   <section>
@@ -464,6 +479,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     cfg: { ...DEFAULTS }, cfgLoaded: false, dias: {}, diasLoaded: false, gastos: [],
     db: null, dbStatus: "loading", canWrite: null,
     meta: null, metaStatus: "idle", metaMsg: "", metaAt: null,
+    shop: null, shopStatus: "idle", shopMsg: "", shopAt: null,
     periodo: lsGet("ceralux.periodo") || "mes",
     rol: "owner", user: null, uid: null, alias: lsGet("ceralux.alias") || "",
     incid: {}, incidLoaded: false, acciones: [], ultimaImport: null,
@@ -519,29 +535,60 @@ details.panel[open] > summary { margin-bottom: 14px; }
     return num(state.dias[fecha]?.ads);
   }
 
+  // IDs de Shopify que el almacén ya conoce (vienen en su Excel)
+  let idsCache = null, testCache = null, idsCacheDe = null;
+  function idsAlmacen() {
+    if (idsCacheDe === state.dias) return idsCache;
+    idsCache = new Set(); testCache = new Set(); idsCacheDe = state.dias;
+    for (const d of Object.values(state.dias)) {
+      for (const id of (d.shopify_ids || [])) idsCache.add(String(id));
+      for (const id of (d.shopify_test || [])) testCache.add(String(id));
+    }
+    return idsCache;
+  }
+  function shopDia(fecha) {
+    const conocidos = idsAlmacen();
+    const lista = (state.shop?.byDate[fecha] || []).filter((o) => !testCache.has(o.id));
+    const vivos = lista.filter((o) => !o.cancelada);
+    const nuevos = vivos.filter((o) => !conocidos.has(o.id));
+    return { total: vivos.length, cancelados: lista.length - vivos.length, p1: vivos.filter((o) => o.pack === 1).length, p2: vivos.filter((o) => o.pack !== 1).length,
+      n1: nuevos.filter((o) => o.pack === 1).length, n2: nuevos.filter((o) => o.pack !== 1).length };
+  }
+
   function calcDia(fecha, u, tasa) {
     const d = state.dias[fecha];
-    const p1 = num(d?.p1), p2 = num(d?.p2), e1 = num(d?.ent1), e2 = num(d?.ent2), d1 = num(d?.dev1), d2 = num(d?.dev2);
+    let p1 = num(d?.p1), p2 = num(d?.p2);
+    const e1 = num(d?.ent1), e2 = num(d?.ent2), d1 = num(d?.dev1), d2 = num(d?.dev2);
+    let nuevos1 = 0, nuevos2 = 0;
+    if (state.shop) {
+      const sd = shopDia(fecha);
+      if (d && !Array.isArray(d.shopify_ids) && (d.p1 != null || d.p2 != null)) {
+        // día apuntado a mano: Shopify solo suma si tiene más pedidos
+        nuevos1 = Math.max(0, sd.p1 - p1); nuevos2 = Math.max(0, sd.p2 - p2);
+      } else { nuevos1 = sd.n1; nuevos2 = sd.n2; }
+      p1 += nuevos1; p2 += nuevos2;
+    }
     const ads = adsDe(fecha);
     const H = p1 + p2, ent = e1 + e2, dev = d1 + d2;
     const x1 = Math.max(0, p1 - e1 - d1), x2 = Math.max(0, p2 - e2 - d2), I = x1 + x2;
     const J = p1 * u.p1.pvp + p2 * u.p2.pvp;
     const real = tieneEnvio(d);
     const envEnt = real ? d.envio_ent : e1 * u.p1.log + e2 * u.p2.log;
-    const envPend = real ? d.envio_pend : x1 * u.p1.log + x2 * u.p2.log;
+    const envPend = real ? d.envio_pend + nuevos1 * u.p1.log + nuevos2 * u.p2.log : x1 * u.p1.log + x2 * u.p2.log;
     const z1 = e1 + x1 * tasa, z2 = e2 + x2 * tasa, Z = dev + I * (1 - tasa);
     const T = z1 * u.p1.pvp + z2 * u.p2.pvp, U = z1 * u.p1.cprod + z2 * u.p2.cprod, V = envEnt + envPend * tasa;
     const W = Z * u.costeDev, X = z1 * u.p1.ivan + z2 * u.p2.ivan - Z * u.ivaDev, Y = ads * (1 + u.recargo);
     const liq = e1 * (u.p1.pvp - u.p1.cprod) + e2 * (u.p2.pvp - u.p2.cprod) - envEnt;
     const O = liq - (e1 * u.p1.ivan + e2 * u.p2.ivan) - dev * (u.costeDev - u.ivaDev) - Y;
-    const faltan = !d || (d.p1 == null && d.p2 == null);
-    return { fecha, p1, p2, ent, dev, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, P: T - U - V - W - X - Y, O, liq,
+    const faltan = (!d || (d.p1 == null && d.p2 == null)) && !(nuevos1 + nuevos2);
+    return { fecha, p1, p2, ent, dev, nuevos: nuevos1 + nuevos2, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, P: T - U - V - W - X - Y, O, liq,
       carritos: num(d?.carritos), faltan, nota: d?.nota || "" };
   }
 
   function fechas() {
     const s = new Set(Object.keys(state.dias));
     if (state.meta) for (const [f, v] of Object.entries(state.meta.byDate)) if (v > 0) s.add(f);
+    if (state.shop) for (const f of Object.keys(state.shop.byDate)) s.add(f);
     return [...s].filter((f) => /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
   }
 
@@ -643,13 +690,22 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
     renderChart(u, h.tasa);
     renderTabla(u, h.tasa);
+    renderCuadre(u, h.tasa);
     renderUnit(u, h, be);
     renderGastos(desde, hasta);
     const puede = state.canWrite !== false && state.db;
     for (const f of ["fDia", "fGasto", "fCfg"]) $(f).querySelectorAll("button, input, select").forEach((el) => { el.disabled = !puede; });
   }
 
+  function renderLiveShop() {
+    const el = $("liveShop"), t = $("liveShopTxt");
+    const hora = state.shopAt ? new Date(state.shopAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
+    const m = { idle: ["idle", "Shopify: esperando"], loading: ["loading", "Leyendo Shopify…"], ok: ["ok", `Shopify en directo · ${hora}`], warn: ["warn", state.shopMsg], bad: ["bad", state.shopMsg] };
+    const [st, txt] = m[state.shopStatus] || m.idle;
+    el.dataset.s = st; t.textContent = txt;
+  }
   function renderLive() {
+    renderLiveShop();
     const el = $("live"), t = $("liveTxt");
     const hora = state.metaAt ? new Date(state.metaAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
     const map = {
@@ -751,7 +807,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
   function metaInput(cfg, since, until, cursor) {
     const inp = {
       ad_account_id: String(cfg.meta_ad_account_id), level: cfg.meta_filtro_campana ? "campaign" : "ad_account",
-      fields: ["amount_spent"], time_range: JSON.stringify({ since, until }), time_increment: "1", limit: 1000,
+      fields: ["amount_spent", "omni_purchase"], time_range: JSON.stringify({ since, until }), time_increment: "1", limit: 1000,
       include_additional_context: false, client_conversation_id: convId,
       advertiser_request: "ver live mis numeros: gasto de ads del facebook por día"
     };
@@ -766,13 +822,14 @@ details.panel[open] > summary { margin-bottom: 14px; }
     let rows = p?.ad_entities;
     if (typeof rows === "string") { try { rows = JSON.parse(rows); } catch { return null; } }
     if (!Array.isArray(rows)) return null;
-    const byDate = {};
+    const byDate = {}, compras = {};
     for (const r of rows) {
       const f = r?.date_start; if (!f) continue;
       const v = parseFloat(r?.amount_spent?.value ?? r?.amount_spent ?? 0);
       byDate[f] = (byDate[f] || 0) + (isFinite(v) ? v : 0);
+      compras[f] = (compras[f] || 0) + (parseFloat(r?.omni_purchase) || 0);
     }
-    return { byDate, next: p?.pagination?.next_cursor || null };
+    return { byDate, compras, next: p?.pagination?.next_cursor || null };
   }
 
   const DENIEGA_META = ["needs_reauth", "server_not_connected", "selection_required", "server_not_found", "not_in_manifest", "blocked_by_policy", "approval_required", "consent_required"];
@@ -805,18 +862,19 @@ details.panel[open] > summary { margin-bottom: 14px; }
     render();
   }
 
-  async function seguirPaginas(cfg, since, until, base, cursor) {
-    let byDate = { ...base }, n = 0;
+  async function seguirPaginas(cfg, since, until, base, cursor, baseCompras) {
+    let byDate = { ...base }, compras = { ...baseCompras }, n = 0;
     while (cursor && n < 5 && mcpNs) {
       n++;
       try {
         const res = await mcpNs.callTool(SERVER, TOOL, metaInput(cfg, since, until, cursor));
         const m = parseMeta(res.payload); if (!m) break;
         for (const [f, v] of Object.entries(m.byDate)) byDate[f] = (byDate[f] || 0) + v;
+        for (const [f, v] of Object.entries(m.compras)) compras[f] = (compras[f] || 0) + v;
         cursor = m.next;
       } catch { break; }
     }
-    return byDate;
+    return { byDate, compras };
   }
 
   async function startMeta() {
@@ -834,13 +892,115 @@ details.panel[open] > summary { margin-bottom: 14px; }
       if (ev.type === "error") { metaError(ev.error); return; }
       const m = parseMeta(ev.result?.payload);
       if (!m) { state.metaStatus = "bad"; state.metaMsg = "Respuesta de Meta no reconocida · uso el gasto guardado"; render(); return; }
-      const byDate = m.next ? await seguirPaginas(cfg, since, until, m.byDate, m.next) : m.byDate;
-      state.meta = { byDate, since, until };
+      const todo = m.next ? await seguirPaginas(cfg, since, until, m.byDate, m.next, m.compras) : m;
+      state.meta = { byDate: todo.byDate, compras: todo.compras, since, until };
       state.metaAt = ev.result?.cache?.storedAt || Date.now();
       state.metaStatus = "ok"; state.metaMsg = "";
       render();
       syncAdsHint();
     }, { refetchInterval: 5 * 60 * 1000, cache: { staleTime: 60 * 1000 } });
+  }
+
+  /* ---------- Shopify en directo ---------- */
+  const SHOP = "Shopify", SHOP_TOOL = "graphql_query";
+  const SHOP_QUERY = "query Pedidos($q: String!, $after: String) { orders(first: 250, after: $after, query: $q, sortKey: CREATED_AT) { nodes { legacyResourceId createdAt cancelledAt test subtotalLineItemsQuantity } pageInfo { hasNextPage endCursor } } }";
+  let shopUnsub = null, shopKey = null, shopTimer = null;
+  function textoShop(e) {
+    const code = e?.code || "upstream_error";
+    const t = {
+      needs_reauth: "Reconecta Shopify en claude.ai → Ajustes → Conectores",
+      server_not_connected: "Añade el conector Shopify en claude.ai → Ajustes → Conectores",
+      server_not_found: "Añade el conector Shopify en claude.ai → Ajustes → Conectores",
+      selection_required: "Elige qué tienda de Shopify usar",
+      not_in_manifest: "No has permitido leer Shopify aquí",
+      consent_required: "Permite leer Shopify para ver los pedidos en directo",
+      blocked_by_policy: "Tu organización bloquea esta lectura de Shopify",
+      tool_error: "Shopify respondió con un error: " + str(e?.message).slice(0, 100),
+      server_unavailable: "Shopify no responde ahora · reintento solo"
+    };
+    return t[code] || "Pedidos de Shopify no disponibles en esta vista";
+  }
+  function leerPedidos(payload) {
+    let p = payload;
+    if (typeof p === "string") { try { p = JSON.parse(p); } catch { return null; } }
+    const o = p?.data?.orders || p?.orders;
+    return Array.isArray(o?.nodes) ? o : null;
+  }
+  async function procesarShop(primera, input, desde) {
+    const nodos = [...primera.nodes];
+    let info = primera.pageInfo, n = 0;
+    while (info?.hasNextPage && n < 10) {
+      n++;
+      try {
+        const res = await mcpNs.callTool(SHOP, SHOP_TOOL, { ...input, variables: { ...input.variables, after: info.endCursor } });
+        const o = leerPedidos(res.payload); if (!o) break;
+        nodos.push(...o.nodes); info = o.pageInfo;
+      } catch { break; }
+    }
+    const byDate = {};
+    for (const x of nodos) {
+      if (x.test) continue;
+      const f = iso(new Date(x.createdAt));
+      if (f < desde) continue;
+      (byDate[f] ||= []).push({ id: str(x.legacyResourceId), pack: Number(x.subtotalLineItemsQuantity) === 1 ? 1 : 2, cancelada: !!x.cancelledAt });
+    }
+    state.shop = { byDate, desde }; state.shopStatus = "ok"; state.shopMsg = "";
+    render(); if (state.vista === "cre") renderCre();
+  }
+  async function startShop() {
+    const cfg = state.cfg;
+    if (state.rol !== "owner" || !cfg.fecha_inicio) return;
+    const hoyD = new Date(), limite = iso(addDays(hoyD, -59));
+    const desde = cfg.fecha_inicio > limite ? cfg.fecha_inicio : limite;
+    if (desde === shopKey) return;
+    shopKey = desde;
+    mcpNs = mcpNs || await window.claude?.use?.("mcp");
+    if (!mcpNs) { state.shopStatus = "bad"; state.shopMsg = "Pedidos de Shopify no disponibles en esta vista"; renderLive(); return; }
+    const input = { query: SHOP_QUERY, variables: { q: `created_at:>='${parseISO(desde).toISOString()}'` } };
+    if (shopUnsub) shopUnsub();
+    if (shopTimer) clearInterval(shopTimer);
+    state.shopStatus = "loading"; renderLive();
+    const alRecibir = (res) => {
+      const o = leerPedidos(res?.payload);
+      if (!o) { state.shopStatus = "bad"; state.shopMsg = "Respuesta de Shopify no reconocida"; renderLive(); return; }
+      state.shopAt = res?.cache?.storedAt || Date.now();
+      procesarShop(o, input, desde);
+    };
+    const alFallar = (e) => {
+      const code = e?.code || "upstream_error";
+      if (DENIEGA_META.includes(code) || code.startsWith("capability") || code === "not_granted") state.shop = null;
+      state.shopStatus = ["server_unavailable", "rate_limited", "upstream_error"].includes(code) ? "warn" : "bad";
+      state.shopMsg = textoShop(e); render();
+    };
+    shopUnsub = mcpNs.watchTool(SHOP, SHOP_TOOL, input, (ev) => {
+      if (ev.type === "data") return alRecibir(ev.result);
+      if (ev.error?.code === "bad_request" && !state.shop) {
+        // si este visor no admite vigilar la herramienta, consulto cada 5 minutos
+        if (shopUnsub) shopUnsub();
+        const leer = () => mcpNs.callTool(SHOP, SHOP_TOOL, input).then(alRecibir, alFallar);
+        leer(); shopTimer = setInterval(() => { if (!document.hidden) leer(); }, 5 * 60 * 1000);
+        return;
+      }
+      alFallar(ev.error);
+    }, { refetchInterval: 5 * 60 * 1000, cache: { staleTime: 60 * 1000 } });
+  }
+
+  function renderCuadre(u, tasa) {
+    const tb = $("cuadre");
+    if (state.rol !== "owner") return;
+    if (!state.shop) { tb.innerHTML = `<tr><td colspan="7" class="empty">${esc(state.shopStatus === "bad" || state.shopStatus === "warn" ? state.shopMsg : "Leyendo Shopify…")}</td></tr>`; return; }
+    const lista = fechas().filter((f) => f >= state.shop.desde).reverse().slice(0, 14);
+    let tShop = 0, tMeta = 0, tNuevos = 0;
+    tb.innerHTML = lista.length ? lista.map((f) => {
+      const sd = shopDia(f), d = state.dias[f], dia = calcDia(f, u, tasa);
+      const meta = state.meta?.compras?.[f];
+      const alm = d && (d.p1 != null || d.p2 != null) ? num(d.p1) + num(d.p2) : null;
+      tShop += sd.total; tMeta += meta || 0; tNuevos += dia.nuevos;
+      const pct = sd.total > 0 && meta != null ? meta / sd.total : null;
+      return `<tr><td>${corta(f)}</td><td><b>${N(sd.total)}</b></td><td>${meta == null ? "—" : N(meta)}</td><td>${alm == null ? "—" : N(alm)}</td><td>${N(sd.cancelados + num(d?.cancelados))}</td><td>${dia.nuevos ? `<span class="tag">${N(dia.nuevos)}</span>` : "—"}</td><td class="${pct != null && pct < 0.8 ? "neg" : ""}">${P(pct)}</td></tr>`;
+    }).join("") : `<tr><td colspan="7" class="empty">Sin pedidos en Shopify desde ${ddmm(state.shop.desde)}.</td></tr>`;
+    const pctT = tShop > 0 && state.meta ? tMeta / tShop : null;
+    $("cuadreTxt").textContent = `${pctT != null ? `Meta registra el ${P(pctT)} de tus pedidos de Shopify en estos días. ` : ""}${tNuevos ? `${N(tNuevos)} ${tNuevos === 1 ? "pedido nuevo aún no está en el Excel del almacén: ya cuenta" : "pedidos nuevos aún no están en el Excel del almacén: ya cuentan"} en tus números como pendientes.` : "Todos los pedidos de Shopify están ya en el almacén."}`;
   }
 
   /* ---------- base de datos ---------- */
@@ -867,7 +1027,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
       if (s.exists && state.rol !== "owner") { state.cfgExiste = true; state.rol = "owner"; aplicarRol(); }
       if (s.exists) state.cfgExiste = true;
       state.cfgLoaded = true;
-      llenarCfg(); render(); startMeta();
+      llenarCfg(); render(); startMeta(); startShop();
       if (state.vista === "cre") startCre();
     }, fallo);
     db.collection("dias").onSnapshot((s) => {
@@ -900,7 +1060,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
   }
   function aplicarRol() {
     const equipo = state.rol === "equipo";
-    $("tabs").hidden = equipo; $("live").hidden = equipo;
+    $("tabs").hidden = equipo; $("lives").hidden = equipo;
     document.querySelector(".brand h1").textContent = equipo ? "CeraLux · Incidencias" : "CeraLux · Números";
     document.querySelector(".brand p").textContent = equipo ? "Pedidos que el repartidor no pudo entregar a la primera" : "Spray reparación de arañazos · contra reembolso · Meta Ads";
     if (equipo) setVista("inc");
@@ -1228,8 +1388,10 @@ details.panel[open] > summary { margin-bottom: 14px; }
       const id = str(r["ID PEDIDO"]), fecha = fechaDe(r["FECHA DEL PEDIDO"]);
       if (!id || !fecha) continue;
       const estadoTxt = str(r["ESTADO"]), estado = estadoTxt.toLowerCase();
-      if (excl.has(id) || str(r["NOMBRE COMPLETO"]).toLowerCase().startsWith("test")) { tests++; continue; }
-      const d = (dias[fecha] ||= { p1: 0, p2: 0, ent1: 0, ent2: 0, dev1: 0, dev2: 0, inc: 0, envio_ent: 0, envio_pend: 0, carritos: 0, cancelados: 0 });
+      const d = (dias[fecha] ||= { p1: 0, p2: 0, ent1: 0, ent2: 0, dev1: 0, dev2: 0, inc: 0, envio_ent: 0, envio_pend: 0, carritos: 0, cancelados: 0, shopify_ids: [], shopify_test: [] });
+      const sid = str(r["ID PEDIDO SHOPIFY"]);
+      if (sid) d.shopify_ids.push(sid);
+      if (excl.has(id) || str(r["NOMBRE COMPLETO"]).toLowerCase().startsWith("test")) { tests++; if (sid) d.shopify_test.push(sid); continue; }
       if (estado === "carrito abandonado" || str(r["ES CARRITO"]) === "1") { d.carritos++; continue; }
       const pack = Number(r["UD"]) === 1 ? 1 : 2;
       vistos[id] = { estado: estadoTxt, r, fecha, pack };

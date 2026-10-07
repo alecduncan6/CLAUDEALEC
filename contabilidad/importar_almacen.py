@@ -11,6 +11,7 @@ Solo saca totales por día (nunca nombres, teléfonos ni direcciones):
     inc               en incidencia (siguen pendientes hasta que pasen a Devuelto)
     envio_ent         coste de envío real (sin IVA) de los entregados
     envio_pend        coste de envío real (sin IVA) de los pendientes (preparado, en ruta, incidencia)
+    shopify_ids       IDs de Shopify de todas las filas del día (para no contar dos veces los pedidos de Shopify)
     carritos          carritos abandonados (no son pedidos)
     cancelados        rechazados / cancelados antes de enviarse
 """
@@ -59,6 +60,8 @@ def fecha_iso(v):
 dias = defaultdict(lambda: defaultdict(float))
 ignorados, avisos = [], []
 estados = {}  # ID pedido -> datos para el tablero de incidencias
+ids_shopify = defaultdict(list)  # IDs de Shopify que conoce el almacén (incluye tests y cancelados)
+ids_test = defaultdict(list)     # IDs de Shopify de los pedidos de test
 for f in filas:
     if not f or f[col["ID PEDIDO"]] is None:
         continue
@@ -66,8 +69,12 @@ for f in filas:
     estado = str(f[col["ESTADO"]] or "").strip().lower()
     nombre = str(f[col["NOMBRE COMPLETO"]] or "").strip().lower()
     dia = dias[fecha_iso(f[col["Fecha del pedido"]])]
+    if "ID pedido Shopify" in col and f[col["ID pedido Shopify"]]:
+        ids_shopify[fecha_iso(f[col["Fecha del pedido"]])].append(str(f[col["ID pedido Shopify"]]).strip())
     if pid in excluir or nombre.startswith("test"):
         ignorados.append(pid)
+        if "ID pedido Shopify" in col and f[col["ID pedido Shopify"]]:
+            ids_test[fecha_iso(f[col["Fecha del pedido"]])].append(str(f[col["ID pedido Shopify"]]).strip())
         continue
     if estado in CARRITO or str(f[col["¿Es carrito?"]]).strip() == "1":
         dia["carritos"] += 1
@@ -108,6 +115,8 @@ resumen = {}
 for fecha in sorted(dias):
     d = dias[fecha]
     resumen[fecha] = {k: (round(d[k], 2) if k.startswith("envio") else int(d[k])) for k in CAMPOS}
+    resumen[fecha]["shopify_ids"] = ids_shopify.get(fecha, [])
+    resumen[fecha]["shopify_test"] = ids_test.get(fecha, [])
 
 print(f"{'fecha':<11}{'P1':>4}{'P2':>4}{'Ent':>5}{'Dev':>5}{'Inc':>5}{'Pend':>6}{'Envío ent':>11}{'Envío pend':>12}{'Carr':>6}{'Canc':>6}")
 for fecha, d in resumen.items():
