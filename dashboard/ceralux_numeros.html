@@ -1,0 +1,805 @@
+<title>CeraLux Números</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: parte de caja diario. Una columna en móvil; en escritorio, héroe a dos columnas y rejilla de KPIs. */
+:root {
+  --bg: #F2F4F7; --surface: #FFFFFF; --ink: #141C2B; --muted: #5D6778; --line: #DCE1E8; --soft: #E9EDF2;
+  --accent: #9A6F1C; --accent-soft: #F4EAD5;
+  --good: #1D7A45; --good-soft: #DDF1E5; --warn: #9E600A; --warn-soft: #FBEBD0; --bad: #B8342A; --bad-soft: #F8DEDA;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1119; --surface: #141B27; --ink: #E7EBF1; --muted: #97A2B4; --line: #253042; --soft: #1B2433;
+    --accent: #D8A647; --accent-soft: #3A2F17;
+    --good: #45C07B; --good-soft: #15301F; --warn: #E5A93E; --warn-soft: #38290F; --bad: #F06B5B; --bad-soft: #3C1A17;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1119; --surface: #141B27; --ink: #E7EBF1; --muted: #97A2B4; --line: #253042; --soft: #1B2433;
+  --accent: #D8A647; --accent-soft: #3A2F17;
+  --good: #45C07B; --good-soft: #15301F; --warn: #E5A93E; --warn-soft: #38290F; --bad: #F06B5B; --bad-soft: #3C1A17;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; padding-inline: 16px; padding-block: 20px 56px; }
+.wrap { max-width: 1080px; margin-inline: auto; display: grid; gap: 28px; }
+.wrap > *, .two > *, .hero > * { min-width: 0; }
+h1, h2, .num { font-family: var(--display); font-stretch: 112%; }
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; margin: 0; }
+h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin: 0 0 12px; text-wrap: balance; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+small, .small { font-size: 13px; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* cabecera */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.brand { display: grid; gap: 2px; }
+.brand p { margin: 0; font-size: 13px; color: var(--muted); }
+.live { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.live[data-s="ok"] .dot { background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+.live[data-s="loading"] .dot { background: var(--accent); }
+.live[data-s="warn"] .dot { background: var(--warn); }
+.live[data-s="bad"] .dot { background: var(--bad); }
+.periodos { overflow-x: auto; }
+.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 9px; background: var(--soft); white-space: nowrap; }
+.seg button { border: 0; background: transparent; padding: 6px 11px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+
+/* avisos */
+.avisos { display: grid; gap: 8px; }
+.aviso { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--r); background: var(--warn-soft); color: var(--ink); font-size: 14px; }
+.aviso b { color: var(--warn); }
+.aviso.info { background: var(--soft); }
+.aviso.info b { color: var(--ink); }
+
+/* héroe */
+.hero { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 760px) { .hero { grid-template-columns: 1.25fr 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+.big { font-size: clamp(38px, 9vw, 56px); font-weight: 800; line-height: 1; letter-spacing: -0.02em; margin: 6px 0 10px; }
+.big.pos { color: var(--good); } .big.neg { color: var(--bad); }
+.split { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--muted); }
+.split b { color: var(--ink); font-weight: 600; }
+.chip { display: inline-block; font-family: var(--display); font-stretch: 112%; font-weight: 800; letter-spacing: 0.06em; font-size: 13px; padding: 4px 10px; border-radius: 6px; background: var(--soft); color: var(--muted); }
+.chip[data-k="ESCALAR"] { background: var(--good-soft); color: var(--good); }
+.chip[data-k="VIGILAR"] { background: var(--warn-soft); color: var(--warn); }
+.chip[data-k="CORTAR"] { background: var(--bad-soft); color: var(--bad); }
+.meter { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--good-soft) 0 75%, var(--warn-soft) 75% 100%); margin: 30px 0 8px; }
+.meter .be { position: absolute; top: -6px; bottom: -6px; left: 75%; width: 2px; background: var(--ink); }
+.meter .be::after { content: "break-even"; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.meter .cur { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--ink); border: 3px solid var(--surface); }
+.meter-legend { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+
+/* kpis */
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+@media (min-width: 760px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.kpi { background: var(--surface); padding: 14px 16px; display: grid; gap: 2px; }
+.kpi .l { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 24px; font-weight: 700; }
+.kpi .s { font-size: 12px; color: var(--muted); }
+.kpi .v.bad { color: var(--bad); }
+
+/* contra reembolso */
+.cod { display: flex; height: 34px; border-radius: 8px; overflow: hidden; background: var(--soft); }
+.cod span { display: flex; align-items: center; padding-inline: 8px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; min-width: 0; }
+.cod .e { background: var(--good); color: var(--surface); }
+.cod .r { background: var(--accent-soft); color: var(--accent); }
+.cod .d { background: var(--bad); color: var(--surface); }
+.cod-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.cod-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+.two { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 760px) { .two { grid-template-columns: 1fr 1fr; } }
+
+/* objetivo */
+.bar { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; margin: 10px 0 14px; }
+.bar > div { height: 100%; background: var(--accent); border-radius: 4px; }
+dl.rows { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; font-size: 14px; }
+dl.rows dt { color: var(--muted); }
+dl.rows dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* gráfico */
+.chart svg { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-size: 11px; font-family: var(--body); }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -2px; }
+
+/* tabla */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--soft); position: sticky; top: 0; }
+th:first-child, td:first-child { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+td.pos { color: var(--good); font-weight: 600; } td.neg { color: var(--bad); font-weight: 600; }
+.tag { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; background: var(--warn-soft); color: var(--warn); }
+.linkbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 9px; font-size: 13px; cursor: pointer; }
+.linkbtn:hover { border-color: var(--muted); }
+
+/* formularios */
+form { display: grid; gap: 12px; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+@media (min-width: 760px) { .fields { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.fields .wide { grid-column: 1 / -1; }
+@media (min-width: 760px) { .two .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
+input, select { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 15px; }
+input:focus, select:focus { border-color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.btn { border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 600; background: var(--ink); color: var(--surface); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.msg { font-size: 13px; }
+.msg.ok { color: var(--good); } .msg.err { color: var(--bad); }
+details.panel > summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+details.panel > summary::-webkit-details-marker { display: none; }
+details.panel > summary::after { content: "+"; color: var(--muted); font-weight: 400; }
+details.panel[open] > summary::after { content: "−"; }
+details.panel[open] > summary { margin-bottom: 14px; }
+.unit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.unit .num { font-size: 20px; font-weight: 700; }
+.gasto { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.gasto:last-child { border-bottom: 0; }
+.gasto .c { min-width: 0; overflow-wrap: anywhere; }
+.empty { padding: 18px; text-align: center; color: var(--muted); font-size: 14px; }
+@media (prefers-reduced-motion: no-preference) { .bar > div, .meter .cur { transition: all .4s ease; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>CeraLux · Números</h1>
+      <p>Spray reparación de arañazos · contra reembolso · Meta Ads</p>
+    </div>
+    <div class="live" id="live" data-s="idle"><span class="dot"></span><span id="liveTxt">Conectando…</span></div>
+  </header>
+
+  <nav class="periodos" aria-label="Periodo">
+    <div class="seg" id="seg">
+      <button type="button" data-p="hoy">Hoy</button>
+      <button type="button" data-p="ayer">Ayer</button>
+      <button type="button" data-p="7d">7 días</button>
+      <button type="button" data-p="mes">Este mes</button>
+      <button type="button" data-p="mespasado">Mes pasado</button>
+      <button type="button" data-p="todo">Todo</button>
+    </div>
+  </nav>
+
+  <div class="avisos" id="avisos"></div>
+
+  <section class="hero">
+    <div class="panel">
+      <h2 id="heroLabel">Beneficio neto proyectado</h2>
+      <div class="big num" id="heroNum">—</div>
+      <div class="split" id="heroSplit"><span>Cargando tus números…</span></div>
+    </div>
+    <div class="panel">
+      <h2>Semáforo de campaña</h2>
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <span class="chip" id="chip" data-k="">SIN DATOS</span>
+        <span class="small muted" id="chipTxt">Registra pedidos para ver tu CPA real.</span>
+      </div>
+      <div class="meter" id="meter"><div class="be"></div><div class="cur" id="meterCur" hidden></div></div>
+      <div class="meter-legend"><span id="cpaNow">CPA —</span><span id="cpaBe">Break-even —</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Resumen del periodo</h2>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <h2>Contra reembolso · estado de los pedidos</h2>
+      <div class="cod" id="cod"><span style="color:var(--muted)">Sin pedidos en este periodo</span></div>
+      <div class="cod-legend" id="codLegend"></div>
+    </div>
+    <div class="panel">
+      <h2>Camino a 10.000 €/mes</h2>
+      <div class="split"><span>Ritmo a 30 días: <b class="num" id="ritmo">—</b></span><span id="pctObj"></span></div>
+      <div class="bar"><div id="objBar" style="width:0%"></div></div>
+      <dl class="rows" id="objRows"></dl>
+    </div>
+  </section>
+
+  <section class="panel chart">
+    <h2>Últimos 14 días</h2>
+    <div id="chart"></div>
+    <div class="legend"><span><i style="background:var(--good)"></i>Beneficio proyectado del día</span><span><i style="background:var(--accent)"></i>Gasto en Ads</span></div>
+  </section>
+
+  <section>
+    <h2>Diario por fecha de pedido</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Pack 1</th><th>Pack 2</th><th>Entreg.</th><th>Devuel.</th><th>En ruta</th><th>Ads</th><th>CPA</th><th>Benef. proy.</th><th></th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="10" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="registrar">
+    <h2>Registrar o corregir un día</h2>
+    <form id="fDia" autocomplete="off">
+      <div class="fields">
+        <label for="dFecha">Fecha del pedido<input id="dFecha" type="date" required></label>
+        <label for="dP1">Pedidos Pack 1<input id="dP1" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dP2">Pedidos Pack 2<input id="dP2" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dAds"><span id="dAdsLbl">Gasto Ads (€)</span><input id="dAds" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00"></label>
+        <label for="dEnt">Entregados<input id="dEnt" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dDev">Devueltos<input id="dDev" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dNota" class="wide">Nota<input id="dNota" type="text" maxlength="200" placeholder="Ej.: nuevo creativo, cambio de precio…"></label>
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit" id="dSave">Guardar día</button>
+        <span class="msg" id="dMsg" role="status"></span>
+      </div>
+      <p class="small muted" style="margin:0">Entregados y devueltos son de los pedidos hechos ESE día. Lo que falta hasta el total queda "en ruta".</p>
+    </form>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <h2>Lo que te deja cada pedido entregado</h2>
+      <div class="unit" id="unit"></div>
+    </div>
+    <div class="panel">
+      <h2>Otros gastos del periodo</h2>
+      <div id="gastosList"><div class="empty">Sin gastos en este periodo.</div></div>
+      <form id="fGasto" autocomplete="off" style="margin-top:14px">
+        <div class="fields">
+          <label for="gFecha">Fecha<input id="gFecha" type="date" required></label>
+          <label for="gImporte">Importe (€)<input id="gImporte" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="36,00"></label>
+          <label for="gConcepto" class="wide">Concepto<input id="gConcepto" type="text" maxlength="80" required placeholder="Ej.: Shopify Basic"></label>
+          <label for="gCat" class="wide">Categoría<select id="gCat">
+            <option>Suscripciones</option><option>Apps</option><option>Contenido / UGC</option><option>Muestras</option>
+            <option>Herramientas</option><option>Gestoría</option><option>Comisiones</option><option>Otros</option>
+          </select></label>
+        </div>
+        <div class="actions"><button class="btn ghost" type="submit">Añadir gasto</button><span class="msg" id="gMsg" role="status"></span></div>
+      </form>
+    </div>
+  </section>
+
+  <details class="panel" id="cfgPanel">
+    <summary>Ajustes: precios, costes y supuestos</summary>
+    <form id="fCfg" autocomplete="off">
+      <div class="fields" id="cfgFields"></div>
+      <div class="actions"><button class="btn" type="submit">Guardar ajustes</button><span class="msg" id="cMsg" role="status"></span></div>
+    </form>
+  </details>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const SERVER = "Meta ADS";
+  const TOOL = "ads_get_ad_entities";
+  const DEFAULTS = {
+    marca: "CeraLux", p1_nombre: "Pack 1 ud", p1_pvp: 29.99, p1_uds: 1, p1_coste_ud: 1.99, p1_logistica: 8.06,
+    p2_nombre: "Pack 2 uds", p2_pvp: 39.99, p2_uds: 2, p2_coste_ud: 1.99, p2_logistica: 8.06,
+    iva_ventas: 0.21, iva_producto: 0.21, aplicar_iva: true, coste_devolucion: 8.06, recargo_ads: 0,
+    tasa_entrega_estimada: 0.8, min_resueltos: 30, pct_pack2_estimado: 0.3, objetivo_mensual: 10000,
+    fecha_inicio: "", meta_ad_account_id: "", meta_filtro_campana: ""
+  };
+  const CFG_FIELDS = [
+    ["p1_pvp", "PVP Pack 1 (€)", "eur"], ["p2_pvp", "PVP Pack 2 (€)", "eur"],
+    ["p1_coste_ud", "Coste producto / ud sin IVA (€)", "eur"], ["p2_coste_ud", "Coste producto / ud Pack 2 (€)", "eur"],
+    ["p1_logistica", "Logística Pack 1 (€)", "eur"], ["p2_logistica", "Logística Pack 2 (€)", "eur"],
+    ["p1_uds", "Unidades Pack 1", "int"], ["p2_uds", "Unidades Pack 2", "int"],
+    ["coste_devolucion", "Coste por pedido devuelto (€)", "eur"], ["tasa_entrega_estimada", "Tasa de entrega estimada (%)", "pct"],
+    ["min_resueltos", "Pedidos resueltos para usar tu tasa real", "int"], ["pct_pack2_estimado", "% Pack 2 estimado", "pct"],
+    ["iva_ventas", "IVA ventas (%)", "pct"], ["iva_producto", "IVA producto (%)", "pct"],
+    ["aplicar_iva", "Descontar IVA del beneficio", "bool"], ["recargo_ads", "Recargo sobre Ads (%)", "pct"],
+    ["objetivo_mensual", "Objetivo mensual (€)", "eur"], ["fecha_inicio", "Fecha de inicio", "date"],
+    ["meta_ad_account_id", "Cuenta Meta (ID)", "text"], ["meta_filtro_campana", "Campañas que contienen", "text"]
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const eur = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
+  const eur0 = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  const pct = new Intl.NumberFormat("es-ES", { style: "percent", maximumFractionDigits: 1 });
+  const int = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0 });
+  const dec2 = new Intl.NumberFormat("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const E = (v) => (v == null || !isFinite(v)) ? "—" : eur.format(v);
+  const E0 = (v) => (v == null || !isFinite(v)) ? "—" : eur0.format(v);
+  const P = (v) => (v == null || !isFinite(v)) ? "—" : pct.format(v);
+  const N = (v) => (v == null || !isFinite(v)) ? "—" : int.format(v);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (v) => { const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(",", ".")); return isFinite(n) ? n : 0; };
+  const iso = (d) => d.toLocaleDateString("sv-SE");
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const parseISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const corta = (s) => { const d = parseISO(s); return d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "2-digit" }); };
+  const ddmm = (s) => s.slice(8, 10) + "/" + s.slice(5, 7);
+
+  const store = (() => { try { return window.localStorage; } catch { return null; } })();
+  const lsGet = (k) => { try { return store?.getItem(k) ?? null; } catch { return null; } };
+  const lsSet = (k, v) => { try { store?.setItem(k, v); } catch { /* sin almacenamiento */ } };
+
+  const state = {
+    cfg: { ...DEFAULTS }, cfgLoaded: false, dias: {}, diasLoaded: false, gastos: [],
+    db: null, dbStatus: "loading", canWrite: null,
+    meta: null, metaStatus: "idle", metaMsg: "", metaAt: null,
+    periodo: lsGet("ceralux.periodo") || "mes"
+  };
+
+  /* ---------- cálculo (mismo modelo que el Excel) ---------- */
+  function unit(cfg) {
+    const iv = num(cfg.iva_ventas), ip = num(cfg.iva_producto), aplica = cfg.aplicar_iva ? 1 : 0;
+    const pk = (n) => {
+      const pvp = num(cfg[`p${n}_pvp`]), uds = num(cfg[`p${n}_uds`]), cu = num(cfg[`p${n}_coste_ud`]), log = num(cfg[`p${n}_logistica`]);
+      const cprod = uds * cu * (1 + ip), ben = pvp - cprod - log;
+      const ivan = aplica ? pvp * iv / (1 + iv) - (uds * cu * ip + log * iv / (1 + iv)) : 0;
+      return { pvp, cprod, log, ben, ivan, neto: ben - ivan, nombre: cfg[`p${n}_nombre`] };
+    };
+    const costeDev = num(cfg.coste_devolucion);
+    return { p1: pk(1), p2: pk(2), costeDev, ivaDev: aplica ? costeDev * iv / (1 + iv) : 0, recargo: num(cfg.recargo_ads) };
+  }
+
+  function historico() {
+    let ent = 0, dev = 0, p1 = 0, p2 = 0;
+    for (const d of Object.values(state.dias)) { ent += num(d.ent); dev += num(d.dev); p1 += num(d.p1); p2 += num(d.p2); }
+    const cfg = state.cfg, res = ent + dev;
+    const real = res > 0 ? ent / res : null;
+    const usarReal = real != null && res >= num(cfg.min_resueltos);
+    return {
+      tasa: usarReal ? real : num(cfg.tasa_entrega_estimada), fuenteTasa: usarReal ? "real" : "estimada", resueltos: res,
+      pack2: (p1 + p2) > 0 ? p2 / (p1 + p2) : num(cfg.pct_pack2_estimado)
+    };
+  }
+
+  function breakEven(u, h) {
+    const x = h.pack2, t = h.tasa;
+    const ticket = (1 - x) * u.p1.pvp + x * u.p2.pvp;
+    const netoEnt = (1 - x) * u.p1.neto + x * u.p2.neto;
+    const benPedido = t * netoEnt - (1 - t) * (u.costeDev - u.ivaDev);
+    const cpaBE = benPedido / (1 + u.recargo);
+    return { ticket, benPedido, cpaBE, roasBE: cpaBE > 0 ? ticket / cpaBE : null };
+  }
+
+  function adsDe(fecha) {
+    const m = state.meta;
+    if (m && fecha >= m.since && fecha <= m.until) return m.byDate[fecha] || 0;
+    return num(state.dias[fecha]?.ads);
+  }
+
+  function calcDia(fecha, u, tasa) {
+    const d = state.dias[fecha];
+    const p1 = num(d?.p1), p2 = num(d?.p2), ent = num(d?.ent), dev = num(d?.dev), ads = adsDe(fecha);
+    const H = p1 + p2, I = Math.max(0, H - ent - dev), J = p1 * u.p1.pvp + p2 * u.p2.pvp;
+    const mix = (a, b) => H > 0 ? (p1 * a + p2 * b) / H : 0;
+    const R = ent + I * tasa, S = dev + I * (1 - tasa);
+    const T = R * mix(u.p1.pvp, u.p2.pvp), U = R * mix(u.p1.cprod, u.p2.cprod), V = R * mix(u.p1.log, u.p2.log);
+    const W = S * u.costeDev, X = R * mix(u.p1.ivan, u.p2.ivan) - S * u.ivaDev, Y = ads * (1 + u.recargo);
+    const Pr = T - U - V - W - X - Y;
+    const O = ent * mix(u.p1.ben - u.p1.ivan, u.p2.ben - u.p2.ivan) - dev * (u.costeDev - u.ivaDev) - Y;
+    const faltan = !d || (d.p1 == null && d.p2 == null);
+    return { fecha, p1, p2, ent, dev, H, I, J, ads, T, U, V, W, X, Y, P: Pr, O, faltan, nota: d?.nota || "" };
+  }
+
+  function fechas() {
+    const s = new Set(Object.keys(state.dias));
+    if (state.meta) for (const [f, v] of Object.entries(state.meta.byDate)) if (v > 0) s.add(f);
+    return [...s].filter((f) => /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
+  }
+
+  function rango(p) {
+    const hoy = new Date(), t = iso(hoy);
+    if (p === "hoy") return [t, t];
+    if (p === "ayer") { const a = iso(addDays(hoy, -1)); return [a, a]; }
+    if (p === "7d") return [iso(addDays(hoy, -6)), t];
+    if (p === "mes") return [t.slice(0, 8) + "01", t];
+    if (p === "mespasado") return [iso(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)), iso(new Date(hoy.getFullYear(), hoy.getMonth(), 0))];
+    const todas = fechas();
+    return [state.cfg.fecha_inicio || todas[0] || t, t];
+  }
+
+  function agregar(desde, hasta, u, tasa) {
+    const dias = fechas().filter((f) => f >= desde && f <= hasta).map((f) => calcDia(f, u, tasa));
+    const s = (k) => dias.reduce((a, d) => a + d[k], 0);
+    const otros = state.gastos.filter((g) => g.fecha >= desde && g.fecha <= hasta).reduce((a, g) => a + num(g.importe), 0);
+    const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
+    const r = { dias, nDias, otros };
+    for (const k of ["p1", "p2", "ent", "dev", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "P", "O"]) r[k] = s(k);
+    r.neto = r.P - otros; r.cobrado = r.O - otros;
+    r.cpa = r.H > 0 ? r.ads / r.H : null; r.roas = r.ads > 0 ? r.J / r.ads : null;
+    r.ticket = r.H > 0 ? r.J / r.H : null; r.pack2 = r.H > 0 ? r.p2 / r.H : null;
+    r.tasaEnt = (r.ent + r.dev) > 0 ? r.ent / (r.ent + r.dev) : null;
+    r.margen = r.T > 0 ? r.neto / r.T : null;
+    return r;
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    const u = unit(state.cfg), h = historico(), be = breakEven(u, h);
+    const [desde, hasta] = rango(state.periodo);
+    const a = agregar(desde, hasta, u, h.tasa);
+    for (const b of $("seg").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.p === state.periodo));
+    renderLive();
+    renderAvisos(u, h);
+
+    const listo = state.diasLoaded || state.dbStatus === "unavailable";
+    $("heroNum").textContent = listo ? E(a.neto) : "—";
+    $("heroNum").className = "big num " + (a.neto > 0.005 ? "pos" : a.neto < -0.005 ? "neg" : "");
+    $("heroSplit").innerHTML = listo
+      ? `<span>Cobrado real: <b class="num">${E(a.cobrado)}</b></span><span>Tasa de entrega usada: <b>${P(h.tasa)}</b> (${h.fuenteTasa})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
+      : `<span>Cargando tus números…</span>`;
+
+    // semáforo
+    let k = "SIN DATOS", txt = "Registra pedidos para ver tu CPA real.";
+    if (a.H === 0 && a.ads > 0) { k = "FALTAN PEDIDOS"; txt = `Hay ${E(a.ads)} de Ads sin pedidos apuntados en este periodo.`; }
+    else if (a.cpa != null && be.cpaBE > 0) {
+      const r = a.cpa / be.cpaBE;
+      if (r <= 0.75) { k = "ESCALAR"; txt = "CPA con margen de sobra. Sube presupuesto un 20-30% cada 48 h."; }
+      else if (r <= 1) { k = "VIGILAR"; txt = "Ganas poco por pedido. Prueba creatividades antes de escalar."; }
+      else { k = "CORTAR"; txt = "Cada pedido te cuesta dinero. Cambia ángulo o apaga."; }
+    }
+    $("chip").textContent = k; $("chip").dataset.k = k; $("chipTxt").textContent = txt;
+    $("cpaNow").textContent = "CPA " + E(a.cpa);
+    $("cpaBe").textContent = "Break-even " + E(be.cpaBE);
+    const cur = $("meterCur");
+    if (a.cpa != null && be.cpaBE > 0) {
+      cur.hidden = false;
+      cur.style.left = Math.min(100, Math.max(0, (a.cpa / be.cpaBE) * 75)) + "%";
+      cur.style.background = k === "CORTAR" ? "var(--bad)" : k === "VIGILAR" ? "var(--warn)" : "var(--good)";
+    } else cur.hidden = true;
+
+    // kpis
+    const kp = [
+      ["Pedidos", N(a.H), `${N(a.p1)} Pack 1 · ${N(a.p2)} Pack 2`],
+      ["Gasto Ads", E(a.ads), state.metaStatus === "ok" ? "en directo de Meta" : "guardado"],
+      ["CPA", E(a.cpa), `máx. rentable ${E(be.cpaBE)}`, a.cpa != null && a.cpa > be.cpaBE],
+      ["ROAS", a.roas == null ? "—" : dec2.format(a.roas) + "x", `break-even ${be.roasBE == null ? "—" : dec2.format(be.roasBE) + "x"}`],
+      ["Facturación bruta", E(a.J), "si se entregara todo"],
+      ["Ticket medio", E(a.ticket), `${P(a.pack2)} eligen Pack 2`],
+      ["Tasa de entrega", P(a.tasaEnt), `${N(a.ent)} de ${N(a.ent + a.dev)} resueltos`],
+      ["Margen neto", P(a.margen), `otros gastos ${E(a.otros)}`]
+    ];
+    $("kpis").innerHTML = kp.map(([l, v, s, bad]) => `<div class="kpi"><span class="l">${l}</span><span class="v num${bad ? " bad" : ""}">${v}</span><span class="s">${esc(s)}</span></div>`).join("");
+
+    // contra reembolso
+    if (a.H > 0) {
+      const w = (n) => (n / a.H * 100).toFixed(2) + "%";
+      $("cod").innerHTML = [["e", a.ent], ["r", a.I], ["d", a.dev]].filter(([, n]) => n > 0).map(([c, n]) => `<span class="${c}" style="width:${w(n)}">${N(n)}</span>`).join("");
+    } else $("cod").innerHTML = `<span style="color:var(--muted)">Sin pedidos en este periodo</span>`;
+    $("codLegend").innerHTML = `<span><i style="background:var(--good)"></i>Entregados ${N(a.ent)}</span><span><i style="background:var(--accent-soft);outline:1px solid var(--accent)"></i>En ruta ${N(a.I)}</span><span><i style="background:var(--bad)"></i>Devueltos ${N(a.dev)}</span>`;
+
+    // objetivo
+    const obj = num(state.cfg.objetivo_mensual);
+    const ritmo = a.neto / a.nDias * 30;
+    $("ritmo").textContent = E0(ritmo);
+    $("pctObj").textContent = obj > 0 ? P(Math.max(0, ritmo) / obj) + " del objetivo" : "";
+    $("objBar").style.width = obj > 0 ? Math.min(100, Math.max(0, ritmo / obj * 100)) + "%" : "0%";
+    const margenPed = a.cpa != null ? be.benPedido - a.cpa * (1 + u.recargo) : null;
+    let necesarios = "—";
+    if (margenPed != null) necesarios = margenPed <= 0 ? "Baja el CPA primero" : N(Math.ceil((obj + a.otros / a.nDias * 30) / 30 / margenPed));
+    $("objRows").innerHTML = `
+      <dt>Beneficio esperado por pedido (antes de Ads)</dt><dd>${E(be.benPedido)}</dd>
+      <dt>Margen por pedido tras Ads (CPA ${E(a.cpa)})</dt><dd>${E(margenPed)}</dd>
+      <dt>Pedidos/día para 10.000 €/mes</dt><dd>${esc(necesarios)}</dd>
+      <dt>Inversión diaria en Ads a ese ritmo</dt><dd>${margenPed > 0 ? E0(Math.ceil((obj + a.otros / a.nDias * 30) / 30 / margenPed) * a.cpa) : "—"}</dd>`;
+
+    renderChart(u, h.tasa);
+    renderTabla(u, h.tasa);
+    renderUnit(u);
+    renderGastos(desde, hasta);
+    const puede = state.canWrite !== false && state.db;
+    for (const f of ["fDia", "fGasto", "fCfg"]) $(f).querySelectorAll("button, input, select").forEach((el) => { el.disabled = !puede; });
+  }
+
+  function renderLive() {
+    const el = $("live"), t = $("liveTxt");
+    const hora = state.metaAt ? new Date(state.metaAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
+    const map = {
+      idle: ["idle", "Gasto de Meta: esperando ajustes"], loading: ["loading", "Leyendo Meta Ads…"],
+      ok: ["ok", `Meta en directo · ${hora}`], warn: ["warn", state.metaMsg], bad: ["bad", state.metaMsg]
+    };
+    const [s, txt] = map[state.metaStatus] || map.idle;
+    el.dataset.s = s; t.textContent = txt;
+  }
+
+  function renderAvisos(u, h) {
+    const out = [];
+    if (state.dbStatus === "unavailable") out.push(["", "Sin base de datos en esta vista.", "Abre el dashboard desde claude.ai para ver y guardar tus pedidos."]);
+    if (state.canWrite === false) out.push(["info", "Solo lectura.", "Tu acceso a esta página no permite guardar cambios."]);
+    const hoy = iso(new Date());
+    const faltan = fechas().filter((f) => f < hoy && adsDe(f) > 0 && calcDia(f, u, h.tasa).faltan);
+    if (state.diasLoaded && faltan.length) out.push(["", "Faltan pedidos:", `${faltan.map(ddmm).join(", ")}. Díselos a Claude o regístralos abajo.`]);
+    const limite = iso(addDays(new Date(), -7));
+    const viejos = fechas().filter((f) => f <= limite).map((f) => calcDia(f, u, h.tasa)).filter((d) => d.I > 0);
+    if (viejos.length) {
+      const n = viejos.reduce((s, d) => s + d.I, 0);
+      out.push(["info", `${N(n)} pedidos en ruta de hace más de 7 días.`, "Actualiza entregados y devueltos para ver tu tasa real."]);
+    }
+    $("avisos").innerHTML = out.map(([c, b, t]) => `<div class="aviso ${c}"><span><b>${esc(b)}</b> ${esc(t)}</span></div>`).join("");
+  }
+
+  function renderChart(u, tasa) {
+    const hoy = new Date();
+    const dias = Array.from({ length: 14 }, (_, i) => calcDia(iso(addDays(hoy, i - 13)), u, tasa));
+    const W = 640, H = 230, L = 52, R = 10, T = 12, B = 30;
+    const vals = dias.flatMap((d) => [d.P, d.ads]);
+    let lo = Math.min(0, ...vals), hi = Math.max(10, ...vals);
+    const paso = (() => { const raw = (hi - lo) / 4, m = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw / m; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * m; })();
+    lo = Math.floor(lo / paso) * paso; hi = Math.ceil(hi / paso) * paso;
+    const y = (v) => T + (hi - v) / (hi - lo) * (H - T - B);
+    const bw = (W - L - R) / dias.length;
+    const x = (i) => L + bw * i + bw / 2;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Beneficio proyectado y gasto en Ads de los últimos 14 días">`;
+    for (let v = lo; v <= hi + 1e-9; v += paso) {
+      svg += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="${v === 0 ? 1.5 : 1}"/>`;
+      svg += `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${eur0.format(v)}</text>`;
+    }
+    dias.forEach((d, i) => {
+      const y0 = y(0), y1 = y(d.P);
+      if (Math.abs(d.P) > 0.005) svg += `<rect x="${x(i) - bw * 0.32}" y="${Math.min(y0, y1)}" width="${bw * 0.64}" height="${Math.max(1, Math.abs(y1 - y0))}" rx="2" fill="${d.P >= 0 ? "var(--good)" : "var(--bad)"}"><title>${corta(d.fecha)}: ${E(d.P)}</title></rect>`;
+      if (i % 2 === 1 || dias.length <= 7) svg += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle">${ddmm(d.fecha)}</text>`;
+    });
+    const pts = dias.map((d, i) => `${x(i).toFixed(1)},${y(d.ads).toFixed(1)}`).join(" ");
+    svg += `<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>`;
+    const last = dias.length - 1;
+    svg += `<circle cx="${x(last)}" cy="${y(dias[last].ads)}" r="4" fill="var(--accent)"/>`;
+    svg += `</svg>`;
+    $("chart").innerHTML = svg;
+  }
+
+  function renderTabla(u, tasa) {
+    const tb = $("tbody");
+    if (state.dbStatus === "loading" && !state.diasLoaded) { tb.innerHTML = `<tr><td colspan="10" class="empty">Cargando…</td></tr>`; return; }
+    const filas = fechas().reverse().slice(0, 90).map((f) => calcDia(f, u, tasa));
+    if (!filas.length) { tb.innerHTML = `<tr><td colspan="10" class="empty">Aún no hay días. Registra el primero abajo o díselo a Claude: "Hoy 9 Pack 1 y 4 Pack 2".</td></tr>`; return; }
+    tb.innerHTML = filas.map((d) => {
+      const cpa = d.H > 0 ? d.ads / d.H : null;
+      const ped = d.faltan ? `<td colspan="2" style="text-align:center"><span class="tag">Faltan pedidos</span></td>` : `<td>${N(d.p1)}</td><td>${N(d.p2)}</td>`;
+      return `<tr title="${esc(d.nota)}"><td>${corta(d.fecha)}</td>${ped}<td>${N(d.ent)}</td><td>${N(d.dev)}</td><td>${N(d.I)}</td><td>${E(d.ads)}</td><td>${E(cpa)}</td><td class="${d.P >= 0 ? "pos" : "neg"}">${E(d.P)}</td><td><button type="button" class="linkbtn" data-edit="${d.fecha}">Editar</button></td></tr>`;
+    }).join("");
+  }
+
+  function renderUnit(u) {
+    const c = (p) => `<div><div class="small muted">${esc(p.nombre)} · ${E(p.pvp)}</div><div class="num">${E(p.neto)}</div><div class="small muted">${E(p.ben)} del almacén − ${E(p.ivan)} de IVA</div></div>`;
+    $("unit").innerHTML = c(u.p1) + c(u.p2) + `<div class="small muted" style="grid-column:1/-1">Un devuelto te cuesta ${E(u.costeDev - u.ivaDev)} netos. El Pack 2 deja ${E(u.p2.neto - u.p1.neto)} más por solo ${E(u.p2.pvp - u.p1.pvp)} más de precio.</div>`;
+  }
+
+  function renderGastos(desde, hasta) {
+    const lista = state.gastos.filter((g) => g.fecha >= desde && g.fecha <= hasta).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    $("gastosList").innerHTML = lista.length ? lista.map((g) => `<div class="gasto"><div class="c"><div>${esc(g.concepto)}</div><div class="small muted">${corta(g.fecha)} · ${esc(g.categoria || "Otros")}</div></div><div style="display:flex;gap:8px;align-items:center"><b class="num">${E(num(g.importe))}</b><button type="button" class="linkbtn" data-del="${esc(g.id)}">Borrar</button></div></div>`).join("") : `<div class="empty">Sin gastos en este periodo.</div>`;
+  }
+
+  /* ---------- Meta Ads en directo ---------- */
+  let metaUnsub = null, metaKey = null, mcpNs = null;
+  const convId = (() => {
+    let id = lsGet("ceralux.conv");
+    if (!id || !/^[A-Za-z0-9]{20}$/.test(id)) {
+      const ch = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      id = Array.from(crypto.getRandomValues(new Uint8Array(20)), (b) => ch[b % ch.length]).join("");
+      lsSet("ceralux.conv", id);
+    }
+    return id;
+  })();
+
+  function metaInput(cfg, since, until, cursor) {
+    const inp = {
+      ad_account_id: String(cfg.meta_ad_account_id), level: cfg.meta_filtro_campana ? "campaign" : "ad_account",
+      fields: ["amount_spent"], time_range: JSON.stringify({ since, until }), time_increment: "1", limit: 1000,
+      include_additional_context: false, client_conversation_id: convId,
+      advertiser_request: "ver live mis numeros: gasto de ads del facebook por día"
+    };
+    if (cfg.meta_filtro_campana) inp.filtering = [{ field: "campaign.name", operator: "CONTAIN", value: [String(cfg.meta_filtro_campana)] }];
+    if (cursor) inp.cursor = cursor;
+    return inp;
+  }
+
+  function parseMeta(payload) {
+    let p = payload;
+    if (typeof p === "string") { try { p = JSON.parse(p); } catch { return null; } }
+    let rows = p?.ad_entities;
+    if (typeof rows === "string") { try { rows = JSON.parse(rows); } catch { return null; } }
+    if (!Array.isArray(rows)) return null;
+    const byDate = {};
+    for (const r of rows) {
+      const f = r?.date_start; if (!f) continue;
+      const v = parseFloat(r?.amount_spent?.value ?? r?.amount_spent ?? 0);
+      byDate[f] = (byDate[f] || 0) + (isFinite(v) ? v : 0);
+    }
+    return { byDate, next: p?.pagination?.next_cursor || null };
+  }
+
+  function metaError(e) {
+    const code = e?.code || "upstream_error";
+    const deniega = ["needs_reauth", "server_not_connected", "selection_required", "server_not_found", "not_in_manifest", "blocked_by_policy", "approval_required", "consent_required"];
+    const textos = {
+      needs_reauth: "Reconecta Meta Ads en claude.ai → Ajustes → Conectores",
+      server_not_connected: "Añade el conector Meta Ads en claude.ai → Ajustes → Conectores",
+      selection_required: "Elige qué conexión de Meta Ads usar",
+      server_not_found: "Añade el conector Meta Ads en claude.ai → Ajustes → Conectores",
+      not_in_manifest: "No has permitido leer Meta Ads aquí · uso el gasto guardado",
+      consent_required: "Permite leer Meta Ads para ver el gasto en directo",
+      blocked_by_policy: "Tu organización bloquea esta lectura de Meta Ads",
+      approval_required: "Esta lectura de Meta Ads necesita aprobación",
+      tool_error: "Meta respondió con un error: " + (e?.message || "").slice(0, 120),
+      server_unavailable: "Meta no responde ahora · reintento solo",
+      rate_limited: "Demasiadas lecturas · reintento en un momento",
+      not_granted: "Gasto en directo no disponible en esta vista · uso el guardado",
+      capability_disabled: "Gasto en directo no disponible en esta vista · uso el guardado",
+      capability_removed: "Gasto en directo no disponible en esta vista · uso el guardado"
+    };
+    if (deniega.includes(code) || code.startsWith("capability") || code === "not_granted") state.meta = null;
+    const transitorio = ["server_unavailable", "rate_limited", "upstream_error"].includes(code);
+    state.metaStatus = transitorio && state.meta ? "warn" : (transitorio ? "warn" : "bad");
+    state.metaMsg = textos[code] || "No se pudo leer Meta Ads · uso el gasto guardado";
+    render();
+  }
+
+  async function seguirPaginas(cfg, since, until, base, cursor) {
+    let byDate = { ...base }, n = 0;
+    while (cursor && n < 5 && mcpNs) {
+      n++;
+      try {
+        const res = await mcpNs.callTool(SERVER, TOOL, metaInput(cfg, since, until, cursor));
+        const m = parseMeta(res.payload); if (!m) break;
+        for (const [f, v] of Object.entries(m.byDate)) byDate[f] = (byDate[f] || 0) + v;
+        cursor = m.next;
+      } catch { break; }
+    }
+    return byDate;
+  }
+
+  async function startMeta() {
+    const cfg = state.cfg;
+    if (!cfg.meta_ad_account_id || !cfg.fecha_inicio) { state.metaStatus = "idle"; renderLive(); return; }
+    const since = cfg.fecha_inicio, until = iso(new Date());
+    const key = [cfg.meta_ad_account_id, cfg.meta_filtro_campana, since, until].join("|");
+    if (key === metaKey) return;
+    metaKey = key;
+    mcpNs = mcpNs || await window.claude?.use?.("mcp");
+    if (!mcpNs) { state.metaStatus = "bad"; state.metaMsg = "Gasto en directo no disponible en esta vista · uso el guardado"; render(); return; }
+    if (metaUnsub) metaUnsub();
+    state.metaStatus = state.meta ? state.metaStatus : "loading"; renderLive();
+    metaUnsub = mcpNs.watchTool(SERVER, TOOL, metaInput(cfg, since, until), async (ev) => {
+      if (ev.type === "error") { metaError(ev.error); return; }
+      const m = parseMeta(ev.result?.payload);
+      if (!m) { state.metaStatus = "bad"; state.metaMsg = "Respuesta de Meta no reconocida · uso el gasto guardado"; render(); return; }
+      const byDate = m.next ? await seguirPaginas(cfg, since, until, m.byDate, m.next) : m.byDate;
+      state.meta = { byDate, since, until };
+      state.metaAt = ev.result?.cache?.storedAt || Date.now();
+      state.metaStatus = "ok"; state.metaMsg = "";
+      render();
+      syncAdsHint();
+    }, { refetchInterval: 5 * 60 * 1000, cache: { staleTime: 60 * 1000 } });
+  }
+
+  /* ---------- base de datos ---------- */
+  async function boot() {
+    render();
+    const C = window.claude;
+    if (!C?.use) { state.dbStatus = "unavailable"; render(); return; }
+    C.use("user").then(async (user) => {
+      if (!user) return;
+      try { const w = await user.can("data.write"); if (w === false) { state.canWrite = false; render(); } } catch { /* sin datos */ }
+    });
+    const db = await C.use("db");
+    if (!db) { state.dbStatus = "unavailable"; render(); return; }
+    state.db = db; state.dbStatus = "ok";
+    const fallo = (e) => { if (e?.code === "revoked" || e?.code === "not_granted") { state.dbStatus = "unavailable"; render(); } };
+    db.doc("config/main").onSnapshot((s) => {
+      state.cfg = { ...DEFAULTS, ...(s.exists ? s.data() : {}) };
+      state.cfgLoaded = true;
+      llenarCfg(); render(); startMeta();
+    }, fallo);
+    db.collection("dias").onSnapshot((s) => {
+      const m = {}; for (const d of s.docs) m[d.id] = d.data();
+      state.dias = m; state.diasLoaded = true; render();
+    }, fallo);
+    db.collection("gastos").onSnapshot((s) => {
+      state.gastos = s.docs.map((d) => ({ id: d.id, ...d.data() })); render();
+    }, fallo);
+  }
+
+  /* ---------- formularios ---------- */
+  function msg(id, txt, ok) { const el = $(id); el.textContent = txt; el.className = "msg " + (ok ? "ok" : "err"); if (ok) setTimeout(() => { if (el.textContent === txt) el.textContent = ""; }, 3500); }
+  const optInt = (v) => v === "" ? null : Math.max(0, Math.round(num(v)));
+
+  function cargarDia(fecha) {
+    const d = state.dias[fecha] || {};
+    $("dFecha").value = fecha;
+    $("dP1").value = d.p1 ?? ""; $("dP2").value = d.p2 ?? "";
+    $("dEnt").value = d.ent || ""; $("dDev").value = d.dev || "";
+    $("dNota").value = d.nota || "";
+    $("dAds").value = adsDe(fecha) ? adsDe(fecha).toFixed(2) : "";
+    syncAdsHint();
+  }
+  function syncAdsHint() {
+    const f = $("dFecha").value, m = state.meta;
+    const enMeta = m && f && f >= m.since && f <= m.until;
+    $("dAdsLbl").textContent = enMeta ? "Gasto Ads (€) · de Meta" : "Gasto Ads (€)";
+    if (enMeta && document.activeElement !== $("dAds")) $("dAds").value = (m.byDate[f] || 0).toFixed(2);
+  }
+  $("dFecha").addEventListener("change", () => cargarDia($("dFecha").value));
+
+  $("fDia").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!state.db) return msg("dMsg", "Sin base de datos en esta vista.", false);
+    const fecha = $("dFecha").value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return msg("dMsg", "Pon una fecha válida.", false);
+    const p1 = optInt($("dP1").value), p2 = optInt($("dP2").value), ent = optInt($("dEnt").value) || 0, dev = optInt($("dDev").value) || 0;
+    if (ent + dev > (p1 || 0) + (p2 || 0)) return msg("dMsg", "Entregados + devueltos no puede superar los pedidos del día.", false);
+    const ads = $("dAds").value === "" ? 0 : Math.round(num($("dAds").value) * 100) / 100;
+    $("dSave").disabled = true;
+    try {
+      await state.db.doc("dias/" + fecha).set({ fecha, p1, p2, ent, dev, ads, nota: $("dNota").value.trim(), actualizado: new Date().toISOString() });
+      msg("dMsg", "Guardado " + ddmm(fecha) + ".", true);
+    } catch (e) {
+      msg("dMsg", e?.code === "invalid_argument" ? "No tienes permiso para guardar aquí." : e?.code === "quota_exceeded" ? "La base de datos está llena." : "No se pudo guardar. Vuelve a intentarlo.", false);
+    } finally { $("dSave").disabled = false; }
+  });
+
+  $("tbody").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-edit]"); if (!b) return;
+    cargarDia(b.dataset.edit);
+    $("registrar").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    $("dP1").focus({ preventScroll: true });
+  });
+
+  $("fGasto").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!state.db) return msg("gMsg", "Sin base de datos en esta vista.", false);
+    const g = { fecha: $("gFecha").value, concepto: $("gConcepto").value.trim(), categoria: $("gCat").value, importe: Math.round(num($("gImporte").value) * 100) / 100 };
+    if (!g.fecha || !g.concepto || !(g.importe > 0)) return msg("gMsg", "Rellena fecha, concepto e importe.", false);
+    try { await state.db.collection("gastos").add(g); $("gConcepto").value = ""; $("gImporte").value = ""; msg("gMsg", "Gasto añadido.", true); }
+    catch { msg("gMsg", "No se pudo guardar el gasto.", false); }
+  });
+
+  $("gastosList").addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-del]"); if (!b || !state.db) return;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "¿Seguro?"; setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "Borrar"; } }, 4000); return; }
+    try { await state.db.doc("gastos/" + b.dataset.del).delete(); } catch { msg("gMsg", "No se pudo borrar.", false); }
+  });
+
+  function llenarCfg() {
+    const c = state.cfg, box = $("cfgFields");
+    if (box.dataset.ready === "1" && box.contains(document.activeElement)) return;
+    box.innerHTML = CFG_FIELDS.map(([k, l, t]) => {
+      const id = "c_" + k;
+      if (t === "bool") return `<label for="${id}">${l}<select id="${id}"><option value="1"${c[k] ? " selected" : ""}>Sí</option><option value="0"${c[k] ? "" : " selected"}>No</option></select></label>`;
+      const v = t === "pct" ? +(num(c[k]) * 100).toFixed(2) : (c[k] ?? "");
+      const type = t === "date" ? "date" : t === "text" ? "text" : "number";
+      const step = t === "int" ? "1" : "0.01";
+      return `<label for="${id}">${l}<input id="${id}" type="${type}"${type === "number" ? ` step="${step}" min="0"` : ""} value="${esc(v)}"></label>`;
+    }).join("");
+    box.dataset.ready = "1";
+  }
+
+  $("fCfg").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!state.db) return msg("cMsg", "Sin base de datos en esta vista.", false);
+    const nuevo = { ...state.cfg };
+    for (const [k, , t] of CFG_FIELDS) {
+      const v = $("c_" + k).value;
+      nuevo[k] = t === "bool" ? v === "1" : t === "pct" ? num(v) / 100 : t === "int" ? Math.round(num(v)) : t === "eur" ? num(v) : v.trim();
+    }
+    try { await state.db.doc("config/main").set(nuevo); msg("cMsg", "Ajustes guardados.", true); }
+    catch { msg("cMsg", "No se pudieron guardar los ajustes.", false); }
+  });
+
+  $("seg").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-p]"); if (!b) return;
+    state.periodo = b.dataset.p; lsSet("ceralux.periodo", state.periodo); render();
+  });
+
+  const hoy = iso(new Date());
+  $("dFecha").value = hoy; $("gFecha").value = hoy;
+  llenarCfg();
+  boot();
+})();
+</script>
