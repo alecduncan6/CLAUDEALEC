@@ -2,9 +2,13 @@
   "config": {
     "aplicar_iva": true,
     "coste_devolucion": 8.06,
+    "excluir_pedidos": [
+      "3503014"
+    ],
     "fecha_inicio": "2026-10-05",
     "iva_producto": 0.21,
     "iva_ventas": 0.21,
+    "logistica_con_iva": false,
     "marca": "CeraLux",
     "meta_ad_account_id": "26290722800581380",
     "meta_cuenta": "HeatioShop",
@@ -28,24 +32,58 @@
   },
   "dias": [
     {
-      "actualizado": "2026-10-07T10:30:00Z",
+      "actualizado": "2026-10-07T12:00:00Z",
       "ads": 67.67,
-      "dev": 0,
-      "ent": 0,
+      "cancelados": 0,
+      "carritos": 0,
+      "dev1": 0,
+      "dev2": 0,
+      "ent1": 3,
+      "ent2": 1,
+      "envio_ent": 31.57,
+      "envio_pend": 39.09,
       "fecha": "2026-10-05",
+      "fuente": "export almacén 07/10",
+      "inc": 3,
       "nota": "Arranca campaña CeraLux ES - Test 3 ángulos",
-      "p1": null,
-      "p2": null
+      "p1": 5,
+      "p2": 4
     },
     {
-      "actualizado": "2026-10-07T10:30:00Z",
+      "actualizado": "2026-10-07T12:00:00Z",
       "ads": 70.13,
-      "dev": 0,
-      "ent": 0,
+      "cancelados": 0,
+      "carritos": 0,
+      "dev1": 0,
+      "dev2": 0,
+      "ent1": 1,
+      "ent2": 0,
+      "envio_ent": 8.06,
+      "envio_pend": 51.96,
       "fecha": "2026-10-06",
+      "fuente": "export almacén 07/10",
+      "inc": 0,
       "nota": "",
-      "p1": null,
-      "p2": null
+      "p1": 7,
+      "p2": 1
+    },
+    {
+      "actualizado": "2026-10-07T12:00:00Z",
+      "ads": 18.14,
+      "cancelados": 0,
+      "carritos": 1,
+      "dev1": 0,
+      "dev2": 0,
+      "ent1": 0,
+      "ent2": 0,
+      "envio_ent": 0,
+      "envio_pend": 16.12,
+      "fecha": "2026-10-07",
+      "fuente": "export almacén 07/10",
+      "inc": 0,
+      "nota": "Día en curso (gasto parcial)",
+      "p1": 2,
+      "p2": 0
     }
   ],
   "gastos": []

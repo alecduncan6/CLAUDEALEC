@@ -1,0 +1,4 @@
+# Exports del almacén: llevan datos personales de clientes, nunca al repo
+contabilidad/almacen/
+resumen_excel*.xlsx
+__pycache__/

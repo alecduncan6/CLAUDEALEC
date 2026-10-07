@@ -94,6 +94,7 @@ button, input, select { font: inherit; color: inherit; }
 .cod .e { background: var(--good); color: var(--surface); }
 .cod .r { background: var(--accent-soft); color: var(--accent); }
 .cod .d { background: var(--bad); color: var(--surface); }
+.cod .i { background: var(--warn); color: var(--surface); }
 .cod-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 13px; color: var(--muted); }
 .cod-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 
@@ -130,6 +131,7 @@ form { display: grid; gap: 12px; }
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
 @media (min-width: 760px) { .fields { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .fields .wide { grid-column: 1 / -1; }
+.packrow { grid-column: 1 / -1; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 4px; }
 @media (min-width: 760px) { .two .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
 input, select { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 15px; }
@@ -222,8 +224,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
     <h2>Diario por fecha de pedido</h2>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Fecha</th><th>Pack 1</th><th>Pack 2</th><th>Entreg.</th><th>Devuel.</th><th>En ruta</th><th>Ads</th><th>CPA</th><th>Benef. proy.</th><th></th></tr></thead>
-        <tbody id="tbody"><tr><td colspan="10" class="empty">Cargando…</td></tr></tbody>
+        <thead><tr><th>Fecha</th><th>Pack 1</th><th>Pack 2</th><th>Entreg.</th><th>Pend.</th><th>Incid.</th><th>Devuel.</th><th>Ads</th><th>CPA</th><th>Benef. proy.</th><th></th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="11" class="empty">Cargando…</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -233,18 +235,23 @@ details.panel[open] > summary { margin-bottom: 14px; }
     <form id="fDia" autocomplete="off">
       <div class="fields">
         <label for="dFecha">Fecha del pedido<input id="dFecha" type="date" required></label>
-        <label for="dP1">Pedidos Pack 1<input id="dP1" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
-        <label for="dP2">Pedidos Pack 2<input id="dP2" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dInc">En incidencia<input id="dInc" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
         <label for="dAds"><span id="dAdsLbl">Gasto Ads (€)</span><input id="dAds" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00"></label>
-        <label for="dEnt">Entregados<input id="dEnt" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
-        <label for="dDev">Devueltos<input id="dDev" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <span class="packrow">Pack 1</span>
+        <label for="dP1">Pedidos<input id="dP1" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dE1">Entregados<input id="dE1" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dD1">Devueltos<input id="dD1" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <span class="packrow">Pack 2</span>
+        <label for="dP2">Pedidos<input id="dP2" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dE2">Entregados<input id="dE2" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
+        <label for="dD2">Devueltos<input id="dD2" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></label>
         <label for="dNota" class="wide">Nota<input id="dNota" type="text" maxlength="200" placeholder="Ej.: nuevo creativo, cambio de precio…"></label>
       </div>
       <div class="actions">
         <button class="btn" type="submit" id="dSave">Guardar día</button>
         <span class="msg" id="dMsg" role="status"></span>
       </div>
-      <p class="small muted" style="margin:0">Entregados y devueltos son de los pedidos hechos ESE día. Lo que falta hasta el total queda "en ruta".</p>
+      <p class="small muted" style="margin:0">Entregados y devueltos son de los pedidos hechos ESE día; lo que falta queda pendiente. Una incidencia sigue pendiente hasta que pasa a Devuelto. Lo más rápido: pásale a Claude el Excel del almacén y lo importa todo.</p>
     </form>
   </section>
 
@@ -289,18 +296,19 @@ details.panel[open] > summary { margin-bottom: 14px; }
     marca: "CeraLux", p1_nombre: "Pack 1 ud", p1_pvp: 29.99, p1_uds: 1, p1_coste_ud: 1.99, p1_logistica: 8.06,
     p2_nombre: "Pack 2 uds", p2_pvp: 39.99, p2_uds: 2, p2_coste_ud: 1.99, p2_logistica: 8.06,
     iva_ventas: 0.21, iva_producto: 0.21, aplicar_iva: true, coste_devolucion: 8.06, recargo_ads: 0,
-    tasa_entrega_estimada: 0.8, min_resueltos: 30, pct_pack2_estimado: 0.3, objetivo_mensual: 10000,
+    tasa_entrega_estimada: 0.8, min_resueltos: 30, pct_pack2_estimado: 0.3, objetivo_mensual: 10000, logistica_con_iva: false,
     fecha_inicio: "", meta_ad_account_id: "", meta_filtro_campana: ""
   };
   const CFG_FIELDS = [
     ["p1_pvp", "PVP Pack 1 (€)", "eur"], ["p2_pvp", "PVP Pack 2 (€)", "eur"],
     ["p1_coste_ud", "Coste producto / ud sin IVA (€)", "eur"], ["p2_coste_ud", "Coste producto / ud Pack 2 (€)", "eur"],
-    ["p1_logistica", "Logística Pack 1 (€)", "eur"], ["p2_logistica", "Logística Pack 2 (€)", "eur"],
+    ["p1_logistica", "Envío estándar Pack 1 (€, sin IVA)", "eur"], ["p2_logistica", "Envío estándar Pack 2 (€, sin IVA)", "eur"],
     ["p1_uds", "Unidades Pack 1", "int"], ["p2_uds", "Unidades Pack 2", "int"],
     ["coste_devolucion", "Coste por pedido devuelto (€)", "eur"], ["tasa_entrega_estimada", "Tasa de entrega estimada (%)", "pct"],
     ["min_resueltos", "Pedidos resueltos para usar tu tasa real", "int"], ["pct_pack2_estimado", "% Pack 2 estimado", "pct"],
     ["iva_ventas", "IVA ventas (%)", "pct"], ["iva_producto", "IVA producto (%)", "pct"],
-    ["aplicar_iva", "Descontar IVA del beneficio", "bool"], ["recargo_ads", "Recargo sobre Ads (%)", "pct"],
+    ["aplicar_iva", "Descontar IVA del beneficio", "bool"], ["logistica_con_iva", "El envío lleva IVA deducible", "bool"],
+    ["recargo_ads", "Recargo sobre Ads (%)", "pct"],
     ["objetivo_mensual", "Objetivo mensual (€)", "eur"], ["fecha_inicio", "Fecha de inicio", "date"],
     ["meta_ad_account_id", "Cuenta Meta (ID)", "text"], ["meta_filtro_campana", "Campañas que contienen", "text"]
   ];
@@ -336,36 +344,44 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
   /* ---------- cálculo (mismo modelo que el Excel) ---------- */
   function unit(cfg) {
-    const iv = num(cfg.iva_ventas), ip = num(cfg.iva_producto), aplica = cfg.aplicar_iva ? 1 : 0;
+    const iv = num(cfg.iva_ventas), ip = num(cfg.iva_producto), aplica = cfg.aplicar_iva ? 1 : 0, logIva = cfg.logistica_con_iva ? 1 : 0;
     const pk = (n) => {
       const pvp = num(cfg[`p${n}_pvp`]), uds = num(cfg[`p${n}_uds`]), cu = num(cfg[`p${n}_coste_ud`]), log = num(cfg[`p${n}_logistica`]);
-      const cprod = uds * cu * (1 + ip), ben = pvp - cprod - log;
-      const ivan = aplica ? pvp * iv / (1 + iv) - (uds * cu * ip + log * iv / (1 + iv)) : 0;
-      return { pvp, cprod, log, ben, ivan, neto: ben - ivan, nombre: cfg[`p${n}_nombre`] };
+      const cprod = uds * cu * (1 + ip);
+      const ivan = aplica ? pvp * iv / (1 + iv) - (uds * cu * ip + logIva * log * iv / (1 + iv)) : 0;
+      return { pvp, cprod, log, ivan, nombre: cfg[`p${n}_nombre`] };
     };
     const costeDev = num(cfg.coste_devolucion);
-    return { p1: pk(1), p2: pk(2), costeDev, ivaDev: aplica ? costeDev * iv / (1 + iv) : 0, recargo: num(cfg.recargo_ads) };
+    return { p1: pk(1), p2: pk(2), costeDev, ivaDev: aplica && logIva ? costeDev * iv / (1 + iv) : 0, recargo: num(cfg.recargo_ads) };
   }
 
+  const tieneEnvio = (d) => typeof d?.envio_ent === "number" && typeof d?.envio_pend === "number";
+
   function historico() {
-    let ent = 0, dev = 0, p1 = 0, p2 = 0;
-    for (const d of Object.values(state.dias)) { ent += num(d.ent); dev += num(d.dev); p1 += num(d.p1); p2 += num(d.p2); }
+    let ent = 0, dev = 0, p1 = 0, p2 = 0, envio = 0, conEnvio = 0;
+    for (const d of Object.values(state.dias)) {
+      const e = num(d.ent1) + num(d.ent2), dv = num(d.dev1) + num(d.dev2), h = num(d.p1) + num(d.p2);
+      ent += e; dev += dv; p1 += num(d.p1); p2 += num(d.p2);
+      if (tieneEnvio(d)) { envio += d.envio_ent + d.envio_pend; conEnvio += h - dv; }
+    }
     const cfg = state.cfg, res = ent + dev;
     const real = res > 0 ? ent / res : null;
     const usarReal = real != null && res >= num(cfg.min_resueltos);
     return {
       tasa: usarReal ? real : num(cfg.tasa_entrega_estimada), fuenteTasa: usarReal ? "real" : "estimada", resueltos: res,
-      pack2: (p1 + p2) > 0 ? p2 / (p1 + p2) : num(cfg.pct_pack2_estimado)
+      pack2: (p1 + p2) > 0 ? p2 / (p1 + p2) : num(cfg.pct_pack2_estimado),
+      envioMedio: conEnvio > 0 ? envio / conEnvio : null
     };
   }
 
   function breakEven(u, h) {
     const x = h.pack2, t = h.tasa;
+    const neto = (p) => p.pvp - p.cprod - (h.envioMedio ?? p.log) - p.ivan;
     const ticket = (1 - x) * u.p1.pvp + x * u.p2.pvp;
-    const netoEnt = (1 - x) * u.p1.neto + x * u.p2.neto;
+    const netoEnt = (1 - x) * neto(u.p1) + x * neto(u.p2);
     const benPedido = t * netoEnt - (1 - t) * (u.costeDev - u.ivaDev);
     const cpaBE = benPedido / (1 + u.recargo);
-    return { ticket, benPedido, cpaBE, roasBE: cpaBE > 0 ? ticket / cpaBE : null };
+    return { ticket, benPedido, cpaBE, roasBE: cpaBE > 0 ? ticket / cpaBE : null, neto1: neto(u.p1), neto2: neto(u.p2) };
   }
 
   function adsDe(fecha) {
@@ -376,16 +392,22 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
   function calcDia(fecha, u, tasa) {
     const d = state.dias[fecha];
-    const p1 = num(d?.p1), p2 = num(d?.p2), ent = num(d?.ent), dev = num(d?.dev), ads = adsDe(fecha);
-    const H = p1 + p2, I = Math.max(0, H - ent - dev), J = p1 * u.p1.pvp + p2 * u.p2.pvp;
-    const mix = (a, b) => H > 0 ? (p1 * a + p2 * b) / H : 0;
-    const R = ent + I * tasa, S = dev + I * (1 - tasa);
-    const T = R * mix(u.p1.pvp, u.p2.pvp), U = R * mix(u.p1.cprod, u.p2.cprod), V = R * mix(u.p1.log, u.p2.log);
-    const W = S * u.costeDev, X = R * mix(u.p1.ivan, u.p2.ivan) - S * u.ivaDev, Y = ads * (1 + u.recargo);
-    const Pr = T - U - V - W - X - Y;
-    const O = ent * mix(u.p1.ben - u.p1.ivan, u.p2.ben - u.p2.ivan) - dev * (u.costeDev - u.ivaDev) - Y;
+    const p1 = num(d?.p1), p2 = num(d?.p2), e1 = num(d?.ent1), e2 = num(d?.ent2), d1 = num(d?.dev1), d2 = num(d?.dev2);
+    const ads = adsDe(fecha);
+    const H = p1 + p2, ent = e1 + e2, dev = d1 + d2;
+    const x1 = Math.max(0, p1 - e1 - d1), x2 = Math.max(0, p2 - e2 - d2), I = x1 + x2;
+    const J = p1 * u.p1.pvp + p2 * u.p2.pvp;
+    const real = tieneEnvio(d);
+    const envEnt = real ? d.envio_ent : e1 * u.p1.log + e2 * u.p2.log;
+    const envPend = real ? d.envio_pend : x1 * u.p1.log + x2 * u.p2.log;
+    const z1 = e1 + x1 * tasa, z2 = e2 + x2 * tasa, Z = dev + I * (1 - tasa);
+    const T = z1 * u.p1.pvp + z2 * u.p2.pvp, U = z1 * u.p1.cprod + z2 * u.p2.cprod, V = envEnt + envPend * tasa;
+    const W = Z * u.costeDev, X = z1 * u.p1.ivan + z2 * u.p2.ivan - Z * u.ivaDev, Y = ads * (1 + u.recargo);
+    const liq = e1 * (u.p1.pvp - u.p1.cprod) + e2 * (u.p2.pvp - u.p2.cprod) - envEnt;
+    const O = liq - (e1 * u.p1.ivan + e2 * u.p2.ivan) - dev * (u.costeDev - u.ivaDev) - Y;
     const faltan = !d || (d.p1 == null && d.p2 == null);
-    return { fecha, p1, p2, ent, dev, H, I, J, ads, T, U, V, W, X, Y, P: Pr, O, faltan, nota: d?.nota || "" };
+    return { fecha, p1, p2, ent, dev, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, P: T - U - V - W - X - Y, O, liq,
+      carritos: num(d?.carritos), faltan, nota: d?.nota || "" };
   }
 
   function fechas() {
@@ -411,7 +433,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const otros = state.gastos.filter((g) => g.fecha >= desde && g.fecha <= hasta).reduce((a, g) => a + num(g.importe), 0);
     const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
     const r = { dias, nDias, otros };
-    for (const k of ["p1", "p2", "ent", "dev", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "P", "O"]) r[k] = s(k);
+    for (const k of ["p1", "p2", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "P", "O", "liq"]) r[k] = s(k);
     r.neto = r.P - otros; r.cobrado = r.O - otros;
     r.cpa = r.H > 0 ? r.ads / r.H : null; r.roas = r.ads > 0 ? r.J / r.ads : null;
     r.ticket = r.H > 0 ? r.J / r.H : null; r.pack2 = r.H > 0 ? r.p2 / r.H : null;
@@ -433,7 +455,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     $("heroNum").textContent = listo ? E(a.neto) : "—";
     $("heroNum").className = "big num " + (a.neto > 0.005 ? "pos" : a.neto < -0.005 ? "neg" : "");
     $("heroSplit").innerHTML = listo
-      ? `<span>Cobrado real: <b class="num">${E(a.cobrado)}</b></span><span>Tasa de entrega usada: <b>${P(h.tasa)}</b> (${h.fuenteTasa})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
+      ? `<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Cobrado real: <b class="num">${E(a.cobrado)}</b></span><span>Tasa de entrega usada: <b>${P(h.tasa)}</b> (${h.fuenteTasa})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
       : `<span>Cargando tus números…</span>`;
 
     // semáforo
@@ -457,11 +479,11 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
     // kpis
     const kp = [
-      ["Pedidos", N(a.H), `${N(a.p1)} Pack 1 · ${N(a.p2)} Pack 2`],
+      ["Pedidos", N(a.H), `${N(a.p1)} Pack 1 · ${N(a.p2)} Pack 2 · ${E0(a.J)} facturados`],
       ["Gasto Ads", E(a.ads), state.metaStatus === "ok" ? "en directo de Meta" : "guardado"],
       ["CPA", E(a.cpa), `máx. rentable ${E(be.cpaBE)}`, a.cpa != null && a.cpa > be.cpaBE],
       ["ROAS", a.roas == null ? "—" : dec2.format(a.roas) + "x", `break-even ${be.roasBE == null ? "—" : dec2.format(be.roasBE) + "x"}`],
-      ["Facturación bruta", E(a.J), "si se entregara todo"],
+      ["Liquidación almacén", E(a.liq), "PVP − coste de lo entregado"],
       ["Ticket medio", E(a.ticket), `${P(a.pack2)} eligen Pack 2`],
       ["Tasa de entrega", P(a.tasaEnt), `${N(a.ent)} de ${N(a.ent + a.dev)} resueltos`],
       ["Margen neto", P(a.margen), `otros gastos ${E(a.otros)}`]
@@ -471,9 +493,9 @@ details.panel[open] > summary { margin-bottom: 14px; }
     // contra reembolso
     if (a.H > 0) {
       const w = (n) => (n / a.H * 100).toFixed(2) + "%";
-      $("cod").innerHTML = [["e", a.ent], ["r", a.I], ["d", a.dev]].filter(([, n]) => n > 0).map(([c, n]) => `<span class="${c}" style="width:${w(n)}">${N(n)}</span>`).join("");
+      $("cod").innerHTML = [["e", a.ent], ["r", a.I - a.inc], ["i", a.inc], ["d", a.dev]].filter(([, n]) => n > 0).map(([c, n]) => `<span class="${c}" style="width:${w(n)}">${N(n)}</span>`).join("");
     } else $("cod").innerHTML = `<span style="color:var(--muted)">Sin pedidos en este periodo</span>`;
-    $("codLegend").innerHTML = `<span><i style="background:var(--good)"></i>Entregados ${N(a.ent)}</span><span><i style="background:var(--accent-soft);outline:1px solid var(--accent)"></i>En ruta ${N(a.I)}</span><span><i style="background:var(--bad)"></i>Devueltos ${N(a.dev)}</span>`;
+    $("codLegend").innerHTML = `<span><i style="background:var(--good)"></i>Entregados ${N(a.ent)}</span><span><i style="background:var(--accent-soft);outline:1px solid var(--accent)"></i>Preparado / en ruta ${N(a.I - a.inc)}</span><span><i style="background:var(--warn)"></i>Incidencia ${N(a.inc)}</span><span><i style="background:var(--bad)"></i>Devueltos ${N(a.dev)}</span>`;
 
     // objetivo
     const obj = num(state.cfg.objetivo_mensual);
@@ -492,7 +514,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
     renderChart(u, h.tasa);
     renderTabla(u, h.tasa);
-    renderUnit(u);
+    renderUnit(u, h, be);
     renderGastos(desde, hasta);
     const puede = state.canWrite !== false && state.db;
     for (const f of ["fDia", "fGasto", "fCfg"]) $(f).querySelectorAll("button, input, select").forEach((el) => { el.disabled = !puede; });
@@ -516,6 +538,12 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const hoy = iso(new Date());
     const faltan = fechas().filter((f) => f < hoy && adsDe(f) > 0 && calcDia(f, u, h.tasa).faltan);
     if (state.diasLoaded && faltan.length) out.push(["", "Faltan pedidos:", `${faltan.map(ddmm).join(", ")}. Díselos a Claude o regístralos abajo.`]);
+    const todos = fechas().map((f) => calcDia(f, u, h.tasa));
+    const inc = todos.reduce((s, d) => s + d.inc, 0);
+    if (inc) out.push(["", `${N(inc)} ${inc === 1 ? "pedido" : "pedidos"} en incidencia.`, "Escríbeles hoy por WhatsApp o llámalos para dar nueva fecha de entrega: cada uno que salves es beneficio que no pierdes."]);
+    const desde3 = iso(addDays(new Date(), -2));
+    const carr = todos.filter((d) => d.fecha >= desde3).reduce((s, d) => s + d.carritos, 0);
+    if (carr) out.push(["info", `${N(carr)} ${carr === 1 ? "carrito abandonado" : "carritos abandonados"} en 3 días.`, carr === 1 ? "Recupéralo por WhatsApp con el mismo precio." : "Recupéralos por WhatsApp con el mismo precio."]);
     const limite = iso(addDays(new Date(), -7));
     const viejos = fechas().filter((f) => f <= limite).map((f) => calcDia(f, u, h.tasa)).filter((d) => d.I > 0);
     if (viejos.length) {
@@ -556,19 +584,20 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
   function renderTabla(u, tasa) {
     const tb = $("tbody");
-    if (state.dbStatus === "loading" && !state.diasLoaded) { tb.innerHTML = `<tr><td colspan="10" class="empty">Cargando…</td></tr>`; return; }
+    if (state.dbStatus === "loading" && !state.diasLoaded) { tb.innerHTML = `<tr><td colspan="11" class="empty">Cargando…</td></tr>`; return; }
     const filas = fechas().reverse().slice(0, 90).map((f) => calcDia(f, u, tasa));
-    if (!filas.length) { tb.innerHTML = `<tr><td colspan="10" class="empty">Aún no hay días. Registra el primero abajo o díselo a Claude: "Hoy 9 Pack 1 y 4 Pack 2".</td></tr>`; return; }
+    if (!filas.length) { tb.innerHTML = `<tr><td colspan="11" class="empty">Aún no hay días. Registra el primero abajo o díselo a Claude: "Hoy 9 Pack 1 y 4 Pack 2".</td></tr>`; return; }
     tb.innerHTML = filas.map((d) => {
       const cpa = d.H > 0 ? d.ads / d.H : null;
       const ped = d.faltan ? `<td colspan="2" style="text-align:center"><span class="tag">Faltan pedidos</span></td>` : `<td>${N(d.p1)}</td><td>${N(d.p2)}</td>`;
-      return `<tr title="${esc(d.nota)}"><td>${corta(d.fecha)}</td>${ped}<td>${N(d.ent)}</td><td>${N(d.dev)}</td><td>${N(d.I)}</td><td>${E(d.ads)}</td><td>${E(cpa)}</td><td class="${d.P >= 0 ? "pos" : "neg"}">${E(d.P)}</td><td><button type="button" class="linkbtn" data-edit="${d.fecha}">Editar</button></td></tr>`;
+      return `<tr title="${esc(d.nota)}"><td>${corta(d.fecha)}</td>${ped}<td>${N(d.ent)}</td><td>${N(d.I)}</td><td>${d.inc ? `<span class="tag">${N(d.inc)}</span>` : "—"}</td><td>${N(d.dev)}</td><td>${E(d.ads)}</td><td>${E(cpa)}</td><td class="${d.P >= 0 ? "pos" : "neg"}">${E(d.P)}</td><td><button type="button" class="linkbtn" data-edit="${d.fecha}">Editar</button></td></tr>`;
     }).join("");
   }
 
-  function renderUnit(u) {
-    const c = (p) => `<div><div class="small muted">${esc(p.nombre)} · ${E(p.pvp)}</div><div class="num">${E(p.neto)}</div><div class="small muted">${E(p.ben)} del almacén − ${E(p.ivan)} de IVA</div></div>`;
-    $("unit").innerHTML = c(u.p1) + c(u.p2) + `<div class="small muted" style="grid-column:1/-1">Un devuelto te cuesta ${E(u.costeDev - u.ivaDev)} netos. El Pack 2 deja ${E(u.p2.neto - u.p1.neto)} más por solo ${E(u.p2.pvp - u.p1.pvp)} más de precio.</div>`;
+  function renderUnit(u, h, be) {
+    const env = h.envioMedio;
+    const c = (p, neto) => `<div><div class="small muted">${esc(p.nombre)} · ${E(p.pvp)}</div><div class="num">${E(neto)}</div><div class="small muted">${E(p.pvp - p.cprod - (env ?? p.log))} del almacén − ${E(p.ivan)} de IVA</div></div>`;
+    $("unit").innerHTML = c(u.p1, be.neto1) + c(u.p2, be.neto2) + `<div class="small muted" style="grid-column:1/-1">${env != null ? `Con tu envío medio real de ${E(env)} (sin IVA). ` : ""}Un devuelto te cuesta ${E(u.costeDev - u.ivaDev)}. El Pack 2 deja ${E(be.neto2 - be.neto1)} más por solo ${E(u.p2.pvp - u.p1.pvp)} más de precio.</div>`;
   }
 
   function renderGastos(desde, hasta) {
@@ -710,11 +739,11 @@ details.panel[open] > summary { margin-bottom: 14px; }
   function msg(id, txt, ok) { const el = $(id); el.textContent = txt; el.className = "msg " + (ok ? "ok" : "err"); if (ok) setTimeout(() => { if (el.textContent === txt) el.textContent = ""; }, 3500); }
   const optInt = (v) => v === "" ? null : Math.max(0, Math.round(num(v)));
 
+  const CAMPOS_DIA = [["dP1", "p1"], ["dP2", "p2"], ["dE1", "ent1"], ["dE2", "ent2"], ["dD1", "dev1"], ["dD2", "dev2"], ["dInc", "inc"]];
   function cargarDia(fecha) {
     const d = state.dias[fecha] || {};
     $("dFecha").value = fecha;
-    $("dP1").value = d.p1 ?? ""; $("dP2").value = d.p2 ?? "";
-    $("dEnt").value = d.ent || ""; $("dDev").value = d.dev || "";
+    for (const [id, k] of CAMPOS_DIA) $(id).value = (k === "p1" || k === "p2") ? (d[k] ?? "") : (d[k] || "");
     $("dNota").value = d.nota || "";
     $("dAds").value = adsDe(fecha) ? adsDe(fecha).toFixed(2) : "";
     syncAdsHint();
@@ -732,12 +761,20 @@ details.panel[open] > summary { margin-bottom: 14px; }
     if (!state.db) return msg("dMsg", "Sin base de datos en esta vista.", false);
     const fecha = $("dFecha").value;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return msg("dMsg", "Pon una fecha válida.", false);
-    const p1 = optInt($("dP1").value), p2 = optInt($("dP2").value), ent = optInt($("dEnt").value) || 0, dev = optInt($("dDev").value) || 0;
-    if (ent + dev > (p1 || 0) + (p2 || 0)) return msg("dMsg", "Entregados + devueltos no puede superar los pedidos del día.", false);
+    const v = Object.fromEntries(CAMPOS_DIA.map(([id, k]) => [k, optInt($(id).value)]));
+    for (const k of ["ent1", "ent2", "dev1", "dev2", "inc"]) v[k] = v[k] || 0;
+    if (v.ent1 + v.dev1 > (v.p1 || 0) || v.ent2 + v.dev2 > (v.p2 || 0)) return msg("dMsg", "Entregados + devueltos no puede superar los pedidos de ese pack.", false);
+    if (v.inc > (v.p1 || 0) + (v.p2 || 0) - v.ent1 - v.ent2 - v.dev1 - v.dev2) return msg("dMsg", "Las incidencias tienen que estar entre los pendientes.", false);
     const ads = $("dAds").value === "" ? 0 : Math.round(num($("dAds").value) * 100) / 100;
+    const prev = state.dias[fecha] || {};
+    const doc = { fecha, ...v, ads, nota: $("dNota").value.trim(), actualizado: new Date().toISOString() };
+    for (const k of ["carritos", "cancelados", "fuente"]) if (prev[k] != null) doc[k] = prev[k];
+    // El envío real del almacén solo sigue valiendo si los pedidos y estados no han cambiado.
+    const mismos = ["p1", "p2", "ent1", "ent2", "dev1", "dev2"].every((k) => num(prev[k]) === num(v[k]));
+    if (mismos && tieneEnvio(prev)) { doc.envio_ent = prev.envio_ent; doc.envio_pend = prev.envio_pend; }
     $("dSave").disabled = true;
     try {
-      await state.db.doc("dias/" + fecha).set({ fecha, p1, p2, ent, dev, ads, nota: $("dNota").value.trim(), actualizado: new Date().toISOString() });
+      await state.db.doc("dias/" + fecha).set(doc);
       msg("dMsg", "Guardado " + ddmm(fecha) + ".", true);
     } catch (e) {
       msg("dMsg", e?.code === "invalid_argument" ? "No tienes permiso para guardar aquí." : e?.code === "quota_exceeded" ? "La base de datos está llena." : "No se pudo guardar. Vuelve a intentarlo.", false);

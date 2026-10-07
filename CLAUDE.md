@@ -1,7 +1,9 @@
 # CeraLux · sistema de números
 
 Marca de e-commerce de Alec: spray reparación de arañazos 120ml, venta contra reembolso (COD) en España.
-Ads en Meta. Almacén/plataforma COD con estados: pedido confirmado → en ruta → entregado / devuelto.
+Ads en Meta. Almacén COD con estados: Preparado → En ruta → Entregado / Devuelto, más INCIDENCIA
+(no se pudo entregar a la primera; sigue pendiente, NO es venta perdida hasta que pasa a Devuelto),
+Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
 
 ## Piezas
 
@@ -9,9 +11,13 @@ Ads en Meta. Almacén/plataforma COD con estados: pedido confirmado → en ruta 
   - Fuente: `dashboard/ceralux_numeros.html` (republicar con el tool Artifact pasando `url`).
   - Base de datos (ArtifactData, mismo `url`):
     - `config/main`: precios, costes y supuestos (mismas claves que `contabilidad/datos.json` → `config`).
-    - `dias/<YYYY-MM-DD>`: `{fecha, p1, p2, ent, dev, ads, nota, actualizado}` por **fecha de pedido**.
-      `p1`/`p2` = pedidos confirmados de cada pack (null = aún no reportado). `ent`/`dev` = de ESOS pedidos,
-      cuántos entregados / devueltos. En ruta se calcula (p1+p2−ent−dev).
+    - `dias/<YYYY-MM-DD>` por **fecha de pedido**:
+      `{fecha, p1, p2, ent1, ent2, dev1, dev2, inc, envio_ent, envio_pend, carritos, cancelados, ads, nota, fuente, actualizado}`
+      - `p1`/`p2`: pedidos de cada pack (null = aún no reportado).
+      - `ent*`/`dev*`: de ESOS pedidos, entregados / devueltos por pack. Pendientes = el resto.
+      - `inc`: cuántos de los pendientes están en incidencia.
+      - `envio_ent`/`envio_pend`: suma del "Coste de envío (sin IVA)" real de entregados / pendientes.
+        Sin ellos se usa la tarifa estándar de config (8,06 €).
     - `gastos/<id>`: `{fecha, concepto, categoria, importe}`.
   - La página lee el gasto de Meta en directo (conector "Meta ADS", tool `ads_get_ad_entities`).
 - **Excel de contabilidad:** `contabilidad/CeraLux_Contabilidad.xlsx`, generado por `contabilidad/generar_excel.py`
@@ -24,16 +30,22 @@ Ads en Meta. Almacén/plataforma COD con estados: pedido confirmado → en ruta 
   `filtering: [{"field":"campaign.name","operator":"CONTAIN","value":["CeraLux"]}]`,
   `time_range: {"since":..,"until":..}`, `time_increment: "1"`. Sumar `amount_spent.value` por `date_start`.
 
-## Rutina diaria (cuando Alec diga "hoy X pack 1, Y pack 2")
+## Cuando Alec pasa el Excel del almacén (lo normal)
 
-1. Saca el gasto de Meta de ese día (consulta de arriba).
-2. `ArtifactData get dias/<fecha>`; luego `set` (con `if_version` si existe) conservando `ent`/`dev`/`nota` previos:
-   `{fecha, p1, p2, ent, dev, ads, nota, actualizado}`.
-3. Responde con el resumen del día: pedidos, gasto, CPA vs CPA break-even (~13 € con supuestos actuales),
-   beneficio proyectado y semáforo (ESCALAR ≤ 75% del break-even, VIGILAR ≤ 100%, CORTAR > 100%).
+1. Cópialo a una carpeta propia del scratchpad (tiene datos personales de clientes: NUNCA al repo ni a la base de datos).
+2. `python -I contabilidad/importar_almacen.py <export.xlsx> --excluir 3503014 --json <scratchpad>/resumen.json`
+   (excluye tests por ID y cualquier cliente cuyo nombre empiece por "Test"; revisa los AVISO de estados desconocidos).
+3. Saca el gasto de Meta de esas fechas.
+4. `ArtifactData list dias` para tener las versiones y escribe con `batch` (`if_version` en los que existen),
+   conservando `nota` y poniendo `ads` de Meta y `fuente: "export almacén <fecha>"`.
+5. Regenera el Excel (abajo) y verifica: la "Liquidación almacén" debe cuadrar con Σ(PRECIO − COSTE TOTAL PEDIDO)
+   de los entregados del export (diferencias de 1-2 céntimos por redondeo del almacén).
 
-Actualización de estados ("del 08/10: 11 entregados, 2 devueltos") → `update dias/<fecha>` con `ent`/`dev`.
-Comprueba que ent + dev ≤ p1 + p2.
+## Cuando Alec solo dice "hoy X pack 1, Y pack 2"
+
+`get dias/<fecha>` y `set` con `p1`/`p2` nuevos y el gasto de Meta, conservando el resto. Responde con pedidos,
+gasto, CPA vs CPA break-even (~11,8 € con los datos actuales), beneficio proyectado y semáforo
+(ESCALAR ≤ 75% del break-even, VIGILAR ≤ 100%, CORTAR > 100%). Recuérdale las incidencias pendientes.
 
 ## Regenerar el Excel con los datos al día
 
@@ -44,9 +56,11 @@ Comprueba que ent + dev ≤ p1 + p2.
 
 ## Modelo (igual en Excel y dashboard)
 
-- Coste pedido = uds × coste_ud × 1,21 + logística (8,06 €) → 10,47 € (Pack 1) / 12,88 € (Pack 2), cuadra con el panel.
-- Beneficio por entregado = PVP − coste (19,52 € / 27,11 €). IVA neto a liquidar por entregado ≈ 3,39 € / 4,71 €.
-- Devuelto = −coste_devolucion (8,06 €, supuesto) + IVA recuperable.
-- Proyección: en ruta × tasa de entrega (80% estimada hasta 30 pedidos resueltos; luego la real).
+- Coste del pedido (almacén) = uds × 1,99 × 1,21 + envío real sin IVA (6,85-8,06 €) → 10,47 € / 12,88 € con 8,06 €.
+- Liquidación almacén = PVP − coste del pedido de lo entregado (lo que paga el almacén).
+- IVA: se repercute el 21% del PVP y solo se deduce el IVA del producto. El envío viene "sin IVA" y el almacén
+  no le suma IVA → no hay IVA de envío que deducir (`logistica_con_iva = false`).
+- Devuelto = −8,06 € (supuesto: se pierde el envío, el producto vuelve).
+- Proyección: pendientes (incluidas incidencias) × tasa de entrega (80% estimada hasta 30 pedidos resueltos; luego la real).
 
 Supuestos pendientes de confirmar con Alec: coste real de una devolución, si Meta le cobra IVA (ROI), si factura con IVA.
