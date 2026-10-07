@@ -161,6 +161,23 @@ details.panel[open] > summary { margin-bottom: 14px; }
 .badge { font-size: 12px; font-weight: 700; min-width: 22px; text-align: center; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
 .view { display: grid; gap: 28px; }
 .view > * { min-width: 0; }
+/* creatividades */
+.chip[data-k="MANTENER"] { background: var(--good-soft); color: var(--good); }
+.chip[data-k="PROMETEDOR"] { background: var(--accent-soft); color: var(--accent); }
+.chip[data-k="APAGAR"] { background: var(--bad-soft); color: var(--bad); }
+.nums4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.nums4 div { display: grid; gap: 1px; min-width: 0; }
+.nums4 .l { font-size: 11px; color: var(--muted); }
+.nums4 .v { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.nums4 .v.pos { color: var(--good); } .nums4 .v.neg { color: var(--bad); }
+.funnel { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.funnel b { color: var(--ink); font-weight: 600; }
+.funnel .baja { color: var(--bad); } .funnel .alta { color: var(--good); }
+.diag { margin: 0; padding-left: 18px; font-size: 13px; display: grid; gap: 3px; }
+.decis { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 760px) { .decis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.decis h3 { margin: 0 0 6px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.decis ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
 /* incidencias */
 .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
 @media (min-width: 760px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -206,6 +223,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
   <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones">
     <button type="button" role="tab" id="tNum" data-v="num" aria-selected="true">Números</button>
+    <button type="button" role="tab" id="tCre" data-v="cre" aria-selected="false">Creatividades</button>
     <button type="button" role="tab" id="tInc" data-v="inc" aria-selected="false">Incidencias <span class="badge" id="incBadge" hidden>0</span></button>
   </nav>
 
@@ -332,6 +350,42 @@ details.panel[open] > summary { margin-bottom: 14px; }
   </details>
   </div>
 
+  <div class="view" id="vCre" hidden>
+    <nav class="periodos" aria-label="Periodo de creatividades">
+      <div class="seg" id="segCre">
+        <button type="button" data-p="hoy">Hoy</button>
+        <button type="button" data-p="ayer">Ayer</button>
+        <button type="button" data-p="7d">7 días</button>
+        <button type="button" data-p="mes">Este mes</button>
+        <button type="button" data-p="todo">Desde el inicio</button>
+      </div>
+    </nav>
+    <div class="avisos" id="cAvisos"></div>
+    <section class="panel">
+      <h2>Qué hacer con tus anuncios</h2>
+      <div class="decis" id="cDecis"><div class="empty">Leyendo tus anuncios de Meta…</div></div>
+      <p class="small muted" id="cRatio" style="margin:14px 0 0"></p>
+    </section>
+    <section>
+      <h2>Resumen del periodo</h2>
+      <div class="kpis" id="cKpis"></div>
+    </section>
+    <section>
+      <h2>Por ángulo (conjunto de anuncios)</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Ángulo</th><th>Anuncios</th><th>Gasto</th><th>Compras</th><th>CPA real</th><th>Beneficio est.</th></tr></thead>
+          <tbody id="cAngulos"><tr><td colspan="6" class="empty">Leyendo…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <section>
+      <h2>Por anuncio</h2>
+      <div class="cards" id="cAds"></div>
+      <p class="small muted" style="margin:12px 0 0">Gancho = % de impresiones que ven al menos el 25% del vídeo. CTR = clics en el enlace ÷ impresiones. Llega a la web = visitas que cargan ÷ clics. Compra = compras ÷ clics. Lo que está por debajo o por encima de la media de la campaña sale marcado.</p>
+    </section>
+  </div>
+
   <div class="view" id="vInc" hidden>
     <section class="panel">
       <h2>Incidencias de entrega</h2>
@@ -413,6 +467,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     periodo: lsGet("ceralux.periodo") || "mes",
     rol: "owner", user: null, uid: null, alias: lsGet("ceralux.alias") || "",
     incid: {}, incidLoaded: false, acciones: [], ultimaImport: null,
+    periodoCre: lsGet("ceralux.periodoCre") || "todo", cre: { status: "idle", msg: "", ads: [], at: null },
     vista: location.hash === "#incidencias" ? "inc" : (lsGet("ceralux.vista") || "num")
   };
 
@@ -720,9 +775,9 @@ details.panel[open] > summary { margin-bottom: 14px; }
     return { byDate, next: p?.pagination?.next_cursor || null };
   }
 
-  function metaError(e) {
+  const DENIEGA_META = ["needs_reauth", "server_not_connected", "selection_required", "server_not_found", "not_in_manifest", "blocked_by_policy", "approval_required", "consent_required"];
+  function textoMeta(e) {
     const code = e?.code || "upstream_error";
-    const deniega = ["needs_reauth", "server_not_connected", "selection_required", "server_not_found", "not_in_manifest", "blocked_by_policy", "approval_required", "consent_required"];
     const textos = {
       needs_reauth: "Reconecta Meta Ads en claude.ai → Ajustes → Conectores",
       server_not_connected: "Añade el conector Meta Ads en claude.ai → Ajustes → Conectores",
@@ -739,10 +794,14 @@ details.panel[open] > summary { margin-bottom: 14px; }
       capability_disabled: "Gasto en directo no disponible en esta vista · uso el guardado",
       capability_removed: "Gasto en directo no disponible en esta vista · uso el guardado"
     };
-    if (deniega.includes(code) || code.startsWith("capability") || code === "not_granted") state.meta = null;
+    return textos[code] || "No se pudo leer Meta Ads · uso el gasto guardado";
+  }
+  function metaError(e) {
+    const code = e?.code || "upstream_error";
+    if (DENIEGA_META.includes(code) || code.startsWith("capability") || code === "not_granted") state.meta = null;
     const transitorio = ["server_unavailable", "rate_limited", "upstream_error"].includes(code);
     state.metaStatus = transitorio && state.meta ? "warn" : (transitorio ? "warn" : "bad");
-    state.metaMsg = textos[code] || "No se pudo leer Meta Ads · uso el gasto guardado";
+    state.metaMsg = textoMeta(e);
     render();
   }
 
@@ -809,10 +868,12 @@ details.panel[open] > summary { margin-bottom: 14px; }
       if (s.exists) state.cfgExiste = true;
       state.cfgLoaded = true;
       llenarCfg(); render(); startMeta();
+      if (state.vista === "cre") startCre();
     }, fallo);
     db.collection("dias").onSnapshot((s) => {
       const m = {}; for (const d of s.docs) m[d.id] = d.data();
       state.dias = m; state.diasLoaded = true; render();
+      if (state.vista === "cre") renderCre();
     }, fallo);
     db.collection("gastos").onSnapshot((s) => {
       state.gastos = s.docs.map((d) => ({ id: d.id, ...d.data() })); render();
@@ -829,11 +890,13 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
   /* ---------- vistas y rol ---------- */
   function setVista(v) {
-    state.vista = v === "inc" ? "inc" : "num";
+    state.vista = ["num", "cre", "inc"].includes(v) ? v : "num";
     lsSet("ceralux.vista", state.vista);
-    $("vNum").hidden = state.vista !== "num"; $("vInc").hidden = state.vista !== "inc";
-    $("tNum").setAttribute("aria-selected", String(state.vista === "num"));
-    $("tInc").setAttribute("aria-selected", String(state.vista === "inc"));
+    for (const [k, vid, tid] of [["num", "vNum", "tNum"], ["cre", "vCre", "tCre"], ["inc", "vInc", "tInc"]]) {
+      $(vid).hidden = state.vista !== k;
+      $(tid).setAttribute("aria-selected", String(state.vista === k));
+    }
+    if (state.vista === "cre") startCre();
   }
   function aplicarRol() {
     const equipo = state.rol === "equipo";
@@ -841,9 +904,167 @@ details.panel[open] > summary { margin-bottom: 14px; }
     document.querySelector(".brand h1").textContent = equipo ? "CeraLux · Incidencias" : "CeraLux · Números";
     document.querySelector(".brand p").textContent = equipo ? "Pedidos que el repartidor no pudo entregar a la primera" : "Spray reparación de arañazos · contra reembolso · Meta Ads";
     if (equipo) setVista("inc");
+    else if (state.vista === "cre") startCre();
   }
   $("tabs").addEventListener("click", (ev) => { const b = ev.target.closest("[data-v]"); if (b) setVista(b.dataset.v); });
   $("avisos").addEventListener("click", (ev) => { if (ev.target.closest("[data-ir]")) { setVista("inc"); window.scrollTo({ top: 0 }); } });
+
+  /* ---------- creatividades ---------- */
+  const CRE_FIELDS = ["id", "name", "adset_name", "campaign_name", "effective_status", "amount_spent", "impressions", "cpm", "frequency",
+    "link_click", "landing_page_view", "omni_add_to_cart", "omni_initiated_checkout", "omni_purchase",
+    "video_p25_watched_actions", "video_thruplay_watched_actions", "video_avg_time_watched_actions"];
+  let creUnsub = null, creKey = null;
+  const val = (x) => x == null ? 0 : typeof x === "object" ? (parseFloat(x.value) || 0) : (parseFloat(x) || 0);
+
+  async function startCre() {
+    const cfg = state.cfg;
+    if (state.rol !== "owner" || !cfg.meta_ad_account_id) { renderCre(); return; }
+    const [since, until] = rango(state.periodoCre);
+    const key = [cfg.meta_ad_account_id, since, until].join("|");
+    if (key === creKey) { renderCre(); return; }
+    creKey = key;
+    mcpNs = mcpNs || await window.claude?.use?.("mcp");
+    if (!mcpNs) { state.cre = { ...state.cre, status: "bad", msg: "Esta vista no puede leer Meta Ads. Ábrela desde claude.ai." }; renderCre(); return; }
+    if (creUnsub) creUnsub();
+    state.cre = { status: "loading", msg: "", ads: [], at: null };
+    renderCre();
+    const input = { ad_account_id: String(cfg.meta_ad_account_id), level: "ad", fields: CRE_FIELDS,
+      time_range: JSON.stringify({ since, until }), limit: 500, include_additional_context: false,
+      client_conversation_id: convId, advertiser_request: "ver el rendimiento real de cada creativo y saber cuales replicar" };
+    creUnsub = mcpNs.watchTool(SERVER, TOOL, input, (ev) => {
+      if (ev.type === "error") {
+        const code = ev.error?.code || "upstream_error";
+        const transitorio = ["server_unavailable", "rate_limited", "upstream_error"].includes(code);
+        state.cre = { ...state.cre, status: transitorio && state.cre.ads.length ? "ok" : "bad", ads: transitorio ? state.cre.ads : [], msg: textoMeta(ev.error).replace(" · uso el gasto guardado", "") };
+        renderCre(); return;
+      }
+      let p = ev.result?.payload, rows = null;
+      try { if (typeof p === "string") p = JSON.parse(p); rows = typeof p?.ad_entities === "string" ? JSON.parse(p.ad_entities) : p?.ad_entities; } catch { rows = null; }
+      if (!Array.isArray(rows)) { state.cre = { status: "bad", msg: "Respuesta de Meta no reconocida.", ads: [], at: null }; renderCre(); return; }
+      const filtro = str(state.cfg.meta_filtro_campana).toLowerCase();
+      const ads = rows.map((r) => ({
+        id: str(r.id), nombre: str(r.name), angulo: str(r.adset_name) || "Sin conjunto", campana: str(r.campaign_name), estado: str(r.effective_status),
+        gasto: val(r.amount_spent), impr: val(r.impressions), clics: val(r.link_click), lpv: val(r.landing_page_view),
+        atc: val(r.omni_add_to_cart), checkout: val(r.omni_initiated_checkout), compras: val(r.omni_purchase),
+        p25: val(r.video_p25_watched_actions), thru: val(r.video_thruplay_watched_actions), tmedio: val(r.video_avg_time_watched_actions), freq: val(r.frequency)
+      })).filter((a) => (!filtro || a.campana.toLowerCase().includes(filtro)) && (a.gasto > 0 || a.impr > 0));
+      state.cre = { status: "ok", msg: "", ads, at: ev.result?.cache?.storedAt || Date.now() };
+      renderCre();
+    }, { refetchInterval: 10 * 60 * 1000, cache: { staleTime: 2 * 60 * 1000 } });
+  }
+
+  const VEREDICTOS = {
+    ESCALAR: "Ganador: replícalo con 2-3 variaciones del mismo gancho y súbele presupuesto.",
+    MANTENER: "Rentable: déjalo correr y prueba variaciones para bajar el CPA.",
+    PROMETEDOR: "Buen inicio con pocas ventas: dale margen antes de decidir.",
+    VIGILAR: "Todavía no se ha ganado lo que gasta.",
+    APAGAR: "Gasta sin rentabilidad: apágalo y quédate con lo aprendido.",
+    APRENDIENDO: "Pocos datos todavía: espera."
+  };
+  function veredicto(a, BE) {
+    if (a.compras === 0) return a.gasto >= 1.5 * BE ? "APAGAR" : a.gasto >= 0.5 * BE ? "VIGILAR" : "APRENDIENDO";
+    const r = a.cpaReal / BE;
+    if (r <= 0.75 && a.compras >= 3) return "ESCALAR";
+    if (r <= 1 && a.compras >= 3) return "MANTENER";
+    if (r <= 1) return "PROMETEDOR";
+    return a.gasto >= 2 * BE ? "APAGAR" : "VIGILAR";
+  }
+  const ratioDe = (a, b) => b > 0 ? a / b : null;
+  function diagnostico(a, m) {
+    const out = [];
+    if (a.impr < 800) return out;
+    if (a.gancho != null && m.gancho && a.gancho < 0.7 * m.gancho) out.push("Gancho flojo: poca gente pasa del principio. Prueba otros primeros 3 segundos.");
+    else if (a.ctr != null && m.ctr && a.ctr < 0.7 * m.ctr) out.push("Enganchan pero no hacen clic: refuerza la oferta y la llamada a la acción.");
+    if (a.clics >= 20 && a.cvr != null && m.cvr && a.cvr < 0.6 * m.cvr) out.push("Hacen clic pero no compran: el ángulo atrae curiosos o la página no convence.");
+    if (a.gancho != null && m.gancho && a.gancho >= 1.3 * m.gancho) out.push("Gancho muy por encima de la media: reutiliza este inicio en otros vídeos.");
+    if (a.freq >= 2.5) out.push(`Frecuencia ${dec2.format(a.freq)}: el público empieza a repetirlo; prepara relevo.`);
+    return out;
+  }
+  const marca = (x, m, fmt) => x == null ? "—" : `<b class="${m && x < 0.7 * m ? "baja" : m && x >= 1.3 * m ? "alta" : ""}">${fmt(x)}</b>`;
+
+  function renderCre() {
+    const cKpis = $("cKpis"), decis = $("cDecis");
+    for (const b of $("segCre").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.p === state.periodoCre));
+    const avisos = [];
+    if (state.rol !== "owner") return;
+    if (!state.cfgLoaded) { decis.innerHTML = `<div class="empty">Cargando…</div>`; return; }
+    if (!state.cfg.meta_ad_account_id) { decis.innerHTML = `<div class="empty">Falta la cuenta de Meta en Ajustes.</div>`; return; }
+    if (state.cre.status === "loading" || state.cre.status === "idle") { decis.innerHTML = `<div class="empty">Leyendo tus anuncios de Meta…</div>`; return; }
+    if (state.cre.status === "bad") { decis.innerHTML = `<div class="empty">${esc(state.cre.msg)}</div>`; $("cAds").innerHTML = ""; $("cAngulos").innerHTML = ""; cKpis.innerHTML = ""; return; }
+
+    const u = unit(state.cfg), h = historico(), be = breakEven(u, h), BE = be.cpaBE;
+    const [desde, hasta] = rango(state.periodoCre);
+    const reales = agregar(desde, hasta, u, h.tasa).H;
+    const ads = state.cre.ads.map((a) => ({ ...a }));
+    const pixel = ads.reduce((s, a) => s + a.compras, 0);
+    const ratio = reales > 0 && pixel > 0 ? reales / pixel : 1;
+    const T = ads.reduce((t, a) => { for (const k of ["gasto", "impr", "clics", "lpv", "compras", "p25"]) t[k] += a[k]; return t; }, { gasto: 0, impr: 0, clics: 0, lpv: 0, compras: 0, p25: 0 });
+    const media = { gancho: ratioDe(T.p25, T.impr), ctr: ratioDe(T.clics, T.impr), cvr: ratioDe(T.compras, T.clics), web: ratioDe(T.lpv, T.clics) };
+    for (const a of ads) {
+      a.pedidos = a.compras * ratio;
+      a.cpaReal = a.pedidos > 0 ? a.gasto / a.pedidos : null;
+      a.benef = a.pedidos * be.benPedido - a.gasto * (1 + u.recargo);
+      a.gancho = ratioDe(a.p25, a.impr); a.ctr = ratioDe(a.clics, a.impr); a.cvr = ratioDe(a.compras, a.clics); a.web = ratioDe(a.lpv, a.clics);
+      a.v = veredicto(a, BE); a.diag = diagnostico(a, media);
+    }
+    ads.sort((x, y) => y.benef - x.benef || y.gasto - x.gasto);
+
+    // avisos globales
+    if (media.web != null && T.clics >= 50 && media.web < 0.6) avisos.push(["", `Solo el ${P(media.web)} de los clics llega a cargar tu web.`, "Afecta a todos los anuncios: revisa la velocidad de la tienda y del formulario contra reembolso. Lo sano es más del 70%."]);
+    if (reales > 0 && pixel > 0 && (ratio < 0.8 || ratio > 1.25)) avisos.push(["info", `Meta cuenta ${N(pixel)} compras y tienes ${N(reales)} pedidos reales.`, "Los CPA de abajo ya están corregidos con esa diferencia."]);
+    $("cAvisos").innerHTML = avisos.map(([c, b, t]) => `<div class="aviso ${c}"><span><b>${esc(b)}</b> ${esc(t)}</span></div>`).join("");
+
+    // decisiones
+    const lista = (arr, f) => arr.length ? `<ul>${arr.map(f).join("")}</ul>` : `<p class="small muted" style="margin:0">Ninguno por ahora.</p>`;
+    const repl = ads.filter((a) => a.v === "ESCALAR" || a.v === "MANTENER");
+    const apagar = ads.filter((a) => a.v === "APAGAR");
+    const esperar = ads.filter((a) => a.v === "PROMETEDOR" || a.v === "VIGILAR");
+    decis.innerHTML = `
+      <div><h3 style="color:var(--good)">Replicar y escalar</h3>${lista(repl, (a) => `<li><b>${esc(a.nombre)}</b> · CPA real ${E(a.cpaReal)} · ${a.benef >= 0 ? "+" : ""}${E(a.benef)}</li>`)}</div>
+      <div><h3 style="color:var(--bad)">Apagar</h3>${lista(apagar, (a) => `<li><b>${esc(a.nombre)}</b> · ${E(a.gasto)} gastados${a.compras ? ` · CPA real ${E(a.cpaReal)}` : " sin ventas"}</li>`)}</div>
+      <div><h3 style="color:var(--warn)">Dar más datos</h3>${lista(esperar, (a) => `<li><b>${esc(a.nombre)}</b> · ${a.compras ? `${N(a.compras)} ${a.compras === 1 ? "venta" : "ventas"}, CPA ${E(a.cpaReal)}` : `${E(a.gasto)} sin ventas: decide al llegar a ${E0(1.5 * BE)}`}</li>`)}</div>`;
+    $("cRatio").textContent = `CPA máximo rentable: ${E(BE)} (de la pestaña Números). ${reales > 0 && pixel > 0 ? `Corrección: ${N(reales)} pedidos reales ÷ ${N(pixel)} compras de Meta = ×${dec2.format(ratio)}.` : "Sin pedidos reales registrados en el periodo: uso las compras de Meta tal cual."}${state.cre.at ? ` Actualizado ${fechaHora(new Date(state.cre.at).toISOString())}.` : ""}`;
+
+    // kpis
+    const cpaT = T.compras > 0 ? T.gasto / (T.compras * ratio) : null;
+    const benT = ads.reduce((s, a) => s + a.benef, 0);
+    cKpis.innerHTML = [
+      ["Gasto", E(T.gasto), `${N(ads.length)} anuncios con impresiones`],
+      ["Compras (Meta)", N(T.compras), `≈ ${N(Math.round(T.compras * ratio))} pedidos reales`],
+      ["CPA real", E(cpaT), `máx. rentable ${E(BE)}`, cpaT != null && cpaT > BE],
+      ["Beneficio estimado", E(benT), "antes de otros gastos", benT < 0],
+      ["Gancho medio", P(media.gancho), "ven el 25% del vídeo"],
+      ["CTR medio", P(media.ctr), "clics en el enlace"],
+      ["Llega a la web", P(media.web), "de los que hacen clic", media.web != null && media.web < 0.6],
+      ["Compra / clic", P(media.cvr), `${N(T.clics)} clics`]
+    ].map(([l, v, s2, bad]) => `<div class="kpi"><span class="l">${l}</span><span class="v num${bad ? " bad" : ""}">${v}</span><span class="s">${esc(s2)}</span></div>`).join("");
+
+    // por ángulo
+    const ang = {};
+    for (const a of ads) { const g = (ang[a.angulo] ||= { n: 0, gasto: 0, compras: 0, pedidos: 0, benef: 0 }); g.n++; g.gasto += a.gasto; g.compras += a.compras; g.pedidos += a.pedidos; g.benef += a.benef; }
+    const angs = Object.entries(ang).sort((x, y) => y[1].benef - x[1].benef);
+    $("cAngulos").innerHTML = angs.length ? angs.map(([n, g]) => `<tr><td style="white-space:normal;min-width:180px">${esc(n)}</td><td>${N(g.n)}</td><td>${E(g.gasto)}</td><td>${N(g.compras)}</td><td>${E(g.pedidos > 0 ? g.gasto / g.pedidos : null)}</td><td class="${g.benef >= 0 ? "pos" : "neg"}">${E(g.benef)}</td></tr>`).join("")
+      : `<tr><td colspan="6" class="empty">Sin anuncios con gasto en este periodo.</td></tr>`;
+
+    // por anuncio
+    $("cAds").innerHTML = ads.length ? ads.map((a) => `<article class="icard">
+      <div class="ihead"><div><h3>${esc(a.nombre)}</h3><div class="imeta"><span>${esc(a.angulo)}</span><span>${a.estado === "ACTIVE" ? "Activo" : esc(a.estado.toLowerCase().replace(/_/g, " "))}</span></div></div><span class="chip" data-k="${a.v}">${a.v}</span></div>
+      <div class="nums4">
+        <div><span class="l">Gasto</span><span class="v">${E(a.gasto)}</span></div>
+        <div><span class="l">Compras</span><span class="v">${N(a.compras)}</span></div>
+        <div><span class="l">CPA real</span><span class="v${a.cpaReal != null && a.cpaReal > BE ? " neg" : ""}">${E(a.cpaReal)}</span></div>
+        <div><span class="l">Beneficio est.</span><span class="v ${a.benef >= 0 ? "pos" : "neg"}">${E(a.benef)}</span></div>
+      </div>
+      <div class="funnel"><span>${N(a.impr)} impr.</span><span>Gancho ${marca(a.gancho, a.impr >= 300 ? media.gancho : 0, P)}</span><span>CTR ${marca(a.ctr, a.impr >= 300 ? media.ctr : 0, P)}</span><span>Llega a la web ${marca(a.web, a.clics >= 15 ? media.web : 0, P)}</span><span>Compra ${marca(a.cvr, a.clics >= 15 ? media.cvr : 0, P)}</span><span>Visto ${a.tmedio ? N(a.tmedio) + " s" : "—"}</span></div>
+      <div class="small">${esc(VEREDICTOS[a.v])}${a.v === "VIGILAR" && !a.compras ? ` Si no vende antes de ${E0(1.5 * BE)}, apágalo.` : ""}</div>
+      ${a.diag.length ? `<ul class="diag">${a.diag.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
+    </article>`).join("") : `<div class="panel empty">Sin anuncios con gasto en este periodo.</div>`;
+  }
+
+  $("segCre").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-p]"); if (!b) return;
+    state.periodoCre = b.dataset.p; lsSet("ceralux.periodoCre", state.periodoCre); startCre();
+  });
 
   /* ---------- incidencias ---------- */
   const TIPOS = {

@@ -31,6 +31,13 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
   - La página importa el Excel del almacén ella misma (botón "Subir Excel del almacén", SheetJS en el navegador):
     actualiza `dias` (solo si lo sube el dueño) e `incidencias` (abre nuevas, cierra las entregadas/devueltas).
   - La página lee el gasto de Meta en directo (conector "Meta ADS", tool `ads_get_ad_entities`).
+  - Pestaña **Creatividades** (solo dueño): lee de Meta en directo `ads_get_ad_entities` a nivel `ad` (gasto, impresiones,
+    clics, visitas, compras, vídeo al 25%, ThruPlays, tiempo medio) y filtra por `meta_filtro_campana`.
+    Corrige las compras de Meta con pedidos reales del periodo (×pedidos/compras), calcula CPA real y beneficio estimado
+    (pedidos × beneficio esperado por pedido − gasto) y da veredicto por anuncio con el CPA break-even (BE):
+    ESCALAR (≥3 compras y CPA ≤ 75% BE) · MANTENER (≥3 y ≤ BE) · PROMETEDOR (<3 y ≤ BE) · VIGILAR · APAGAR
+    (0 compras con gasto ≥ 1,5×BE, o CPA > BE con gasto ≥ 2×BE) · APRENDIENDO (gasto < 0,5×BE sin compras).
+    Diagnóstico frente a la media de la campaña: gancho (vídeo al 25% ÷ impresiones), CTR, llegada a la web, compra/clic.
 - **Excel de contabilidad:** `contabilidad/CeraLux_Contabilidad.xlsx`, generado por `contabilidad/generar_excel.py`
   desde `contabilidad/datos.json`. Todo con fórmulas (Dashboard, Diario, Gastos, Config, Guía).
 
