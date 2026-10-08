@@ -33,6 +33,8 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
   - La página importa el Excel del almacén ella misma (botón "Subir Excel del almacén", SheetJS en el navegador):
     actualiza `dias` (solo si lo sube el dueño) e `incidencias` (abre nuevas, cierra las entregadas/devueltas).
   - La página lee el gasto de Meta en directo (conector "Meta ADS", tool `ads_get_ad_entities`), con compras del píxel por día.
+  - Periodos: Hoy, Ayer, 7 días, Este mes, Mes pasado, Todo y "Día" (selector de fecha, periodo `dia:AAAA-MM-DD`,
+    también en Creatividades; no se guarda en el navegador, al volver se ve el periodo habitual).
   - **Shopify en directo** (solo dueño): conector "Shopify", tool `graphql_query`, pedidos desde `fecha_inicio`
     (máx. 60 días) con `legacyResourceId, createdAt, cancelledAt, test, subtotalLineItemsQuantity` (sin datos de clientes).
     Fecha = día local de `createdAt`. Pack = 1 unidad → Pack 1; 2 o más → Pack 2. Los pedidos de Shopify cuyo ID no está

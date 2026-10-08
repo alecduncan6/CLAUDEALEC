@@ -55,6 +55,9 @@ button, input, select { font: inherit; color: inherit; }
 .seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 9px; background: var(--soft); white-space: nowrap; }
 .seg button { border: 0; background: transparent; padding: 6px 11px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+.seg .dia { display: inline-flex; align-items: center; gap: 4px; padding: 0 4px 0 11px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; }
+.seg .dia[data-on="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+.seg .dia input { border: 0; background: transparent; font-size: 13px; padding: 4px 2px; color: inherit; cursor: pointer; }
 
 /* avisos */
 .avisos { display: grid; gap: 8px; }
@@ -240,6 +243,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
       <button type="button" data-p="mes">Este mes</button>
       <button type="button" data-p="mespasado">Mes pasado</button>
       <button type="button" data-p="todo">Todo</button>
+      <div class="dia" id="diaWrap"><span aria-hidden="true">Día</span><input type="date" id="diaSel" aria-label="Ver un día concreto"></div>
     </div>
   </nav>
 
@@ -373,6 +377,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
         <button type="button" data-p="7d">7 días</button>
         <button type="button" data-p="mes">Este mes</button>
         <button type="button" data-p="todo">Desde el inicio</button>
+        <div class="dia" id="diaWrapCre"><span aria-hidden="true">Día</span><input type="date" id="diaSelCre" aria-label="Ver los anuncios de un día concreto"></div>
       </div>
     </nav>
     <div class="avisos" id="cAvisos"></div>
@@ -596,6 +601,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
   }
 
   function rango(p) {
+    if (/^dia:\d{4}-\d{2}-\d{2}$/.test(p)) return [p.slice(4), p.slice(4)];
     const hoy = new Date(), t = iso(hoy);
     if (p === "hoy") return [t, t];
     if (p === "ayer") { const a = iso(addDays(hoy, -1)); return [a, a]; }
@@ -621,12 +627,32 @@ details.panel[open] > summary { margin-bottom: 14px; }
     return r;
   }
 
+  // selector "Día": un periodo de un solo día ("dia:AAAA-MM-DD"); no se guarda, al volver se ve el periodo habitual
+  function pintarDia(wrap, input, p) {
+    const on = p.startsWith("dia:"), inp = $(input);
+    $(wrap).dataset.on = String(on);
+    if (document.activeElement !== inp) inp.value = on ? p.slice(4) : "";
+    inp.max = iso(new Date());
+    if (state.cfg.fecha_inicio) inp.min = state.cfg.fecha_inicio;
+  }
+  function elegirDia(input, aplicar) {
+    $(input).addEventListener("change", (ev) => {
+      const v = ev.target.value;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) aplicar("dia:" + v);
+    });
+    $(input).parentElement.addEventListener("click", (ev) => {
+      if (ev.target.tagName === "INPUT") { try { ev.target.showPicker?.(); } catch { /* el navegador abre el suyo */ } return; }
+      try { $(input).showPicker?.(); } catch { $(input).focus(); }
+    });
+  }
+
   /* ---------- render ---------- */
   function render() {
     const u = unit(state.cfg), h = historico(), be = breakEven(u, h);
     const [desde, hasta] = rango(state.periodo);
     const a = agregar(desde, hasta, u, h.tasa);
     for (const b of $("seg").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.p === state.periodo));
+    pintarDia("diaWrap", "diaSel", state.periodo);
     renderLive();
     renderAvisos(u, h);
 
@@ -1148,6 +1174,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
   function renderCre() {
     const cKpis = $("cKpis"), decis = $("cDecis");
     for (const b of $("segCre").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.p === state.periodoCre));
+    pintarDia("diaWrapCre", "diaSelCre", state.periodoCre);
     const avisos = [];
     if (state.rol !== "owner") return;
     if (!state.cfgLoaded) { decis.innerHTML = `<div class="empty">Cargando…</div>`; return; }
@@ -1228,6 +1255,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const b = ev.target.closest("[data-p]"); if (!b) return;
     state.periodoCre = b.dataset.p; lsSet("ceralux.periodoCre", state.periodoCre); startCre();
   });
+  elegirDia("diaSelCre", (p) => { state.periodoCre = p; startCre(); });
 
   /* ---------- incidencias ---------- */
   const TIPOS = {
@@ -1548,6 +1576,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const b = ev.target.closest("[data-p]"); if (!b) return;
     state.periodo = b.dataset.p; lsSet("ceralux.periodo", state.periodo); render();
   });
+  elegirDia("diaSel", (p) => { state.periodo = p; render(); });
 
   const hoy = iso(new Date());
   $("dFecha").value = hoy; $("gFecha").value = hoy;
