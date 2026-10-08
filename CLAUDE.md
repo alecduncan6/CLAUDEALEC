@@ -12,8 +12,9 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
   - Base de datos (ArtifactData, mismo `url`):
     - `config/main`: precios, costes y supuestos (mismas claves que `contabilidad/datos.json` → `config`).
     - `dias/<YYYY-MM-DD>` por **fecha de pedido**:
-      `{fecha, p1, p2, ent1, ent2, dev1, dev2, inc, envio_ent, envio_pend, carritos, recuperados, cancelados, ads, nota, fuente, actualizado}`
-      - `p1`/`p2`: pedidos de cada pack (null = aún no reportado).
+      `{fecha, p1, p2, p3, ent1, ent2, ent3, dev1, dev2, dev3, inc, envio_ent, envio_pend, carritos, recuperados, cancelados, ads, nota,
+      fuente, actualizado}`
+      - `p1`/`p2`/`p3`: pedidos de cada pack (null = aún no reportado). Pack = unidades: 1 → Pack 1, 2 → Pack 2, 3 o más → Pack 3.
       - `ent*`/`dev*`: de ESOS pedidos, entregados / devueltos por pack. Pendientes = el resto.
       - `inc`: cuántos de los pendientes están en incidencia.
       - `carritos`: carritos abandonados sin recuperar (estado "Carrito Abandonado", o carrito cancelado).
@@ -44,7 +45,7 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
     también en Creatividades; no se guarda en el navegador, al volver se ve el periodo habitual).
   - **Shopify en directo** (solo dueño): conector "Shopify", tool `graphql_query`, pedidos desde `fecha_inicio`
     (máx. 60 días) con `legacyResourceId, createdAt, cancelledAt, test, subtotalLineItemsQuantity` (sin datos de clientes).
-    Fecha = día local de `createdAt`. Pack = 1 unidad → Pack 1; 2 o más → Pack 2. Los pedidos de Shopify cuyo ID no está
+    Fecha = día local de `createdAt`. Pack = 1 unidad → Pack 1; 2 → Pack 2; 3 o más → Pack 3. Los pedidos de Shopify cuyo ID no está
     en ningún `shopify_ids` se suman al día como pendientes ("aún no en almacén"); los de `shopify_test` se ignoran.
     Tabla "Cuadre": Shopify vs Meta (píxel) vs almacén por día y % que registra Meta. El #1158 es el pedido de test.
   - Pestaña **Creatividades** (solo dueño): lee de Meta en directo `ads_get_ad_entities` a nivel `ad` (gasto, impresiones,
@@ -88,10 +89,10 @@ Lo normal es que lo suba él mismo en la pestaña Incidencias del dashboard. Si 
 5. Regenera el Excel (abajo) y verifica: la "Liquidación almacén" debe cuadrar con Σ(PRECIO − COSTE TOTAL PEDIDO)
    de los entregados del export (diferencias de 1-2 céntimos por redondeo del almacén).
 
-## Cuando Alec solo dice "hoy X pack 1, Y pack 2"
+## Cuando Alec solo dice "hoy X pack 1, Y pack 2, Z pack 3"
 
-`get dias/<fecha>` y `set` con `p1`/`p2` nuevos y el gasto de Meta, conservando el resto. Responde con pedidos,
-gasto, CPA vs CPA break-even (~10,8 € con los datos actuales), beneficio proyectado y semáforo
+`get dias/<fecha>` y `set` con `p1`/`p2`/`p3` nuevos y el gasto de Meta, conservando el resto. Responde con pedidos,
+gasto, CPA vs CPA break-even (~11,2 € con los datos actuales), beneficio proyectado y semáforo
 (ESCALAR ≤ 75% del break-even, VIGILAR ≤ 100%, CORTAR > 100%). Recuérdale las incidencias pendientes.
 
 ## Regenerar el Excel con los datos al día
@@ -119,7 +120,11 @@ gasto, CPA vs CPA break-even (~10,8 € con los datos actuales), beneficio proye
 
 ## Modelo (igual en Excel y dashboard)
 
-- Coste del pedido (almacén) = uds × 1,99 × 1,21 + envío real sin IVA (6,85-8,06 €) → 10,47 € / 12,88 € con 8,06 €.
+- Packs: Pack 1 = 1 ud a 29,99 €, Pack 2 = 2 uds a 39,99 €, Pack 3 = 3 uds a 49,99 € (`p3_*` en config; primera venta el 08/10, #1193).
+- Coste del pedido (almacén) = uds × 1,99 × 1,21 + envío real sin IVA (6,85-8,06 €) → 10,47 € / 12,88 € / 15,28 € con 8,06 €.
+  Envío estándar del Pack 3 = 8,06 € (supuesto hasta ver el real en el export).
+- Excel de contabilidad, Diario: B-D pedidos P1-P3, E-G entregados, H-J devueltos, K incidencias, L-M envío real, N Ads, O notas,
+  P-Y cálculos (W liquidación, X cobrado, Y proyectado), AA-AO auxiliares. Config: packs en C/D/E, notas en F.
 - Liquidación almacén = PVP − coste del pedido de lo entregado (lo que paga el almacén).
 - IVA: se repercute el 21% del PVP y solo se deduce el IVA del producto. El envío viene "sin IVA" y el almacén
   no le suma IVA → no hay IVA de envío que deducir (`logistica_con_iva = false`).

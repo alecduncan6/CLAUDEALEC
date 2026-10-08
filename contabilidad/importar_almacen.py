@@ -5,9 +5,9 @@
                                             [--incidencias incidencias.json]
 
 Solo saca totales por día (nunca nombres, teléfonos ni direcciones):
-    p1, p2            pedidos confirmados de cada pack
-    ent1, ent2        entregados de cada pack
-    dev1, dev2        devueltos de cada pack
+    p1, p2, p3        pedidos confirmados de cada pack (1, 2 y 3 unidades; 4 o más cuentan como Pack 3)
+    ent1, ent2, ent3  entregados de cada pack
+    dev1, dev2, dev3  devueltos de cada pack
     inc               en incidencia (siguen pendientes hasta que pasen a Devuelto)
     envio_ent         coste de envío real (sin IVA) de los entregados
     envio_pend        coste de envío real (sin IVA) de los pendientes (preparado, en ruta, incidencia);
@@ -88,13 +88,13 @@ for f in filas:
         dia["cancelados"] += 1
         continue
     uds = int(f[col["UD"]] or 0)
-    pack = {1: "1", 2: "2"}.get(uds)
+    pack = {1: "1", 2: "2", 3: "3"}.get(uds)
     if pack is None:
-        avisos.append(f"pedido {pid}: {uds} uds no encaja con ningún pack (se cuenta como Pack 2)")
-        pack = "2"
+        pack = "1" if uds < 1 else "3"
+        avisos.append(f"pedido {pid}: {uds} uds no encaja con ningún pack (se cuenta como Pack {pack})")
     estados[pid] = {
         "pedido": pid, "estado_almacen": str(f[col["ESTADO"]] or "").strip(), "fecha_pedido": fecha_iso(f[col["Fecha del pedido"]]),
-        "pack": int(pack), "pack_nombre": "Pack 1 ud" if pack == "1" else "Pack 2 uds", "importe": float(f[col["PRECIO"]] or 0),
+        "pack": int(pack), "pack_nombre": "Pack 1 ud" if pack == "1" else f"Pack {pack} uds", "importe": float(f[col["PRECIO"]] or 0),
         "tracking": str(f[col["TRACKING"]] or "").strip() if "TRACKING" in col else "",
         "nombre": str(f[col["NOMBRE COMPLETO"]] or "").strip(),
         "telefono": str(f[col["TELF"]] or "").strip() if "TELF" in col else "",
@@ -118,7 +118,7 @@ for f in filas:
             avisos.append(f"pedido {pid}: estado '{estado}' desconocido (se cuenta como pendiente)")
         dia["envio_pend"] += envio
 
-CAMPOS = ("p1", "p2", "ent1", "ent2", "dev1", "dev2", "inc", "envio_ent", "envio_pend", "carritos", "recuperados", "cancelados")
+CAMPOS = ("p1", "p2", "p3", "ent1", "ent2", "ent3", "dev1", "dev2", "dev3", "inc", "envio_ent", "envio_pend", "carritos", "recuperados", "cancelados")
 resumen = {}
 for fecha in sorted(dias):
     d = dias[fecha]
@@ -126,10 +126,11 @@ for fecha in sorted(dias):
     resumen[fecha]["shopify_ids"] = ids_shopify.get(fecha, [])
     resumen[fecha]["shopify_test"] = ids_test.get(fecha, [])
 
-print(f"{'fecha':<11}{'P1':>4}{'P2':>4}{'Ent':>5}{'Dev':>5}{'Inc':>5}{'Pend':>6}{'Envío ent':>11}{'Envío pend':>12}{'Carr':>6}{'Recu':>6}{'Canc':>6}")
+print(f"{'fecha':<11}{'P1':>4}{'P2':>4}{'P3':>4}{'Ent':>5}{'Dev':>5}{'Inc':>5}{'Pend':>6}{'Envío ent':>11}{'Envío pend':>12}{'Carr':>6}{'Recu':>6}{'Canc':>6}")
 for fecha, d in resumen.items():
-    pend = d["p1"] + d["p2"] - d["ent1"] - d["ent2"] - d["dev1"] - d["dev2"]
-    print(f"{fecha:<11}{d['p1']:>4}{d['p2']:>4}{d['ent1'] + d['ent2']:>5}{d['dev1'] + d['dev2']:>5}{d['inc']:>5}"
+    pend = sum(d[f"p{n}"] - d[f"ent{n}"] - d[f"dev{n}"] for n in (1, 2, 3))
+    print(f"{fecha:<11}{d['p1']:>4}{d['p2']:>4}{d['p3']:>4}{d['ent1'] + d['ent2'] + d['ent3']:>5}"
+          f"{d['dev1'] + d['dev2'] + d['dev3']:>5}{d['inc']:>5}"
           f"{pend:>6}{d['envio_ent']:>11.2f}{d['envio_pend']:>12.2f}{d['carritos']:>6}{d['recuperados']:>6}{d['cancelados']:>6}")
 print(f"Ignorados (test): {', '.join(ignorados) or 'ninguno'}")
 for a in avisos:

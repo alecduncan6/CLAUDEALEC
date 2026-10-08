@@ -135,12 +135,15 @@ ws.column_dimensions["A"].width = 2
 ws.column_dimensions["B"].width = 46
 ws.column_dimensions["C"].width = 15
 ws.column_dimensions["D"].width = 15
-ws.column_dimensions["E"].width = 72
+ws.column_dimensions["E"].width = 15
+ws.column_dimensions["F"].width = 72
 titulo(ws, "B1", f"Configuración · {cfg['marca']}",
        "Celdas azules con fondo amarillo = editables. Todo lo demás se calcula solo.", "B2")
 
-cabecera(ws, 4, 2, ["Unit economics por pack", cfg["p1_nombre"], cfg["p2_nombre"], "De dónde sale"])
+cabecera(ws, 4, 2, ["Unit economics por pack", cfg["p1_nombre"], cfg["p2_nombre"], cfg.get("p3_nombre", "Pack 3 uds"),
+                    "De dónde sale"])
 ws["B4"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
+P3_DEF = {"pvp": 49.99, "uds": 3, "coste_ud": 1.99, "logistica": 8.06}
 filas_pack = [
     (5, "PVP contra reembolso (IVA incl.)", "pvp", EUR, "Importe que cobra el repartidor. Dato de Alec."),
     (6, "Unidades en el pack", "uds", ENTERO, "Dato de Alec."),
@@ -152,12 +155,13 @@ for f, etiqueta, clave, fmt, nota in filas_pack:
     celda(ws, f"B{f}", etiqueta)
     entrada(ws, f"C{f}", cfg[f"p1_{clave}"], fmt)
     entrada(ws, f"D{f}", cfg[f"p2_{clave}"], fmt)
-    celda(ws, f"E{f}", nota, color=GRIS, size=9, wrap=True)
+    entrada(ws, f"E{f}", cfg.get(f"p3_{clave}", P3_DEF[clave]), fmt)
+    celda(ws, f"F{f}", nota, color=GRIS, size=9, wrap=True)
 
 calc_pack = [
     (9, "Coste producto (IVA incl.)", "={c}6*{c}7*(1+IVA_PROD)", "Uds × coste × (1 + IVA producto)."),
-    (10, "Coste total del pedido", "={c}9+{c}8", "Cuadra con 'Coste total pedido' del almacén: 10,47 € y 12,88 €."),
-    (11, "Beneficio dropshipper por pedido ENTREGADO", "={c}5-{c}10", "Lo que te liquida el almacén: 19,52 € y 27,11 €."),
+    (10, "Coste total del pedido", "={c}9+{c}8", "Cuadra con 'Coste total pedido' del almacén: 10,47 €, 12,88 € y 15,28 €."),
+    (11, "Beneficio dropshipper por pedido ENTREGADO", "={c}5-{c}10", "Lo que te liquida el almacén: 19,52 €, 27,11 € y 34,71 €."),
     (12, "IVA repercutido (dentro del PVP)", "={c}5*IVA_VENTAS/(1+IVA_VENTAS)", "PVP × 21/121."),
     (13, "IVA soportado deducible", "={c}6*{c}7*IVA_PROD+IF(LOG_IVA=1,{c}8*IVA_VENTAS/(1+IVA_VENTAS),0)",
      "IVA del producto (+ IVA del envío solo si en Parámetros dices que lo lleva)."),
@@ -167,11 +171,11 @@ calc_pack = [
 ]
 for f, etiqueta, formula, nota in calc_pack:
     celda(ws, f"B{f}", etiqueta, bold=(f in (11, 15)))
-    for c in "CD":
+    for c in "CDE":
         celda(ws, f"{c}{f}", formula.format(c=c), fmt=EUR, bold=(f in (11, 15)), borde=BORDE)
-    celda(ws, f"E{f}", nota, color=GRIS, size=9)
+    celda(ws, f"F{f}", nota, color=GRIS, size=9)
 
-cabecera(ws, 17, 2, ["Parámetros", "Valor", "", "Qué significa"])
+cabecera(ws, 17, 2, ["Parámetros", "Valor", "", "", "Qué significa"])
 ws["B17"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
 params = [
     (18, "IVA de las ventas", cfg["iva_ventas"], PCT, "IVA general en España."),
@@ -188,7 +192,8 @@ params = [
      "Para proyectar pendientes e incidencias mientras no tengas datos propios."),
     (25, "Pedidos resueltos para usar tu tasa real", cfg["min_resueltos"], ENTERO,
      "Con estos entregados + devueltos, el libro pasa a usar tu tasa de entrega real."),
-    (26, "% de Pack 2 estimado (sin datos)", cfg["pct_pack2_estimado"], PCT, "Solo se usa hasta que haya pedidos."),
+    (26, "% de Pack 2 (C) y de Pack 3 (D) estimado, sin datos", cfg["pct_pack2_estimado"], PCT,
+     "Solo se usa hasta que haya pedidos."),
     (27, "Objetivo de beneficio neto mensual", cfg["objetivo_mensual"], EUR0, "La meta: 10.000 €/mes."),
     (28, "Fecha de inicio", inicio, FECHA, "Primer día del Diario y del resumen mensual."),
     (29, "Cuenta publicitaria Meta", f"{cfg['meta_cuenta']} ({cfg['meta_ad_account_id']})", None,
@@ -201,18 +206,19 @@ params = [
 for f, etiqueta, valor, fmt, nota in params:
     celda(ws, f"B{f}", etiqueta)
     entrada(ws, f"C{f}", valor, fmt)
-    celda(ws, f"E{f}", nota, color=GRIS, size=9, wrap=True)
+    celda(ws, f"F{f}", nota, color=GRIS, size=9, wrap=True)
+entrada(ws, "D26", cfg.get("pct_pack3_estimado", 0.05), PCT)
 dv = DataValidation(type="list", formula1='"SÍ,NO"', allow_blank=False)
 ws.add_data_validation(dv)
 dv.add("C20")
 dv.add("C21")
 
-cabecera(ws, 32, 2, ["Calculado con tus datos", "Valor", "", "Cómo se calcula"])
+cabecera(ws, 32, 2, ["Calculado con tus datos", "Valor", "", "", "Cómo se calcula"])
 ws.row_dimensions[32].height = 20
 ws["B32"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
 rng = lambda col: f"Diario!${col}${F0}:${col}${FN}"  # noqa: E731
-entregados = f"(SUM({rng('D')})+SUM({rng('E')}))"
-devueltos = f"(SUM({rng('F')})+SUM({rng('G')}))"
+entregados = f"(SUM({rng('E')})+SUM({rng('F')})+SUM({rng('G')}))"
+devueltos = f"(SUM({rng('H')})+SUM({rng('I')})+SUM({rng('J')}))"
 calc = [
     (33, "IVA aplicado (1 = sí)", '=IF(C20="SÍ",1,0)', ENTERO, ""),
     (34, "Envío con IVA deducible (1 = sí)", '=IF(C21="SÍ",1,0)', ENTERO, ""),
@@ -222,14 +228,16 @@ calc = [
     (38, "Tasa de entrega real", f'=IF(C37>0,{entregados}/C37,"")', PCT, "Entregados ÷ (entregados + devueltos)."),
     (39, "Tasa de entrega USADA en proyecciones", '=IF(AND(C37>=C25,C38<>""),C38,C24)', PCT,
      "Real si hay suficientes pedidos resueltos; si no, la estimada."),
-    (40, "% de Pack 2 real", f'=IF(SUM({rng("M")})>0,SUM({rng("C")})/SUM({rng("M")}),"")', PCT, "Upsell real."),
-    (41, "% de Pack 2 usado", '=IF(C40="",C26,C40)', PCT, ""),
+    (40, "% de Pack 2 (C) y de Pack 3 (D) real", f'=IF(SUM({rng("P")})>0,SUM({rng("C")})/SUM({rng("P")}),"")', PCT,
+     "Upsell real."),
+    (41, "% de Pack 2 (C) y de Pack 3 (D) usado", '=IF(C40="",C26,C40)', PCT, ""),
     (42, "Envío medio real por pedido (sin IVA)",
-     f'=IF(SUM({rng("AI")})>0,(SUM({rng("I")})+SUM({rng("J")}))/SUM({rng("AI")}),"")', EUR,
+     f'=IF(SUM({rng("AN")})>0,(SUM({rng("L")})+SUM({rng("M")}))/SUM({rng("AN")}),"")', EUR,
      "Media de los envíos reales del export del almacén."),
-    (43, "Ticket medio esperado", "=(1-C41)*C5+C41*D5", EUR, ""),
+    (43, "Ticket medio esperado", "=(1-C41-D41)*C5+C41*D5+D41*E5", EUR, ""),
     (44, "Beneficio neto medio por pedido entregado",
-     '=(1-C41)*(C5-C9-IF(C42="",C8,C42)-C14)+C41*(D5-D9-IF(C42="",D8,C42)-D14)', EUR,
+     '=(1-C41-D41)*(C5-C9-IF(C42="",C8,C42)-C14)+C41*(D5-D9-IF(C42="",D8,C42)-D14)'
+     '+D41*(E5-E9-IF(C42="",E8,C42)-E14)', EUR,
      "Mezcla de packs, con tu envío medio real."),
     (45, "Beneficio esperado por pedido confirmado (antes de Ads)", "=C39*C44-(1-C39)*C36-COMISION", EUR,
      "Tasa × beneficio por entrega − (1 − tasa) × coste de devolución − comisión del almacén."),
@@ -240,11 +248,14 @@ calc = [
 for f, etiqueta, formula, fmt, nota in calc:
     celda(ws, f"B{f}", etiqueta, bold=(f in (46, 47)))
     celda(ws, f"C{f}", formula, fmt=fmt, bold=(f in (46, 47)), borde=BORDE)
-    celda(ws, f"E{f}", nota, color=GRIS, size=9)
+    celda(ws, f"F{f}", nota, color=GRIS, size=9)
+celda(ws, "D40", f'=IF(SUM({rng("P")})>0,SUM({rng("D")})/SUM({rng("P")}),"")', fmt=PCT, borde=BORDE)
+celda(ws, "D41", '=IF(D40="",D26,D40)', fmt=PCT, borde=BORDE)
 
 for n, ref in {
     "P1_PVP": "$C$5", "P2_PVP": "$D$5", "P1_CPROD": "$C$9", "P2_CPROD": "$D$9",
     "P1_LOG": "$C$8", "P2_LOG": "$D$8", "P1_IVAN": "$C$14", "P2_IVAN": "$D$14",
+    "P3_PVP": "$E$5", "P3_CPROD": "$E$9", "P3_LOG": "$E$8", "P3_IVAN": "$E$14",
     "IVA_VENTAS": "$C$18", "IVA_PROD": "$C$19", "COSTE_DEV": "$C$22", "RECARGO_ADS": "$C$23",
     "OBJETIVO_MES": "$C$27", "FECHA_INICIO": "$C$28", "APLICA_IVA": "$C$33", "LOG_IVA": "$C$34",
     "IVA_DEV": "$C$35", "COMISION": "$C$31", "TASA_USADA": "$C$39", "BEN_PEDIDO": "$C$45", "CPA_BE": "$C$46", "ROAS_BE": "$C$47",
@@ -258,56 +269,62 @@ ws = diario
 titulo(ws, "A1", "Diario de pedidos",
        "Una fila por día de PEDIDO. Lo amarillo se rellena (lo hace Claude con el export del almacén). "
        "Pendientes = preparados + en ruta + incidencias; una incidencia no es venta perdida hasta que pasa a Devuelto.", "A2")
-ws["A3"].value = ("Ejemplo: el 05/10 entran 5 Pack 1 y 4 Pack 2 → B=5, C=4. Luego se entregan 3 Pack 1 y 1 Pack 2 "
-                  "→ D=3, E=1. 3 de los pendientes están en incidencia → H=3.")
+ws["A3"].value = ("Ejemplo: el 05/10 entran 5 Pack 1, 4 Pack 2 y 1 Pack 3 → B=5, C=4, D=1. Luego se entregan 3 Pack 1 "
+                  "y 1 Pack 2 → E=3, F=1. 3 de los pendientes están en incidencia → K=3.")
 ws["A3"].font = font(color=GRIS, size=9, italic=True)
 
-D_ENVIO_ENT = "IF(ISNUMBER(I{r}),I{r},D{r}*P1_LOG+E{r}*P2_LOG)"
-D_ENVIO_PEND = "IF(ISNUMBER(J{r}),J{r},X{r}*P1_LOG+Y{r}*P2_LOG)"
+D_ENVIO_ENT = "IF(ISNUMBER(L{r}),L{r},E{r}*P1_LOG+F{r}*P2_LOG+G{r}*P3_LOG)"
+D_ENVIO_PEND = "IF(ISNUMBER(M{r}),M{r},AA{r}*P1_LOG+AB{r}*P2_LOG+AC{r}*P3_LOG)"
 cols = [
     # (letra, cabecera, ancho, formato, fórmula o None si es entrada)
     ("A", "Fecha del pedido", 12, FECHA, None),
     ("B", "Pedidos Pack 1", 8, ENTERO, None),
     ("C", "Pedidos Pack 2", 8, ENTERO, None),
-    ("D", "Entregados Pack 1", 9, ENTERO, None),
-    ("E", "Entregados Pack 2", 9, ENTERO, None),
-    ("F", "Devueltos Pack 1", 9, ENTERO, None),
-    ("G", "Devueltos Pack 2", 9, ENTERO, None),
-    ("H", "Incidencias (pendientes)", 10, ENTERO, None),
-    ("I", "Envío real entregados (€)", 10, EUR, None),
-    ("J", "Envío real pendientes (€)", 10, EUR, None),
-    ("K", "Gasto Ads Meta (€)", 10, EUR, None),
-    ("L", "Notas", 24, None, None),
-    ("M", "Pedidos totales", 8, ENTERO, "=B{r}+C{r}"),
-    ("N", "Pendientes", 9, ENTERO, "=X{r}+Y{r}"),
-    ("O", "Facturación bruta", 11, EUR, "=B{r}*P1_PVP+C{r}*P2_PVP"),
-    ("P", "Ticket medio", 9, EUR, '=IF(M{r}>0,O{r}/M{r},"")'),
-    ("Q", "CPA", 9, EUR, '=IF(M{r}>0,K{r}/M{r},"")'),
-    ("R", "ROAS", 8, ROAS, '=IF(K{r}>0,O{r}/K{r},"")'),
-    ("S", "Tasa de entrega", 9, PCT, '=IF(D{r}+E{r}+F{r}+G{r}>0,(D{r}+E{r})/(D{r}+E{r}+F{r}+G{r}),"")'),
-    ("T", "Liquidación almacén (entregados)", 12, EUR,
-     "=D{r}*(P1_PVP-P1_CPROD)+E{r}*(P2_PVP-P2_CPROD)-" + D_ENVIO_ENT),
-    ("U", "Beneficio cobrado (real)", 12, EUR,
-     "=T{r}-(D{r}*P1_IVAN+E{r}*P2_IVAN)-(F{r}+G{r})*(COSTE_DEV-IVA_DEV)-AH{r}-AJ{r}"),
-    ("V", "Beneficio proyectado", 12, EUR, "=AC{r}-AD{r}-AE{r}-AF{r}-AG{r}-AH{r}-AJ{r}"),
-    ("W", "", 2, None, None),
-    ("X", "Pendientes Pack 1", 9, ENTERO, "=MAX(0,B{r}-D{r}-F{r})"),
-    ("Y", "Pendientes Pack 2", 9, ENTERO, "=MAX(0,C{r}-E{r}-G{r})"),
-    ("Z", "Entregados proy. P1", 9, '0.0;-0.0;"-"', "=D{r}+X{r}*TASA_USADA"),
-    ("AA", "Entregados proy. P2", 9, '0.0;-0.0;"-"', "=E{r}+Y{r}*TASA_USADA"),
-    ("AB", "Devueltos proy.", 9, '0.0;-0.0;"-"', "=F{r}+G{r}+(X{r}+Y{r})*(1-TASA_USADA)"),
-    ("AC", "Ventas proy. (IVA incl.)", 11, EUR, "=Z{r}*P1_PVP+AA{r}*P2_PVP"),
-    ("AD", "Coste producto proy.", 10, EUR, "=Z{r}*P1_CPROD+AA{r}*P2_CPROD"),
-    ("AE", "Envíos proy.", 10, EUR, "=" + D_ENVIO_ENT + "+" + D_ENVIO_PEND + "*TASA_USADA"),
-    ("AF", "Devoluciones proy.", 10, EUR, "=AB{r}*COSTE_DEV"),
-    ("AG", "IVA neto proy.", 10, EUR, "=Z{r}*P1_IVAN+AA{r}*P2_IVAN-AB{r}*IVA_DEV"),
-    ("AH", "Ads total (con recargo)", 10, EUR, "=K{r}*(1+RECARGO_ADS)"),
-    ("AI", "Pedidos con envío real", 9, ENTERO, "=IF(ISNUMBER(I{r}),D{r}+E{r}+X{r}+Y{r},0)"),
-    ("AJ", "Comisión almacén", 9, EUR, "=M{r}*COMISION"),
+    ("D", "Pedidos Pack 3", 8, ENTERO, None),
+    ("E", "Entregados Pack 1", 9, ENTERO, None),
+    ("F", "Entregados Pack 2", 9, ENTERO, None),
+    ("G", "Entregados Pack 3", 9, ENTERO, None),
+    ("H", "Devueltos Pack 1", 9, ENTERO, None),
+    ("I", "Devueltos Pack 2", 9, ENTERO, None),
+    ("J", "Devueltos Pack 3", 9, ENTERO, None),
+    ("K", "Incidencias (pendientes)", 10, ENTERO, None),
+    ("L", "Envío real entregados (€)", 10, EUR, None),
+    ("M", "Envío real pendientes (€)", 10, EUR, None),
+    ("N", "Gasto Ads Meta (€)", 10, EUR, None),
+    ("O", "Notas", 24, None, None),
+    ("P", "Pedidos totales", 8, ENTERO, "=B{r}+C{r}+D{r}"),
+    ("Q", "Pendientes", 9, ENTERO, "=AA{r}+AB{r}+AC{r}"),
+    ("R", "Facturación bruta", 11, EUR, "=B{r}*P1_PVP+C{r}*P2_PVP+D{r}*P3_PVP"),
+    ("S", "Ticket medio", 9, EUR, '=IF(P{r}>0,R{r}/P{r},"")'),
+    ("T", "CPA", 9, EUR, '=IF(P{r}>0,N{r}/P{r},"")'),
+    ("U", "ROAS", 8, ROAS, '=IF(N{r}>0,R{r}/N{r},"")'),
+    ("V", "Tasa de entrega", 9, PCT,
+     '=IF(E{r}+F{r}+G{r}+H{r}+I{r}+J{r}>0,(E{r}+F{r}+G{r})/(E{r}+F{r}+G{r}+H{r}+I{r}+J{r}),"")'),
+    ("W", "Liquidación almacén (entregados)", 12, EUR,
+     "=E{r}*(P1_PVP-P1_CPROD)+F{r}*(P2_PVP-P2_CPROD)+G{r}*(P3_PVP-P3_CPROD)-" + D_ENVIO_ENT),
+    ("X", "Beneficio cobrado (real)", 12, EUR,
+     "=W{r}-(E{r}*P1_IVAN+F{r}*P2_IVAN+G{r}*P3_IVAN)-(H{r}+I{r}+J{r})*(COSTE_DEV-IVA_DEV)-AM{r}-AO{r}"),
+    ("Y", "Beneficio proyectado", 12, EUR, "=AH{r}-AI{r}-AJ{r}-AK{r}-AL{r}-AM{r}-AO{r}"),
+    ("Z", "", 2, None, None),
+    ("AA", "Pendientes Pack 1", 9, ENTERO, "=MAX(0,B{r}-E{r}-H{r})"),
+    ("AB", "Pendientes Pack 2", 9, ENTERO, "=MAX(0,C{r}-F{r}-I{r})"),
+    ("AC", "Pendientes Pack 3", 9, ENTERO, "=MAX(0,D{r}-G{r}-J{r})"),
+    ("AD", "Entregados proy. P1", 9, '0.0;-0.0;"-"', "=E{r}+AA{r}*TASA_USADA"),
+    ("AE", "Entregados proy. P2", 9, '0.0;-0.0;"-"', "=F{r}+AB{r}*TASA_USADA"),
+    ("AF", "Entregados proy. P3", 9, '0.0;-0.0;"-"', "=G{r}+AC{r}*TASA_USADA"),
+    ("AG", "Devueltos proy.", 9, '0.0;-0.0;"-"', "=H{r}+I{r}+J{r}+(AA{r}+AB{r}+AC{r})*(1-TASA_USADA)"),
+    ("AH", "Ventas proy. (IVA incl.)", 11, EUR, "=AD{r}*P1_PVP+AE{r}*P2_PVP+AF{r}*P3_PVP"),
+    ("AI", "Coste producto proy.", 10, EUR, "=AD{r}*P1_CPROD+AE{r}*P2_CPROD+AF{r}*P3_CPROD"),
+    ("AJ", "Envíos proy.", 10, EUR, "=" + D_ENVIO_ENT + "+" + D_ENVIO_PEND + "*TASA_USADA"),
+    ("AK", "Devoluciones proy.", 10, EUR, "=AG{r}*COSTE_DEV"),
+    ("AL", "IVA neto proy.", 10, EUR, "=AD{r}*P1_IVAN+AE{r}*P2_IVAN+AF{r}*P3_IVAN-AG{r}*IVA_DEV"),
+    ("AM", "Ads total (con recargo)", 10, EUR, "=N{r}*(1+RECARGO_ADS)"),
+    ("AN", "Pedidos con envío real", 9, ENTERO, "=IF(ISNUMBER(L{r}),E{r}+F{r}+G{r}+AA{r}+AB{r}+AC{r},0)"),
+    ("AO", "Comisión almacén", 9, EUR, "=P{r}*COMISION"),
 ]
 FMT = {l: f for l, _, _, f, _ in cols}
-ENTRADAS = {"B": "p1", "C": "p2", "D": "ent1", "E": "ent2", "F": "dev1", "G": "dev2", "H": "inc",
-            "I": "envio_ent", "J": "envio_pend", "K": "ads", "L": "nota"}
+ENTRADAS = {"B": "p1", "C": "p2", "D": "p3", "E": "ent1", "F": "ent2", "G": "ent3", "H": "dev1", "I": "dev2",
+            "J": "dev3", "K": "inc", "L": "envio_ent", "M": "envio_pend", "N": "ads", "O": "nota"}
 for letra, cab, ancho, _fmt, formula in cols:
     ws.column_dimensions[letra].width = ancho
     if not cab:
@@ -320,17 +337,17 @@ for letra, cab, ancho, _fmt, formula in cols:
     c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     c.border = BORDE
 ws.row_dimensions[5].height = 54
-celda(ws, "X3", "Cálculos auxiliares (no tocar) →", color=GRIS, size=9, italic=True)
+celda(ws, "AA3", "Cálculos auxiliares (no tocar) →", color=GRIS, size=9, italic=True)
 
 celda(ws, "A4", "TOTAL", bold=True, color=TINTA)
 for letra, _, _, fmt, formula in cols:
-    if letra in ("A", "L", "W") or fmt is None:
+    if letra in ("A", "O", "Z") or fmt is None:
         continue
     celda(ws, f"{letra}4", f"=SUM({letra}{F0}:{letra}{FN})", bold=True, fmt=fmt, color=TINTA)
-celda(ws, "P4", '=IF(M4>0,O4/M4,"")', bold=True, fmt=EUR, color=TINTA)
-celda(ws, "Q4", '=IF(M4>0,K4/M4,"")', bold=True, fmt=EUR, color=TINTA)
-celda(ws, "R4", '=IF(K4>0,O4/K4,"")', bold=True, fmt=ROAS, color=TINTA)
-celda(ws, "S4", '=IF(D4+E4+F4+G4>0,(D4+E4)/(D4+E4+F4+G4),"")', bold=True, fmt=PCT, color=TINTA)
+celda(ws, "S4", '=IF(P4>0,R4/P4,"")', bold=True, fmt=EUR, color=TINTA)
+celda(ws, "T4", '=IF(P4>0,N4/P4,"")', bold=True, fmt=EUR, color=TINTA)
+celda(ws, "U4", '=IF(N4>0,R4/N4,"")', bold=True, fmt=ROAS, color=TINTA)
+celda(ws, "V4", '=IF(E4+F4+G4+H4+I4+J4>0,(E4+F4+G4)/(E4+F4+G4+H4+I4+J4),"")', bold=True, fmt=PCT, color=TINTA)
 
 for i in range(DIAS_HOJA):
     r = F0 + i
@@ -339,33 +356,33 @@ for i in range(DIAS_HOJA):
     celda(ws, f"A{r}", fecha, fmt=FECHA, borde=BORDE)
     for letra, clave in ENTRADAS.items():
         v = d.get(clave)
-        if v in ("", None) or (letra in "DEFGH" and v == 0):
+        if v in ("", None) or (letra in "EFGHIJK" and v == 0):
             v = None
         celda(ws, f"{letra}{r}", v, color=AZUL_INPUT, fmt=FMT[letra], borde=BORDE)
     for letra, _, _, fmt, formula in cols:
         if formula:
             celda(ws, f"{letra}{r}", formula.format(r=r), fmt=fmt, borde=BORDE,
-                  color=(GRIS if letra >= "X" or len(letra) == 2 else "000000"), bold=(letra in "TUV"))
+                  color=(GRIS if len(letra) == 2 else "000000"), bold=(letra in "WXY"))
 
-ws.conditional_formatting.add(f"B{F0}:C{FN}", FormulaRule(
-    formula=[f'AND($K{F0}>0,$B{F0}="",$C{F0}="",$A{F0}<TODAY())'], fill=fill("FAD7A0")))
-ws.conditional_formatting.add(f"H{F0}:H{FN}", CellIsRule(operator="greaterThan", formula=["0"], fill=fill("FAD7A0")))
+ws.conditional_formatting.add(f"B{F0}:D{FN}", FormulaRule(
+    formula=[f'AND($N{F0}>0,$B{F0}="",$C{F0}="",$D{F0}="",$A{F0}<TODAY())'], fill=fill("FAD7A0")))
+ws.conditional_formatting.add(f"K{F0}:K{FN}", CellIsRule(operator="greaterThan", formula=["0"], fill=fill("FAD7A0")))
 ws.conditional_formatting.add(f"A{F0}:A{FN}", FormulaRule(
     formula=[f"$A{F0}=TODAY()"], fill=fill("F5E6C4"), font=Font(name=FUENTE, bold=True)))
-ws.conditional_formatting.add(f"U{F0}:V{FN}", CellIsRule(
+ws.conditional_formatting.add(f"X{F0}:Y{FN}", CellIsRule(
     operator="greaterThan", formula=["0"], font=Font(name=FUENTE, bold=True, color=VERDE_OK)))
 ws.freeze_panes = f"B{F0}"
-ws["K5"].comment = Comment("Lo trae Claude del conector de Meta Ads (cuenta HeatioShop, campañas 'CeraLux').", "CeraLux")
-ws["H5"].comment = Comment("Pedidos en INCIDENCIA (p. ej. destinatario ausente). Siguen pendientes: "
+ws["N5"].comment = Comment("Lo trae Claude del conector de Meta Ads (cuenta HeatioShop, campañas 'CeraLux').", "CeraLux")
+ws["K5"].comment = Comment("Pedidos en INCIDENCIA (p. ej. destinatario ausente). Siguen pendientes: "
                            "no son venta perdida hasta que el almacén los marca como Devuelto.", "CeraLux")
-ws["I5"].comment = Comment("Suma del 'Coste de envío (sin IVA)' real de los pedidos entregados. "
+ws["L5"].comment = Comment("Suma del 'Coste de envío (sin IVA)' real de los pedidos entregados. "
                            "Vacío = se usa la tarifa estándar de Config.", "CeraLux")
-ws["J5"].comment = Comment("Suma del envío real de los pedidos pendientes (preparado, en ruta, incidencia).", "CeraLux")
-ws["T5"].comment = Comment("Lo que te liquida el almacén por lo entregado: PVP − coste total del pedido. "
+ws["M5"].comment = Comment("Suma del envío real de los pedidos pendientes (preparado, en ruta, incidencia).", "CeraLux")
+ws["W5"].comment = Comment("Lo que te liquida el almacén por lo entregado: PVP − coste total del pedido. "
                            "Debe cuadrar con su panel.", "CeraLux")
-ws["U5"].comment = Comment("Dinero ya ganado: liquidación − IVA − devoluciones − Ads − comisión del almacén. "
+ws["X5"].comment = Comment("Dinero ya ganado: liquidación − IVA − devoluciones − Ads − comisión del almacén. "
                            "Los días recientes salen negativos porque aún hay pedidos pendientes.", "CeraLux")
-ws["V5"].comment = Comment("Lo que dejará el día cuando se resuelvan los pendientes, "
+ws["Y5"].comment = Comment("Lo que dejará el día cuando se resuelvan los pendientes, "
                            "usando la tasa de entrega de Config.", "CeraLux")
 
 # =====================================================================
@@ -436,21 +453,21 @@ celda(ws, "L3", "=TASA_USADA", fmt=PCT, bold=True, color=VERDE_LINK)
 seccion(ws, "B5:M5", "RESUMEN DEL PERIODO")
 TARJETAS = [
     [("Beneficio neto proyectado", "=F25", EUR),
-     ("Liquidación almacén", f"={S('T')}", EUR),
-     ("Beneficio cobrado (real)", f"={S('U')}+F24", EUR),
-     ("Pedidos", f"={S('M')}", ENTERO),
-     ("Facturación bruta", f"={S('O')}", EUR),
-     ("Gasto Ads", f"={S('K')}", EUR)],
+     ("Liquidación almacén", f"={S('W')}", EUR),
+     ("Beneficio cobrado (real)", f"={S('X')}+F24", EUR),
+     ("Pedidos", f"={S('P')}", ENTERO),
+     ("Facturación bruta", f"={S('R')}", EUR),
+     ("Gasto Ads", f"={S('N')}", EUR)],
     [("CPA (coste por pedido)", '=IF(H7>0,L7/H7,"")', EUR),
      ("CPA break-even", "=CPA_BE", EUR),
      ("ROAS", '=IF(L7>0,J7/L7,"")', ROAS),
      ("ROAS break-even", "=ROAS_BE", ROAS),
      ("Ticket medio", '=IF(H7>0,J7/H7,"")', EUR),
-     ("% Pack 2", f'=IF(H7>0,{S("C")}/H7,"")', PCT)],
-    [("Entregados", f"={S('D')}+{S('E')}", ENTERO),
-     ("Pendientes", f"={S('N')}", ENTERO),
-     ("En incidencia", f"={S('H')}", ENTERO),
-     ("Devueltos", f"={S('F')}+{S('G')}", ENTERO),
+     ("% Pack 2 o Pack 3", f'=IF(H7>0,({S("C")}+{S("D")})/H7,"")', PCT)],
+    [("Entregados", f"={S('E')}+{S('F')}+{S('G')}", ENTERO),
+     ("Pendientes", f"={S('Q')}", ENTERO),
+     ("En incidencia", f"={S('K')}", ENTERO),
+     ("Devueltos", f"={S('H')}+{S('I')}+{S('J')}", ENTERO),
      ("Tasa de entrega", '=IF(B13+H13>0,B13/(B13+H13),"")', PCT),
      ("Semáforo campaña",
       '=IF(B10="","SIN DATOS",IF(B10<=D10*0.75,"ESCALAR",IF(B10<=D10,"VIGILAR","CORTAR")))', None)],
@@ -486,13 +503,13 @@ ws.conditional_formatting.add("F13", CellIsRule(operator="greaterThan", formula=
 # --- cuenta de resultados ---
 seccion(ws, "B15:F15", "CUENTA DE RESULTADOS (proyectada)")
 pyg = [
-    (16, "Ventas esperadas (IVA incl.)", f"={S('AC')}"),
-    (17, "− Coste de producto", f"=-{S('AD')}"),
-    (18, "− Envíos", f"=-{S('AE')}"),
-    (19, "− Devoluciones", f"=-{S('AF')}"),
-    (20, "− Comisión almacén (0,95 €/pedido)", f"=-{S('AJ')}"),
-    (21, "− IVA a liquidar (neto)", f"=-{S('AG')}"),
-    (22, "− Publicidad Meta", f"=-{S('AH')}"),
+    (16, "Ventas esperadas (IVA incl.)", f"={S('AH')}"),
+    (17, "− Coste de producto", f"=-{S('AI')}"),
+    (18, "− Envíos", f"=-{S('AJ')}"),
+    (19, "− Devoluciones", f"=-{S('AK')}"),
+    (20, "− Comisión almacén (0,95 €/pedido)", f"=-{S('AO')}"),
+    (21, "− IVA a liquidar (neto)", f"=-{S('AL')}"),
+    (22, "− Publicidad Meta", f"=-{S('AM')}"),
     (23, "Beneficio de campaña", "=SUM(F16:F22)"),
     (24, "− Otros gastos", f"=-{GASTOS_PERIODO}"),
     (25, "BENEFICIO NETO", "=F23+F24"),
@@ -545,13 +562,13 @@ def S_dia(col, celda_fecha):
 for i in range(14):
     r = 29 + i
     fd = f"$B{r}"
-    ent = f"({S_dia('D', fd)}+{S_dia('E', fd)})"
-    res = f"({S_dia('D', fd)}+{S_dia('E', fd)}+{S_dia('F', fd)}+{S_dia('G', fd)})"
+    ent = f"({S_dia('E', fd)}+{S_dia('F', fd)}+{S_dia('G', fd)})"
+    res = f"({S_dia('E', fd)}+{S_dia('F', fd)}+{S_dia('G', fd)}+{S_dia('H', fd)}+{S_dia('I', fd)}+{S_dia('J', fd)})"
     celda(ws, f"B{r}", f"={HASTA}-{13 - i}", fmt="ddd dd/mm", borde=BORDE, align="center")
-    celda(ws, f"C{r}", f"={S_dia('M', fd)}", fmt=ENTERO, borde=BORDE)
-    celda(ws, f"D{r}", f"={S_dia('K', fd)}", fmt=EUR, borde=BORDE)
+    celda(ws, f"C{r}", f"={S_dia('P', fd)}", fmt=ENTERO, borde=BORDE)
+    celda(ws, f"D{r}", f"={S_dia('N', fd)}", fmt=EUR, borde=BORDE)
     celda(ws, f"E{r}", f'=IF(C{r}>0,D{r}/C{r},"")', fmt=EUR, borde=BORDE)
-    celda(ws, f"F{r}", f"={S_dia('V', fd)}", fmt=EUR, borde=BORDE, bold=True)
+    celda(ws, f"F{r}", f"={S_dia('Y', fd)}", fmt=EUR, borde=BORDE, bold=True)
     celda(ws, f"G{r}", f'=IF({res}>0,{ent}/{res},"")', fmt=PCT, borde=BORDE)
 
 graf = BarChart()
@@ -591,14 +608,14 @@ for i in range(12):
     r = 47 + i
     celda(ws, f"B{r}", f"=DATE(YEAR(FECHA_INICIO),MONTH(FECHA_INICIO)+{i},1)", fmt="mmm yyyy",
           borde=BORDE, align="center")
-    celda(ws, f"C{r}", f"={S_mes('M', r)}", fmt=ENTERO, borde=BORDE)
-    celda(ws, f"D{r}", f"={S_mes('K', r)}", fmt=EUR0, borde=BORDE)
+    celda(ws, f"C{r}", f"={S_mes('P', r)}", fmt=ENTERO, borde=BORDE)
+    celda(ws, f"D{r}", f"={S_mes('N', r)}", fmt=EUR0, borde=BORDE)
     celda(ws, f"E{r}", f'=IF(C{r}>0,D{r}/C{r},"")', fmt=EUR, borde=BORDE)
-    celda(ws, f"F{r}", f"={S_mes('O', r)}", fmt=EUR0, borde=BORDE)
-    celda(ws, f"G{r}", f"={S_mes('D', r)}+{S_mes('E', r)}", fmt=ENTERO, borde=BORDE)
-    celda(ws, f"H{r}", f"={S_mes('F', r)}+{S_mes('G', r)}", fmt=ENTERO, borde=BORDE)
+    celda(ws, f"F{r}", f"={S_mes('R', r)}", fmt=EUR0, borde=BORDE)
+    celda(ws, f"G{r}", f"={S_mes('E', r)}+{S_mes('F', r)}+{S_mes('G', r)}", fmt=ENTERO, borde=BORDE)
+    celda(ws, f"H{r}", f"={S_mes('H', r)}+{S_mes('I', r)}+{S_mes('J', r)}", fmt=ENTERO, borde=BORDE)
     celda(ws, f"I{r}", f'=IF(G{r}+H{r}>0,G{r}/(G{r}+H{r}),"")', fmt=PCT, borde=BORDE)
-    celda(ws, f"J{r}", f"={S_mes('V', r)}", fmt=EUR0, borde=BORDE)
+    celda(ws, f"J{r}", f"={S_mes('Y', r)}", fmt=EUR0, borde=BORDE)
     celda(ws, f"K{r}", (f"=-SUMIFS(Gastos!$D${G0}:$D${GN},Gastos!$A${G0}:$A${GN},\">=\"&$B{r},"
                          f"Gastos!$A${G0}:$A${GN},\"<=\"&EOMONTH($B{r},0))"), fmt=EUR0, borde=BORDE)
     celda(ws, f"L{r}", f"=J{r}+K{r}", fmt=EUR0, borde=BORDE, bold=True)
@@ -653,11 +670,11 @@ lineas = [
     ("t", "Dashboard: tus números del periodo que elijas (celdas Desde / Hasta). Todo se calcula solo."),
     ("t", "Diario: una fila por día de pedido, con pedidos y estados de cada pack."),
     ("t", "Gastos: Shopify, apps, muestras, gestoría... todo lo que no es producto, envío ni Ads."),
-    ("t", "Config: precios, costes de tus 2 packs y supuestos. Si el almacén cambia tarifas, se cambia aquí."),
+    ("t", "Config: precios, costes de tus 3 packs y supuestos. Si el almacén cambia tarifas, se cambia aquí."),
     ("h", "Rutina diaria (2 minutos)"),
     ("t", "1. Descarga el Excel de pedidos del almacén y pásaselo a Claude. Lo importa entero: pedidos por pack, "
           "estados, incidencias y coste de envío real. Sin datos personales: solo totales por día."),
-    ("t", "2. Si no tienes el export a mano, basta con decir \"hoy 9 Pack 1 y 4 Pack 2\" o apuntarlo en el dashboard web."),
+    ("t", "2. Si no tienes el export a mano, basta con decir \"hoy 9 Pack 1, 4 Pack 2 y 1 Pack 3\" o apuntarlo en el dashboard web."),
     ("t", "3. El gasto de Meta Ads lo trae Claude del conector (y el dashboard web lo lee en directo)."),
     ("h", "Estados del almacén"),
     ("t", "Preparado, En ruta e Incidencia = pendientes. Una incidencia NO es venta perdida hasta que pasa a Devuelto."),
@@ -676,8 +693,7 @@ lineas = [
     ("t", "VIGILAR: CPA entre el 75% y el 100% del break-even. Ganas poco: prueba creatividades nuevas antes de escalar."),
     ("t", "CORTAR: CPA por encima del break-even. Cada pedido te cuesta dinero: apaga o cambia el ángulo."),
     ("h", "Supuestos que debes confirmar (Config)"),
-    ("t", "• Coste de un pedido devuelto = 8,06 € (pierdes el envío, el producto vuelve). Si tu almacén cobra "
-          "también el retorno, súbelo."),
+    ("t", "• Coste de un pedido devuelto = 8,06 € (confirmado con Dropi: el envío de ida ya incluye la vuelta)."),
     ("t", "• El envío no lleva IVA deducible (el export lo da 'sin IVA' y no le suma IVA al coste total)."),
     ("t", "• Meta te factura sin IVA (alta en ROI). Si no, pon 21% en 'Recargo sobre el gasto en Ads'."),
     ("t", "• El IVA se descuenta del beneficio (SÍ). Si aún no facturas con IVA, ponlo en NO para ver el bruto, "
