@@ -112,6 +112,9 @@ button, input, select { font: inherit; color: inherit; }
 dl.rows { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; font-size: 14px; }
 dl.rows dt { color: var(--muted); }
 dl.rows dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+dl.rows dt.tot, dl.rows dd.tot { color: var(--ink); font-weight: 700; border-top: 1px solid var(--line); padding-top: 7px; }
+.caja { display: grid; gap: 14px 28px; grid-template-columns: 1fr; margin-bottom: 16px; }
+@media (min-width: 760px) { .caja { grid-template-columns: 1fr 1.25fr; align-items: start; } }
 
 /* gráfico */
 .chart svg { width: 100%; height: auto; display: block; }
@@ -264,6 +267,27 @@ details.panel[open] > summary { margin-bottom: 14px; }
       <div class="meter" id="meter"><div class="be"></div><div class="cur" id="meterCur" hidden></div></div>
       <div class="meter-legend"><span id="cpaNow">CPA —</span><span id="cpaBe">Break-even —</span></div>
     </div>
+  </section>
+
+  <section class="panel" id="caja">
+    <h2>Tu dinero real hoy (desde el inicio)</h2>
+    <div class="caja">
+      <div>
+        <div class="big num" id="cajaNum">—</div>
+        <div class="small muted" id="cajaSub">Copia los dos números de arriba de tu panel de Dropi y verás cuánto llevas ganado o perdido de verdad.</div>
+      </div>
+      <dl class="rows" id="cajaRows"></dl>
+    </div>
+    <form id="fCaja" autocomplete="off">
+      <div class="fields">
+        <label for="kDisp">"Disponible" en Dropi (€)<input id="kDisp" type="number" step="0.01" inputmode="decimal" placeholder="619,46" required></label>
+        <label for="kPrest">"Préstamos" en Dropi (€)<input id="kPrest" type="number" step="0.01" min="0" inputmode="decimal" placeholder="600,00" required></label>
+      </div>
+      <div class="actions">
+        <button class="btn" type="submit">Guardar saldo de Dropi</button>
+        <span class="msg" id="kMsg" role="status"></span>
+      </div>
+    </form>
   </section>
 
   <section>
@@ -488,7 +512,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     shop: null, shopStatus: "idle", shopMsg: "", shopAt: null,
     periodo: lsGet("ceralux.periodo") || "mes",
     rol: "owner", user: null, uid: null, alias: lsGet("ceralux.alias") || "",
-    incid: {}, incidLoaded: false, acciones: [], ultimaImport: null,
+    incid: {}, incidLoaded: false, acciones: [], ultimaImport: null, caja: null,
     periodoCre: lsGet("ceralux.periodoCre") || "todo", cre: { status: "idle", msg: "", ads: [], at: null },
     vista: location.hash === "#incidencias" ? "inc" : (lsGet("ceralux.vista") || "num")
   };
@@ -589,7 +613,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const liq = e1 * (u.p1.pvp - u.p1.cprod) + e2 * (u.p2.pvp - u.p2.cprod) - envEnt;
     const O = liq - (e1 * u.p1.ivan + e2 * u.p2.ivan) - dev * (u.costeDev - u.ivaDev) - Y - C;
     const faltan = (!d || (d.p1 == null && d.p2 == null)) && !(nuevos1 + nuevos2);
-    return { fecha, p1, p2, ent, dev, nuevos: nuevos1 + nuevos2, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
+    const ivaEnt = e1 * u.p1.ivan + e2 * u.p2.ivan, pendPVP = x1 * u.p1.pvp + x2 * u.p2.pvp;
+    return { fecha, p1, p2, ent, dev, nuevos: nuevos1 + nuevos2, ivaEnt, pendPVP, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
       carritos: num(d?.carritos), faltan, nota: d?.nota || "" };
   }
 
@@ -618,7 +643,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const otros = state.gastos.filter((g) => g.fecha >= desde && g.fecha <= hasta).reduce((a, g) => a + num(g.importe), 0);
     const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
     const r = { dias, nDias, otros };
-    for (const k of ["p1", "p2", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq"]) r[k] = s(k);
+    for (const k of ["p1", "p2", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq", "ivaEnt", "pendPVP"]) r[k] = s(k);
     r.neto = r.P - otros; r.cobrado = r.O - otros;
     r.cpa = r.H > 0 ? r.ads / r.H : null; r.roas = r.ads > 0 ? r.J / r.ads : null;
     r.ticket = r.H > 0 ? r.J / r.H : null; r.pack2 = r.H > 0 ? r.p2 / r.H : null;
@@ -717,13 +742,14 @@ details.panel[open] > summary { margin-bottom: 14px; }
       <dt>Pedidos/día para 10.000 €/mes</dt><dd>${esc(necesarios)}</dd>
       <dt>Inversión diaria en Ads a ese ritmo</dt><dd>${margenPed > 0 ? E0(Math.ceil((obj + a.otros / a.nDias * 30) / 30 / margenPed) * a.cpa) : "—"}</dd>`;
 
+    renderCaja(u, h);
     renderChart(u, h.tasa);
     renderTabla(u, h.tasa);
     renderCuadre(u, h.tasa);
     renderUnit(u, h, be);
     renderGastos(desde, hasta);
     const puede = state.canWrite !== false && state.db;
-    for (const f of ["fDia", "fGasto", "fCfg"]) $(f).querySelectorAll("button, input, select").forEach((el) => { el.disabled = !puede; });
+    for (const f of ["fDia", "fGasto", "fCfg", "fCaja"]) $(f).querySelectorAll("button, input, select").forEach((el) => { el.disabled = !puede; });
   }
 
   function renderLiveShop() {
@@ -814,6 +840,34 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const env = h.envioMedio;
     const c = (p, neto) => `<div><div class="small muted">${esc(p.nombre)} · ${E(p.pvp)}</div><div class="num">${E(neto)}</div><div class="small muted">${E(p.pvp - p.cprod - (env ?? p.log))} del almacén − ${E(p.ivan)} de IVA</div></div>`;
     $("unit").innerHTML = c(u.p1, be.neto1) + c(u.p2, be.neto2) + `<div class="small muted" style="grid-column:1/-1">${env != null ? `Con tu envío medio real de ${E(env)} (sin IVA). ` : ""}Un devuelto te cuesta ${E(u.costeDev - u.ivaDev)}. El almacén cobra ${E(u.comision)} por cada pedido confirmado, se entregue o no. El Pack 2 deja ${E(be.neto2 - be.neto1)} más por solo ${E(u.p2.pvp - u.p1.pvp)} más de precio.</div>`;
+  }
+
+  // Caja real: lo que dice Dropi (dinero propio = disponible − préstamo) menos lo pagado fuera (Meta, otros gastos).
+  // No depende del periodo elegido ni de supuestos, salvo el IVA a reservar de lo ya entregado.
+  function renderCaja(u, h) {
+    const k = state.caja, [d0, d1] = rango("todo"), t = agregar(d0, d1, u, h.tasa);
+    const ads = t.ads * (1 + u.recargo), proyectado = t.neto;
+    const pend = `${N(t.I)} pedidos · ${E0(t.pendPVP)}`;
+    if (!k) {
+      $("cajaNum").textContent = "—"; $("cajaNum").className = "big num";
+      $("cajaRows").innerHTML = `<dt>Gastado en Meta Ads</dt><dd>${E(ads)}</dd><dt>Otros gastos</dt><dd>${E(t.otros)}</dd>
+        <dt>Aún en juego (pendientes)</dt><dd>${pend}</dd><dt>Resultado final estimado (modelo)</dt><dd>${E(proyectado)}</dd>`;
+      return;
+    }
+    const propio = num(k.disponible) - num(k.prestamo), pos = propio - ads - t.otros, tuyo = pos - t.ivaEnt;
+    $("cajaNum").textContent = E(tuyo);
+    $("cajaNum").className = "big num " + (tuyo > 0.005 ? "pos" : tuyo < -0.005 ? "neg" : "");
+    const horas = (Date.now() - new Date(k.en).getTime()) / 3600000;
+    $("cajaSub").innerHTML = `Saldo de Dropi: ${esc(fechaHora(k.en))}${horas > 24 ? ` · <b style="color:var(--warn)">tiene más de un día: actualízalo</b>` : ""}. Si se entregan los pendientes como espera el modelo, terminarías en <b class="num">${E(proyectado)}</b>.`;
+    $("cajaRows").innerHTML = `
+      <dt>Propio en Dropi <span class="small">(${E(num(k.disponible))} − ${E(num(k.prestamo))} de préstamo)</span></dt><dd>${E(propio)}</dd>
+      <dt>− Gastado en Meta Ads</dt><dd>${E(-ads)}</dd>
+      <dt>− Otros gastos</dt><dd>${E(t.otros ? -t.otros : 0)}</dd>
+      <dt class="tot">Posición real hoy</dt><dd class="tot">${E(pos)}</dd>
+      <dt>− IVA a reservar de lo entregado</dt><dd>${E(-t.ivaEnt)}</dd>
+      <dt class="tot">Tuyo de verdad</dt><dd class="tot">${E(tuyo)}</dd>
+      <dt>Aún en juego (pendientes)</dt><dd>${pend}</dd>`;
+    if (document.activeElement?.closest?.("#fCaja") == null) { $("kDisp").value = num(k.disponible); $("kPrest").value = num(k.prestamo); }
   }
 
   function renderGastos(desde, hasta) {
@@ -1064,6 +1118,10 @@ details.panel[open] > summary { margin-bottom: 14px; }
       state.dias = m; state.diasLoaded = true; render();
       if (state.vista === "cre") renderCre();
     }, fallo);
+    db.collection("caja").onSnapshot((s) => {
+      const docs = s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((d) => d.en).sort((a, b) => String(b.en).localeCompare(String(a.en)));
+      state.caja = docs[0] || null; render();
+    }, () => {});
     db.collection("gastos").onSnapshot((s) => {
       state.gastos = s.docs.map((d) => ({ id: d.id, ...d.data() })); render();
     }, fallo);
@@ -1571,6 +1629,13 @@ details.panel[open] > summary { margin-bottom: 14px; }
     }
     try { await state.db.doc("config/main").set(nuevo); msg("cMsg", "Ajustes guardados.", true); }
     catch { msg("cMsg", "No se pudieron guardar los ajustes.", false); }
+  });
+
+  $("fCaja").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const disponible = num($("kDisp").value), prestamo = num($("kPrest").value);
+    try { await state.db.doc("caja/" + iso(new Date())).set({ disponible, prestamo, en: new Date().toISOString() }); msg("kMsg", "Saldo guardado.", true); }
+    catch { msg("kMsg", "No se pudo guardar.", false); }
   });
 
   $("seg").addEventListener("click", (ev) => {

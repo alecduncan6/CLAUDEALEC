@@ -28,6 +28,9 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
     - `acciones/<auto>`: gestiones del equipo `{pedido, tipo, nota, en, por (id usuario), autor (alias)}`;
       tipo ∈ whatsapp | no_contesta | acordada | almacen | rechaza.
     - `importaciones/ultima`: `{en, por, autor, pedidos, nuevas, cerradas}`.
+    - `caja/<YYYY-MM-DD>`: saldo del panel de Dropi `{disponible, prestamo, en}` (el último manda). Bloque "Tu dinero real hoy":
+      (disponible − préstamo) − Meta Ads desde el inicio − otros gastos = posición real; − IVA de lo entregado = "tuyo de verdad".
+      No usa supuestos del modelo salvo el IVA. Solo dueño.
   - Reglas de acceso: todo es solo del dueño (read/write `owner`) salvo `incidencias`, `acciones` e
     `importaciones` (read/write `interact`). El equipo se añade como Colaborador o Editor desde Compartir:
     ve solo la pestaña Incidencias, nunca los números. Un Lector no ve nada de clientes.
@@ -121,6 +124,8 @@ gasto, CPA vs CPA break-even (~10,8 € con los datos actuales), beneficio proye
 - Comisión del almacén (Dropi): `comision_pedido` = 0,95 € por pedido confirmado, se entregue o se devuelva
   (no va en el "coste total pedido" del export, así que no entra en la liquidación; se resta aparte en cobrado y proyectado).
 - Dropi adelanta un préstamo de 600 €: el "Disponible" de su panel lo incluye, no es dinero propio.
+- Pedidos #1154–#1157 (3 y 4 de octubre, CeraLux, sincronizados con Dropi) quedan fuera porque `fecha_inicio` es el 05/10.
+  Pendiente que Alec confirme si son reales (entonces `fecha_inicio` = 2026-10-03 y exportar desde el 03/10) o pruebas.
 - Proyección: pendientes (incluidas incidencias) × tasa de entrega (80% estimada hasta 30 pedidos resueltos; luego la real).
 
 Supuestos pendientes de confirmar con Alec: coste real de una devolución, si Meta le cobra IVA (ROI), si factura con IVA,
