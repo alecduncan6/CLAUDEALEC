@@ -300,6 +300,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
       <h2>Contra reembolso · estado de los pedidos</h2>
       <div class="cod" id="cod"><span style="color:var(--muted)">Sin pedidos en este periodo</span></div>
       <div class="cod-legend" id="codLegend"></div>
+      <p class="small muted" id="carrTxt" style="margin:12px 0 0"></p>
     </div>
     <div class="panel">
       <h2>Camino a 10.000 €/mes</h2>
@@ -615,7 +616,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const faltan = (!d || (d.p1 == null && d.p2 == null)) && !(nuevos1 + nuevos2);
     const ivaEnt = e1 * u.p1.ivan + e2 * u.p2.ivan, pendPVP = x1 * u.p1.pvp + x2 * u.p2.pvp;
     return { fecha, p1, p2, ent, dev, nuevos: nuevos1 + nuevos2, ivaEnt, pendPVP, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
-      carritos: num(d?.carritos), faltan, nota: d?.nota || "" };
+      carritos: num(d?.carritos), recuperados: num(d?.recuperados), faltan, nota: d?.nota || "" };
   }
 
   function fechas() {
@@ -643,7 +644,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const otros = state.gastos.filter((g) => g.fecha >= desde && g.fecha <= hasta).reduce((a, g) => a + num(g.importe), 0);
     const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
     const r = { dias, nDias, otros };
-    for (const k of ["p1", "p2", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq", "ivaEnt", "pendPVP"]) r[k] = s(k);
+    for (const k of ["p1", "p2", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq", "ivaEnt", "pendPVP", "carritos", "recuperados"]) r[k] = s(k);
     r.neto = r.P - otros; r.cobrado = r.O - otros;
     r.cpa = r.H > 0 ? r.ads / r.H : null; r.roas = r.ads > 0 ? r.J / r.ads : null;
     r.ticket = r.H > 0 ? r.J / r.H : null; r.pack2 = r.H > 0 ? r.p2 / r.H : null;
@@ -725,6 +726,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
       const w = (n) => (n / a.H * 100).toFixed(2) + "%";
       $("cod").innerHTML = [["e", a.ent], ["r", a.I - a.inc], ["i", a.inc], ["d", a.dev]].filter(([, n]) => n > 0).map(([c, n]) => `<span class="${c}" style="width:${w(n)}">${N(n)}</span>`).join("");
     } else $("cod").innerHTML = `<span style="color:var(--muted)">Sin pedidos en este periodo</span>`;
+    const cT = a.carritos + a.recuperados;
+    $("carrTxt").innerHTML = cT ? `Carritos abandonados: <b>${N(cT)}</b> · recuperados por tu equipo: <b>${N(a.recuperados)}</b> (${P(a.recuperados / cT)}). Los recuperados ya cuentan como pedidos.` : "Sin carritos abandonados en este periodo.";
     $("codLegend").innerHTML = `<span><i style="background:var(--good)"></i>Entregados ${N(a.ent)}</span><span><i style="background:var(--accent-soft);outline:1px solid var(--accent)"></i>Preparado / en ruta ${N(a.I - a.inc)}</span><span><i style="background:var(--warn)"></i>Incidencia ${N(a.inc)}</span><span><i style="background:var(--bad)"></i>Devueltos ${N(a.dev)}</span>`;
 
     // objetivo
@@ -785,7 +788,9 @@ details.panel[open] > summary { margin-bottom: 14px; }
     if (inc) out.push(["", `${N(inc)} ${inc === 1 ? "pedido" : "pedidos"} en incidencia${sinTocar ? ` (${N(sinTocar)} sin contactar)` : ""}.`, "Cada uno que tu equipo salve es beneficio que no pierdes.", "inc"]);
     const desde3 = iso(addDays(new Date(), -2));
     const carr = todos.filter((d) => d.fecha >= desde3).reduce((s, d) => s + d.carritos, 0);
-    if (carr) out.push(["info", `${N(carr)} ${carr === 1 ? "carrito abandonado" : "carritos abandonados"} en 3 días.`, carr === 1 ? "Recupéralo por WhatsApp con el mismo precio." : "Recupéralos por WhatsApp con el mismo precio."]);
+    const recu = todos.filter((d) => d.fecha >= desde3).reduce((s, d) => s + d.recuperados, 0);
+    if (carr || recu) out.push(["info", `${N(carr)} ${carr === 1 ? "carrito abandonado" : "carritos abandonados"} en 3 días${recu ? ` · tu equipo ha recuperado ${N(recu)}` : ""}.`,
+      carr === 1 ? "Llámalo o escríbele por WhatsApp con el mismo precio." : carr ? "Llámalos o escríbeles por WhatsApp con el mismo precio." : "Todos los carritos de estos días están recuperados."]);
     const limite = iso(addDays(new Date(), -7));
     const viejos = fechas().filter((f) => f <= limite).map((f) => calcDia(f, u, h.tasa)).filter((d) => d.I > 0);
     if (viejos.length) {
@@ -1073,17 +1078,17 @@ details.panel[open] > summary { margin-bottom: 14px; }
     if (state.rol !== "owner") return;
     if (!state.shop) { tb.innerHTML = `<tr><td colspan="7" class="empty">${esc(state.shopStatus === "bad" || state.shopStatus === "warn" ? state.shopMsg : "Leyendo Shopify…")}</td></tr>`; return; }
     const lista = fechas().filter((f) => f >= state.shop.desde).reverse().slice(0, 14);
-    let tShop = 0, tMeta = 0, tNuevos = 0;
+    let tShop = 0, tMeta = 0, tNuevos = 0, tRecu = 0;
     tb.innerHTML = lista.length ? lista.map((f) => {
       const sd = shopDia(f), d = state.dias[f], dia = calcDia(f, u, tasa);
       const meta = state.meta?.compras?.[f];
       const alm = d && (d.p1 != null || d.p2 != null) ? num(d.p1) + num(d.p2) : null;
-      tShop += sd.total; tMeta += meta || 0; tNuevos += dia.nuevos;
+      tShop += sd.total; tMeta += meta || 0; tNuevos += dia.nuevos; tRecu += dia.recuperados;
       const pct = sd.total > 0 && meta != null ? meta / sd.total : null;
       return `<tr><td>${corta(f)}</td><td><b>${N(sd.total)}</b></td><td>${meta == null ? "—" : N(meta)}</td><td>${alm == null ? "—" : N(alm)}</td><td>${N(sd.cancelados + num(d?.cancelados))}</td><td>${dia.nuevos ? `<span class="tag">${N(dia.nuevos)}</span>` : "—"}</td><td class="${pct != null && pct < 0.8 ? "neg" : ""}">${P(pct)}</td></tr>`;
     }).join("") : `<tr><td colspan="7" class="empty">Sin pedidos en Shopify desde ${ddmm(state.shop.desde)}.</td></tr>`;
     const pctT = tShop > 0 && state.meta ? tMeta / tShop : null;
-    $("cuadreTxt").textContent = `${pctT != null ? `Meta registra el ${P(pctT)} de tus pedidos de Shopify en estos días. ` : ""}${tNuevos ? `${N(tNuevos)} ${tNuevos === 1 ? "pedido nuevo aún no está en el Excel del almacén: ya cuenta" : "pedidos nuevos aún no están en el Excel del almacén: ya cuentan"} en tus números como pendientes.` : "Todos los pedidos de Shopify están ya en el almacén."}`;
+    $("cuadreTxt").textContent = `${pctT != null ? `Meta registra el ${P(pctT)} de tus pedidos de Shopify en estos días. ` : ""}${tNuevos ? `${N(tNuevos)} ${tNuevos === 1 ? "pedido nuevo aún no está en el Excel del almacén: ya cuenta" : "pedidos nuevos aún no están en el Excel del almacén: ya cuentan"} en tus números como pendientes.` : "Todos los pedidos de Shopify están ya en el almacén."}${tRecu ? ` El almacén tiene ${N(tRecu)} ${tRecu === 1 ? "pedido más que viene" : "pedidos más que vienen"} de carritos recuperados por tu equipo (no pasan por Shopify).` : ""}`;
   }
 
   /* ---------- base de datos ---------- */
@@ -1477,17 +1482,21 @@ details.panel[open] > summary { margin-bottom: 14px; }
       const id = str(r["ID PEDIDO"]), fecha = fechaDe(r["FECHA DEL PEDIDO"]);
       if (!id || !fecha) continue;
       const estadoTxt = str(r["ESTADO"]), estado = estadoTxt.toLowerCase();
-      const d = (dias[fecha] ||= { p1: 0, p2: 0, ent1: 0, ent2: 0, dev1: 0, dev2: 0, inc: 0, envio_ent: 0, envio_pend: 0, carritos: 0, cancelados: 0, shopify_ids: [], shopify_test: [] });
+      const d = (dias[fecha] ||= { p1: 0, p2: 0, ent1: 0, ent2: 0, dev1: 0, dev2: 0, inc: 0, envio_ent: 0, envio_pend: 0, carritos: 0, recuperados: 0, cancelados: 0, shopify_ids: [], shopify_test: [] });
       const sid = str(r["ID PEDIDO SHOPIFY"]);
       if (sid) d.shopify_ids.push(sid);
       if (excl.has(id) || str(r["NOMBRE COMPLETO"]).toLowerCase().startsWith("test")) { tests++; if (sid) d.shopify_test.push(sid); continue; }
-      if (estado === "carrito abandonado" || str(r["ES CARRITO"]) === "1") { d.carritos++; continue; }
+      // "¿Es carrito?" = 1 marca el origen; mientras el estado sea de carrito no es venta. Si el equipo lo recupera,
+      // Dropi le pone estado de pedido (Preparado, En ruta…) y desde ahí cuenta como pedido (sin pedido en Shopify).
+      const esCarrito = str(r["ES CARRITO"]) === "1";
+      if (estado.includes("carrito") || (esCarrito && CANCELADO.includes(estado))) { d.carritos++; continue; }
       const pack = Number(r["UD"]) === 1 ? 1 : 2;
       vistos[id] = { estado: estadoTxt, r, fecha, pack };
       if (CANCELADO.includes(estado)) { d.cancelados++; continue; }
       // hasta que no sale del almacén el envío viene a 0: se usa la tarifa estándar para no inflar el beneficio
       const envio = num(r["COSTE DE ENVIO SIN IVA"]) || num(state.cfg["p" + pack + "_logistica"]);
       d["p" + pack]++; pedidos++;
+      if (esCarrito) d.recuperados++;
       if (estado === "entregado") { d["ent" + pack]++; d.envio_ent += envio; }
       else if (DEVUELTO.includes(estado)) d["dev" + pack]++;
       else { if (estado === "incidencia") d.inc++; d.envio_pend += envio; }
@@ -1570,7 +1579,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const ads = $("dAds").value === "" ? 0 : Math.round(num($("dAds").value) * 100) / 100;
     const prev = state.dias[fecha] || {};
     const doc = { fecha, ...v, ads, nota: $("dNota").value.trim(), actualizado: new Date().toISOString() };
-    for (const k of ["carritos", "cancelados", "fuente"]) if (prev[k] != null) doc[k] = prev[k];
+    for (const k of ["carritos", "recuperados", "cancelados", "fuente"]) if (prev[k] != null) doc[k] = prev[k];
     // El envío real del almacén solo sigue valiendo si los pedidos y estados no han cambiado.
     const mismos = ["p1", "p2", "ent1", "ent2", "dev1", "dev2"].every((k) => num(prev[k]) === num(v[k]));
     if (mismos && tieneEnvio(prev)) { doc.envio_ent = prev.envio_ent; doc.envio_pend = prev.envio_pend; }

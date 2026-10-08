@@ -13,7 +13,8 @@ Solo saca totales por día (nunca nombres, teléfonos ni direcciones):
     envio_pend        coste de envío real (sin IVA) de los pendientes (preparado, en ruta, incidencia);
                       los que aún no tienen envío en el export (0) cuentan con --envio-std
     shopify_ids       IDs de Shopify de todas las filas del día (para no contar dos veces los pedidos de Shopify)
-    carritos          carritos abandonados (no son pedidos)
+    carritos          carritos abandonados sin recuperar (no son pedidos)
+    recuperados       carritos que el equipo ha recuperado: ya tienen estado de pedido y cuentan en p1/p2
     cancelados        rechazados / cancelados antes de enviarse
 """
 import argparse
@@ -28,7 +29,6 @@ DEVUELTO = {"devuelto", "devolución", "devolucion"}
 INCIDENCIA = {"incidencia"}
 PENDIENTE = {"confirmado", "pedido confirmado", "preparado", "en ruta", "en reparto", "pendiente"}
 CANCELADO = {"rechazado", "cancelado", "anulado"}
-CARRITO = {"carrito abandonado"}
 
 ap = argparse.ArgumentParser()
 ap.add_argument("export")
@@ -79,7 +79,9 @@ for f in filas:
         if "ID pedido Shopify" in col and f[col["ID pedido Shopify"]]:
             ids_test[fecha_iso(f[col["Fecha del pedido"]])].append(str(f[col["ID pedido Shopify"]]).strip())
         continue
-    if estado in CARRITO or str(f[col["¿Es carrito?"]]).strip() == "1":
+    # "¿Es carrito?" = 1 marca el origen; si el equipo lo recupera, Dropi le pone estado de pedido y cuenta como venta
+    es_carrito = str(f[col["¿Es carrito?"]]).strip() == "1"
+    if "carrito" in estado or (es_carrito and estado in CANCELADO):
         dia["carritos"] += 1
         continue
     if estado in CANCELADO:
@@ -102,6 +104,8 @@ for f in filas:
     # hasta que no sale del almacén el envío viene a 0: se usa la tarifa estándar para no inflar el beneficio
     envio = float(f[col["COSTE DE ENVÍO (SIN IVA)"]] or 0) or args.envio_std
     dia[f"p{pack}"] += 1
+    if es_carrito:
+        dia["recuperados"] += 1
     if estado in ENTREGADO:
         dia[f"ent{pack}"] += 1
         dia["envio_ent"] += envio
@@ -114,7 +118,7 @@ for f in filas:
             avisos.append(f"pedido {pid}: estado '{estado}' desconocido (se cuenta como pendiente)")
         dia["envio_pend"] += envio
 
-CAMPOS = ("p1", "p2", "ent1", "ent2", "dev1", "dev2", "inc", "envio_ent", "envio_pend", "carritos", "cancelados")
+CAMPOS = ("p1", "p2", "ent1", "ent2", "dev1", "dev2", "inc", "envio_ent", "envio_pend", "carritos", "recuperados", "cancelados")
 resumen = {}
 for fecha in sorted(dias):
     d = dias[fecha]
@@ -122,11 +126,11 @@ for fecha in sorted(dias):
     resumen[fecha]["shopify_ids"] = ids_shopify.get(fecha, [])
     resumen[fecha]["shopify_test"] = ids_test.get(fecha, [])
 
-print(f"{'fecha':<11}{'P1':>4}{'P2':>4}{'Ent':>5}{'Dev':>5}{'Inc':>5}{'Pend':>6}{'Envío ent':>11}{'Envío pend':>12}{'Carr':>6}{'Canc':>6}")
+print(f"{'fecha':<11}{'P1':>4}{'P2':>4}{'Ent':>5}{'Dev':>5}{'Inc':>5}{'Pend':>6}{'Envío ent':>11}{'Envío pend':>12}{'Carr':>6}{'Recu':>6}{'Canc':>6}")
 for fecha, d in resumen.items():
     pend = d["p1"] + d["p2"] - d["ent1"] - d["ent2"] - d["dev1"] - d["dev2"]
     print(f"{fecha:<11}{d['p1']:>4}{d['p2']:>4}{d['ent1'] + d['ent2']:>5}{d['dev1'] + d['dev2']:>5}{d['inc']:>5}"
-          f"{pend:>6}{d['envio_ent']:>11.2f}{d['envio_pend']:>12.2f}{d['carritos']:>6}{d['cancelados']:>6}")
+          f"{pend:>6}{d['envio_ent']:>11.2f}{d['envio_pend']:>12.2f}{d['carritos']:>6}{d['recuperados']:>6}{d['cancelados']:>6}")
 print(f"Ignorados (test): {', '.join(ignorados) or 'ninguno'}")
 for a in avisos:
     print("AVISO:", a)

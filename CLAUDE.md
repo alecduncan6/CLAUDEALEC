@@ -12,10 +12,13 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
   - Base de datos (ArtifactData, mismo `url`):
     - `config/main`: precios, costes y supuestos (mismas claves que `contabilidad/datos.json` → `config`).
     - `dias/<YYYY-MM-DD>` por **fecha de pedido**:
-      `{fecha, p1, p2, ent1, ent2, dev1, dev2, inc, envio_ent, envio_pend, carritos, cancelados, ads, nota, fuente, actualizado}`
+      `{fecha, p1, p2, ent1, ent2, dev1, dev2, inc, envio_ent, envio_pend, carritos, recuperados, cancelados, ads, nota, fuente, actualizado}`
       - `p1`/`p2`: pedidos de cada pack (null = aún no reportado).
       - `ent*`/`dev*`: de ESOS pedidos, entregados / devueltos por pack. Pendientes = el resto.
       - `inc`: cuántos de los pendientes están en incidencia.
+      - `carritos`: carritos abandonados sin recuperar (estado "Carrito Abandonado", o carrito cancelado).
+        `recuperados`: filas con "¿Es carrito?" = 1 que ya tienen estado de pedido (el equipo los ha recuperado por teléfono):
+        cuentan en `p1`/`p2` como pedidos normales y no tienen pedido en Shopify (su "ID pedido Shopify" es del carrito).
       - `envio_ent`/`envio_pend`: suma del "Coste de envío (sin IVA)" real de entregados / pendientes.
         Sin ellos se usa la tarifa estándar de config (8,06 €). Los pedidos que aún no han salido vienen con envío 0 en el
         export: los importadores (página y `importar_almacen.py --envio-std`) les ponen la tarifa estándar.
