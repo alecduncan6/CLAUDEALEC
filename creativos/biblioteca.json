@@ -1,7 +1,7 @@
 {
  "config": {
-  "cpa_be": 11.76,
-  "ben_pedido": 11.76,
+  "cpa_be": 10.81,
+  "ben_pedido": 10.81,
   "recargo_ads": 0,
   "fecha_inicio": "2026-10-05",
   "umbral_escalar": 0.75,

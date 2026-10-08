@@ -435,7 +435,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
   const DEFAULTS = {
     marca: "CeraLux", p1_nombre: "Pack 1 ud", p1_pvp: 29.99, p1_uds: 1, p1_coste_ud: 1.99, p1_logistica: 8.06,
     p2_nombre: "Pack 2 uds", p2_pvp: 39.99, p2_uds: 2, p2_coste_ud: 1.99, p2_logistica: 8.06,
-    iva_ventas: 0.21, iva_producto: 0.21, aplicar_iva: true, coste_devolucion: 8.06, recargo_ads: 0,
+    iva_ventas: 0.21, iva_producto: 0.21, aplicar_iva: true, coste_devolucion: 8.06, comision_pedido: 0.95, recargo_ads: 0,
     tasa_entrega_estimada: 0.8, min_resueltos: 30, pct_pack2_estimado: 0.3, objetivo_mensual: 10000, logistica_con_iva: false,
     fecha_inicio: "", meta_ad_account_id: "", meta_filtro_campana: ""
   };
@@ -444,7 +444,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
     ["p1_coste_ud", "Coste producto / ud sin IVA (€)", "eur"], ["p2_coste_ud", "Coste producto / ud Pack 2 (€)", "eur"],
     ["p1_logistica", "Envío estándar Pack 1 (€, sin IVA)", "eur"], ["p2_logistica", "Envío estándar Pack 2 (€, sin IVA)", "eur"],
     ["p1_uds", "Unidades Pack 1", "int"], ["p2_uds", "Unidades Pack 2", "int"],
-    ["coste_devolucion", "Coste por pedido devuelto (€)", "eur"], ["tasa_entrega_estimada", "Tasa de entrega estimada (%)", "pct"],
+    ["coste_devolucion", "Coste por pedido devuelto (€)", "eur"], ["comision_pedido", "Comisión almacén por pedido confirmado (€)", "eur"],
+    ["tasa_entrega_estimada", "Tasa de entrega estimada (%)", "pct"],
     ["min_resueltos", "Pedidos resueltos para usar tu tasa real", "int"], ["pct_pack2_estimado", "% Pack 2 estimado", "pct"],
     ["iva_ventas", "IVA ventas (%)", "pct"], ["iva_producto", "IVA producto (%)", "pct"],
     ["aplicar_iva", "Descontar IVA del beneficio", "bool"], ["logistica_con_iva", "El envío lleva IVA deducible", "bool"],
@@ -497,7 +498,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
       return { pvp, cprod, log, ivan, nombre: cfg[`p${n}_nombre`] };
     };
     const costeDev = num(cfg.coste_devolucion);
-    return { p1: pk(1), p2: pk(2), costeDev, ivaDev: aplica && logIva ? costeDev * iv / (1 + iv) : 0, recargo: num(cfg.recargo_ads) };
+    return { p1: pk(1), p2: pk(2), costeDev, ivaDev: aplica && logIva ? costeDev * iv / (1 + iv) : 0, recargo: num(cfg.recargo_ads),
+      comision: num(cfg.comision_pedido) };
   }
 
   const tieneEnvio = (d) => typeof d?.envio_ent === "number" && typeof d?.envio_pend === "number";
@@ -524,7 +526,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const neto = (p) => p.pvp - p.cprod - (h.envioMedio ?? p.log) - p.ivan;
     const ticket = (1 - x) * u.p1.pvp + x * u.p2.pvp;
     const netoEnt = (1 - x) * neto(u.p1) + x * neto(u.p2);
-    const benPedido = t * netoEnt - (1 - t) * (u.costeDev - u.ivaDev);
+    const benPedido = t * netoEnt - (1 - t) * (u.costeDev - u.ivaDev) - u.comision;
     const cpaBE = benPedido / (1 + u.recargo);
     return { ticket, benPedido, cpaBE, roasBE: cpaBE > 0 ? ticket / cpaBE : null, neto1: neto(u.p1), neto2: neto(u.p2) };
   }
@@ -578,10 +580,11 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const z1 = e1 + x1 * tasa, z2 = e2 + x2 * tasa, Z = dev + I * (1 - tasa);
     const T = z1 * u.p1.pvp + z2 * u.p2.pvp, U = z1 * u.p1.cprod + z2 * u.p2.cprod, V = envEnt + envPend * tasa;
     const W = Z * u.costeDev, X = z1 * u.p1.ivan + z2 * u.p2.ivan - Z * u.ivaDev, Y = ads * (1 + u.recargo);
+    const C = H * u.comision; // el almacén cobra por pedido confirmado, se entregue o no
     const liq = e1 * (u.p1.pvp - u.p1.cprod) + e2 * (u.p2.pvp - u.p2.cprod) - envEnt;
-    const O = liq - (e1 * u.p1.ivan + e2 * u.p2.ivan) - dev * (u.costeDev - u.ivaDev) - Y;
+    const O = liq - (e1 * u.p1.ivan + e2 * u.p2.ivan) - dev * (u.costeDev - u.ivaDev) - Y - C;
     const faltan = (!d || (d.p1 == null && d.p2 == null)) && !(nuevos1 + nuevos2);
-    return { fecha, p1, p2, ent, dev, nuevos: nuevos1 + nuevos2, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, P: T - U - V - W - X - Y, O, liq,
+    return { fecha, p1, p2, ent, dev, nuevos: nuevos1 + nuevos2, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
       carritos: num(d?.carritos), faltan, nota: d?.nota || "" };
   }
 
@@ -609,7 +612,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const otros = state.gastos.filter((g) => g.fecha >= desde && g.fecha <= hasta).reduce((a, g) => a + num(g.importe), 0);
     const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
     const r = { dias, nDias, otros };
-    for (const k of ["p1", "p2", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "P", "O", "liq"]) r[k] = s(k);
+    for (const k of ["p1", "p2", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq"]) r[k] = s(k);
     r.neto = r.P - otros; r.cobrado = r.O - otros;
     r.cpa = r.H > 0 ? r.ads / r.H : null; r.roas = r.ads > 0 ? r.J / r.ads : null;
     r.ticket = r.H > 0 ? r.J / r.H : null; r.pack2 = r.H > 0 ? r.p2 / r.H : null;
@@ -784,7 +787,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
   function renderUnit(u, h, be) {
     const env = h.envioMedio;
     const c = (p, neto) => `<div><div class="small muted">${esc(p.nombre)} · ${E(p.pvp)}</div><div class="num">${E(neto)}</div><div class="small muted">${E(p.pvp - p.cprod - (env ?? p.log))} del almacén − ${E(p.ivan)} de IVA</div></div>`;
-    $("unit").innerHTML = c(u.p1, be.neto1) + c(u.p2, be.neto2) + `<div class="small muted" style="grid-column:1/-1">${env != null ? `Con tu envío medio real de ${E(env)} (sin IVA). ` : ""}Un devuelto te cuesta ${E(u.costeDev - u.ivaDev)}. El Pack 2 deja ${E(be.neto2 - be.neto1)} más por solo ${E(u.p2.pvp - u.p1.pvp)} más de precio.</div>`;
+    $("unit").innerHTML = c(u.p1, be.neto1) + c(u.p2, be.neto2) + `<div class="small muted" style="grid-column:1/-1">${env != null ? `Con tu envío medio real de ${E(env)} (sin IVA). ` : ""}Un devuelto te cuesta ${E(u.costeDev - u.ivaDev)}. El almacén cobra ${E(u.comision)} por cada pedido confirmado, se entregue o no. El Pack 2 deja ${E(be.neto2 - be.neto1)} más por solo ${E(u.p2.pvp - u.p1.pvp)} más de precio.</div>`;
   }
 
   function renderGastos(desde, hasta) {

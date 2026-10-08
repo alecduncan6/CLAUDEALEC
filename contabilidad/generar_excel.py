@@ -195,6 +195,8 @@ params = [
      "De aquí sale el gasto en Ads (conector de Meta)."),
     (30, "Filtro de campañas", cfg["meta_filtro_campana"], None,
      "Solo cuenta campañas cuyo nombre contiene este texto."),
+    (31, "Comisión del almacén por pedido confirmado", cfg.get("comision_pedido", 0.95), EUR,
+     "Dropi cobra 0,95 € por cada pedido confirmado, se entregue o se devuelva."),
 ]
 for f, etiqueta, valor, fmt, nota in params:
     celda(ws, f"B{f}", etiqueta)
@@ -206,6 +208,7 @@ dv.add("C20")
 dv.add("C21")
 
 cabecera(ws, 32, 2, ["Calculado con tus datos", "Valor", "", "Cómo se calcula"])
+ws.row_dimensions[32].height = 20
 ws["B32"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
 rng = lambda col: f"Diario!${col}${F0}:${col}${FN}"  # noqa: E731
 entregados = f"(SUM({rng('D')})+SUM({rng('E')}))"
@@ -228,8 +231,8 @@ calc = [
     (44, "Beneficio neto medio por pedido entregado",
      '=(1-C41)*(C5-C9-IF(C42="",C8,C42)-C14)+C41*(D5-D9-IF(C42="",D8,C42)-D14)', EUR,
      "Mezcla de packs, con tu envío medio real."),
-    (45, "Beneficio esperado por pedido confirmado (antes de Ads)", "=C39*C44-(1-C39)*C36", EUR,
-     "Tasa × beneficio por entrega − (1 − tasa) × coste de devolución."),
+    (45, "Beneficio esperado por pedido confirmado (antes de Ads)", "=C39*C44-(1-C39)*C36-COMISION", EUR,
+     "Tasa × beneficio por entrega − (1 − tasa) × coste de devolución − comisión del almacén."),
     (46, "CPA break-even (máximo que puedes pagar por pedido)", "=C45/(1+RECARGO_ADS)", EUR,
      "Por encima de este CPA pierdes dinero."),
     (47, "ROAS break-even", '=IF(C46>0,C43/C46,"")', ROAS, "Facturación bruta ÷ Ads mínima para no perder."),
@@ -244,7 +247,7 @@ for n, ref in {
     "P1_LOG": "$C$8", "P2_LOG": "$D$8", "P1_IVAN": "$C$14", "P2_IVAN": "$D$14",
     "IVA_VENTAS": "$C$18", "IVA_PROD": "$C$19", "COSTE_DEV": "$C$22", "RECARGO_ADS": "$C$23",
     "OBJETIVO_MES": "$C$27", "FECHA_INICIO": "$C$28", "APLICA_IVA": "$C$33", "LOG_IVA": "$C$34",
-    "IVA_DEV": "$C$35", "TASA_USADA": "$C$39", "BEN_PEDIDO": "$C$45", "CPA_BE": "$C$46", "ROAS_BE": "$C$47",
+    "IVA_DEV": "$C$35", "COMISION": "$C$31", "TASA_USADA": "$C$39", "BEN_PEDIDO": "$C$45", "CPA_BE": "$C$46", "ROAS_BE": "$C$47",
 }.items():
     nombre(wb, n, f"Config!{ref}")
 
@@ -285,8 +288,8 @@ cols = [
     ("T", "Liquidación almacén (entregados)", 12, EUR,
      "=D{r}*(P1_PVP-P1_CPROD)+E{r}*(P2_PVP-P2_CPROD)-" + D_ENVIO_ENT),
     ("U", "Beneficio cobrado (real)", 12, EUR,
-     "=T{r}-(D{r}*P1_IVAN+E{r}*P2_IVAN)-(F{r}+G{r})*(COSTE_DEV-IVA_DEV)-AH{r}"),
-    ("V", "Beneficio proyectado", 12, EUR, "=AC{r}-AD{r}-AE{r}-AF{r}-AG{r}-AH{r}"),
+     "=T{r}-(D{r}*P1_IVAN+E{r}*P2_IVAN)-(F{r}+G{r})*(COSTE_DEV-IVA_DEV)-AH{r}-AJ{r}"),
+    ("V", "Beneficio proyectado", 12, EUR, "=AC{r}-AD{r}-AE{r}-AF{r}-AG{r}-AH{r}-AJ{r}"),
     ("W", "", 2, None, None),
     ("X", "Pendientes Pack 1", 9, ENTERO, "=MAX(0,B{r}-D{r}-F{r})"),
     ("Y", "Pendientes Pack 2", 9, ENTERO, "=MAX(0,C{r}-E{r}-G{r})"),
@@ -300,6 +303,7 @@ cols = [
     ("AG", "IVA neto proy.", 10, EUR, "=Z{r}*P1_IVAN+AA{r}*P2_IVAN-AB{r}*IVA_DEV"),
     ("AH", "Ads total (con recargo)", 10, EUR, "=K{r}*(1+RECARGO_ADS)"),
     ("AI", "Pedidos con envío real", 9, ENTERO, "=IF(ISNUMBER(I{r}),D{r}+E{r}+X{r}+Y{r},0)"),
+    ("AJ", "Comisión almacén", 9, EUR, "=M{r}*COMISION"),
 ]
 FMT = {l: f for l, _, _, f, _ in cols}
 ENTRADAS = {"B": "p1", "C": "p2", "D": "ent1", "E": "ent2", "F": "dev1", "G": "dev2", "H": "inc",
@@ -359,7 +363,7 @@ ws["I5"].comment = Comment("Suma del 'Coste de envío (sin IVA)' real de los ped
 ws["J5"].comment = Comment("Suma del envío real de los pedidos pendientes (preparado, en ruta, incidencia).", "CeraLux")
 ws["T5"].comment = Comment("Lo que te liquida el almacén por lo entregado: PVP − coste total del pedido. "
                            "Debe cuadrar con su panel.", "CeraLux")
-ws["U5"].comment = Comment("Dinero ya ganado: liquidación − IVA − devoluciones − Ads. "
+ws["U5"].comment = Comment("Dinero ya ganado: liquidación − IVA − devoluciones − Ads − comisión del almacén. "
                            "Los días recientes salen negativos porque aún hay pedidos pendientes.", "CeraLux")
 ws["V5"].comment = Comment("Lo que dejará el día cuando se resuelvan los pendientes, "
                            "usando la tasa de entrega de Config.", "CeraLux")
@@ -431,9 +435,9 @@ celda(ws, "L3", "=TASA_USADA", fmt=PCT, bold=True, color=VERDE_LINK)
 # B10 CPA, D10 CPA BE, B13 entregados, D13 pendientes, F13 incidencias, H13 devueltos, L13 semáforo.
 seccion(ws, "B5:M5", "RESUMEN DEL PERIODO")
 TARJETAS = [
-    [("Beneficio neto proyectado", "=F24", EUR),
+    [("Beneficio neto proyectado", "=F25", EUR),
      ("Liquidación almacén", f"={S('T')}", EUR),
-     ("Beneficio cobrado (real)", f"={S('U')}+F23", EUR),
+     ("Beneficio cobrado (real)", f"={S('U')}+F24", EUR),
      ("Pedidos", f"={S('M')}", ENTERO),
      ("Facturación bruta", f"={S('O')}", EUR),
      ("Gasto Ads", f"={S('K')}", EUR)],
@@ -486,15 +490,16 @@ pyg = [
     (17, "− Coste de producto", f"=-{S('AD')}"),
     (18, "− Envíos", f"=-{S('AE')}"),
     (19, "− Devoluciones", f"=-{S('AF')}"),
-    (20, "− IVA a liquidar (neto)", f"=-{S('AG')}"),
-    (21, "− Publicidad Meta", f"=-{S('AH')}"),
-    (22, "Beneficio de campaña", "=SUM(F16:F21)"),
-    (23, "− Otros gastos", f"=-{GASTOS_PERIODO}"),
-    (24, "BENEFICIO NETO", "=F22+F23"),
+    (20, "− Comisión almacén (0,95 €/pedido)", f"=-{S('AJ')}"),
+    (21, "− IVA a liquidar (neto)", f"=-{S('AG')}"),
+    (22, "− Publicidad Meta", f"=-{S('AH')}"),
+    (23, "Beneficio de campaña", "=SUM(F16:F22)"),
+    (24, "− Otros gastos", f"=-{GASTOS_PERIODO}"),
+    (25, "BENEFICIO NETO", "=F23+F24"),
 ]
 celda(ws, "E16", "% ventas", color=GRIS, size=8, align="right")
 for f, etq, formula in pyg:
-    total = f in (22, 24)
+    total = f in (23, 25)
     ws.merge_cells(f"B{f}:D{f}")
     celda(ws, f"B{f}", etq, bold=total, color=TINTA if total else "000000",
           fondo=FONDO_CARD if total else None)
@@ -502,22 +507,22 @@ for f, etq, formula in pyg:
     if f > 16:
         celda(ws, f"E{f}", f'=IF($F$16>0,F{f}/$F$16,"")', fmt='0.0%;-0.0%;"-"', color=GRIS, size=9,
               fondo=FONDO_CARD if total else None)
-ws.merge_cells("B25:D25")
-celda(ws, "B25", "Margen neto sobre ventas", italic=True, color=GRIS)
-celda(ws, "F25", '=IF(F16>0,F24/F16,"")', fmt=PCT, bold=True)
+ws.merge_cells("B26:D26")
+celda(ws, "B26", "Margen neto sobre ventas", italic=True, color=GRIS)
+celda(ws, "F26", '=IF(F16>0,F25/F16,"")', fmt=PCT, bold=True)
 
 # --- objetivo ---
 seccion(ws, "H15:M15", "CAMINO A 10.000 €/MES")
 obj = [
     (16, "Objetivo de beneficio neto mensual", "=OBJETIVO_MES", EUR0),
-    (17, "Beneficio neto por día (periodo)", "=F24/I3", EUR),
+    (17, "Beneficio neto por día (periodo)", "=F25/I3", EUR),
     (18, "Ritmo a 30 días", "=L17*30", EUR0),
     (19, "% del objetivo", '=IF(L16>0,L18/L16,"")', PCT),
     (20, "Beneficio esperado por pedido (antes de Ads)", "=BEN_PEDIDO", EUR),
     (21, "CPA actual", "=B10", EUR),
     (22, "Margen por pedido después de Ads", '=IF(ISNUMBER(L21),L20-L21*(1+RECARGO_ADS),"")', EUR),
     (23, "Pedidos/día necesarios para el objetivo",
-     '=IF(NOT(ISNUMBER(L22)),"",IF(L22<=0,"Baja el CPA",ROUNDUP((L16-F23/I3*30)/30/L22,0)))', ENTERO),
+     '=IF(NOT(ISNUMBER(L22)),"",IF(L22<=0,"Baja el CPA",ROUNDUP((L16-F24/I3*30)/30/L22,0)))', ENTERO),
     (24, "Inversión diaria en Ads a ese CPA", '=IF(ISNUMBER(L23),L23*L21,"")', EUR0),
 ]
 for f, etq, formula, fmt in obj:

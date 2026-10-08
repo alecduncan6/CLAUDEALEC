@@ -82,7 +82,7 @@ Lo normal es que lo suba él mismo en la pestaña Incidencias del dashboard. Si 
 ## Cuando Alec solo dice "hoy X pack 1, Y pack 2"
 
 `get dias/<fecha>` y `set` con `p1`/`p2` nuevos y el gasto de Meta, conservando el resto. Responde con pedidos,
-gasto, CPA vs CPA break-even (~11,8 € con los datos actuales), beneficio proyectado y semáforo
+gasto, CPA vs CPA break-even (~10,8 € con los datos actuales), beneficio proyectado y semáforo
 (ESCALAR ≤ 75% del break-even, VIGILAR ≤ 100%, CORTAR > 100%). Recuérdale las incidencias pendientes.
 
 ## Regenerar el Excel con los datos al día
@@ -115,6 +115,10 @@ gasto, CPA vs CPA break-even (~11,8 € con los datos actuales), beneficio proye
 - IVA: se repercute el 21% del PVP y solo se deduce el IVA del producto. El envío viene "sin IVA" y el almacén
   no le suma IVA → no hay IVA de envío que deducir (`logistica_con_iva = false`).
 - Devuelto = −8,06 € (supuesto: se pierde el envío, el producto vuelve).
+- Comisión del almacén (Dropi): `comision_pedido` = 0,95 € por pedido confirmado, se entregue o se devuelva
+  (no va en el "coste total pedido" del export, así que no entra en la liquidación; se resta aparte en cobrado y proyectado).
+- Dropi adelanta un préstamo de 600 €: el "Disponible" de su panel lo incluye, no es dinero propio.
 - Proyección: pendientes (incluidas incidencias) × tasa de entrega (80% estimada hasta 30 pedidos resueltos; luego la real).
 
-Supuestos pendientes de confirmar con Alec: coste real de una devolución, si Meta le cobra IVA (ROI), si factura con IVA.
+Supuestos pendientes de confirmar con Alec: coste real de una devolución, si Meta le cobra IVA (ROI), si factura con IVA,
+si la comisión de 0,95 € lleva IVA. Excel de creativos: `cpa_be`/`ben_pedido` de `biblioteca.json` = break-even del dashboard.

@@ -1,6 +1,7 @@
 {
   "config": {
     "aplicar_iva": true,
+    "comision_pedido": 0.95,
     "coste_devolucion": 8.06,
     "excluir_pedidos": [
       "3503014"
@@ -32,7 +33,7 @@
   },
   "dias": [
     {
-      "actualizado": "2026-10-07T12:00:00Z",
+      "actualizado": "2026-10-07T13:36:32.828Z",
       "ads": 67.67,
       "cancelados": 0,
       "carritos": 0,
@@ -47,29 +48,55 @@
       "inc": 3,
       "nota": "Arranca campaña CeraLux ES - Test 3 ángulos",
       "p1": 5,
-      "p2": 4
+      "p2": 4,
+      "shopify_ids": [
+        "13939856507257",
+        "13940152009081",
+        "13940271186297",
+        "13940283933049",
+        "13940295795065",
+        "13941140488569",
+        "13941202026873",
+        "13941776875897",
+        "13943120658809",
+        "13943765172601"
+      ],
+      "shopify_test": [
+        "13939856507257"
+      ]
     },
     {
-      "actualizado": "2026-10-07T12:00:00Z",
-      "ads": 70.13,
+      "actualizado": "2026-10-08T10:00:00Z",
+      "ads": 70.18,
       "cancelados": 0,
       "carritos": 0,
       "dev1": 0,
       "dev2": 0,
-      "ent1": 1,
+      "ent1": 2,
       "ent2": 0,
-      "envio_ent": 8.06,
-      "envio_pend": 51.96,
+      "envio_ent": 15.26,
+      "envio_pend": 44.76,
       "fecha": "2026-10-06",
       "fuente": "export almacén 07/10",
       "inc": 0,
       "nota": "",
       "p1": 7,
-      "p2": 1
+      "p2": 1,
+      "shopify_ids": [
+        "13945038438777",
+        "13945048760697",
+        "13945223709049",
+        "13945735020921",
+        "13946198065529",
+        "13946429276537",
+        "13946436780409",
+        "13947139981689"
+      ],
+      "shopify_test": []
     },
     {
-      "actualizado": "2026-10-07T12:00:00Z",
-      "ads": 18.14,
+      "actualizado": "2026-10-08T10:00:00Z",
+      "ads": 47.41,
       "cancelados": 0,
       "carritos": 1,
       "dev1": 0,
@@ -81,9 +108,15 @@
       "fecha": "2026-10-07",
       "fuente": "export almacén 07/10",
       "inc": 0,
-      "nota": "Día en curso (gasto parcial)",
+      "nota": "",
       "p1": 2,
-      "p2": 0
+      "p2": 0,
+      "shopify_ids": [
+        "13947253621113",
+        "13947343602041",
+        "1694785241465"
+      ],
+      "shopify_test": []
     }
   ],
   "gastos": []
