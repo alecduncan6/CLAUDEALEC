@@ -17,7 +17,8 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
       - `ent*`/`dev*`: de ESOS pedidos, entregados / devueltos por pack. Pendientes = el resto.
       - `inc`: cuántos de los pendientes están en incidencia.
       - `envio_ent`/`envio_pend`: suma del "Coste de envío (sin IVA)" real de entregados / pendientes.
-        Sin ellos se usa la tarifa estándar de config (8,06 €).
+        Sin ellos se usa la tarifa estándar de config (8,06 €). Los pedidos que aún no han salido vienen con envío 0 en el
+        export: los importadores (página y `importar_almacen.py --envio-std`) les ponen la tarifa estándar.
       - `shopify_ids`: IDs de Shopify (legacyResourceId) de TODAS las filas del Excel del almacén ese día
         (incluidos tests y cancelados). `shopify_test`: los de pedidos de test. Sirven para no contar dos veces.
     - `gastos/<id>`: `{fecha, concepto, categoria, importe}`.

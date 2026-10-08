@@ -10,7 +10,8 @@ Solo saca totales por día (nunca nombres, teléfonos ni direcciones):
     dev1, dev2        devueltos de cada pack
     inc               en incidencia (siguen pendientes hasta que pasen a Devuelto)
     envio_ent         coste de envío real (sin IVA) de los entregados
-    envio_pend        coste de envío real (sin IVA) de los pendientes (preparado, en ruta, incidencia)
+    envio_pend        coste de envío real (sin IVA) de los pendientes (preparado, en ruta, incidencia);
+                      los que aún no tienen envío en el export (0) cuentan con --envio-std
     shopify_ids       IDs de Shopify de todas las filas del día (para no contar dos veces los pedidos de Shopify)
     carritos          carritos abandonados (no son pedidos)
     cancelados        rechazados / cancelados antes de enviarse
@@ -35,6 +36,8 @@ ap.add_argument("--excluir", default="", help="IDs de pedido a ignorar (tests), 
 ap.add_argument("--json", help="guardar el resumen en este fichero")
 ap.add_argument("--incidencias", help="guardar los pedidos por estado para el tablero de incidencias "
                                       "(lleva nombre y teléfono: solo al scratchpad, nunca al repo)")
+ap.add_argument("--envio-std", type=float, default=8.06,
+                help="envío (sin IVA) para los pedidos que aún no tienen coste de envío en el export (salen a 0)")
 args = ap.parse_args()
 excluir = {s.strip() for s in args.excluir.split(",") if s.strip()}
 
@@ -96,7 +99,8 @@ for f in filas:
         "ciudad": str(f[col["CIUDAD"]] or "").strip() if "CIUDAD" in col else "",
         "motivo": str(f[col["Motivo incidencia (si tiene)"]] or "").strip() if "Motivo incidencia (si tiene)" in col else "",
     }
-    envio = float(f[col["COSTE DE ENVÍO (SIN IVA)"]] or 0)
+    # hasta que no sale del almacén el envío viene a 0: se usa la tarifa estándar para no inflar el beneficio
+    envio = float(f[col["COSTE DE ENVÍO (SIN IVA)"]] or 0) or args.envio_std
     dia[f"p{pack}"] += 1
     if estado in ENTREGADO:
         dia[f"ent{pack}"] += 1

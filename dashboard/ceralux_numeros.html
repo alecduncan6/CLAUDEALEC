@@ -1427,7 +1427,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
       const pack = Number(r["UD"]) === 1 ? 1 : 2;
       vistos[id] = { estado: estadoTxt, r, fecha, pack };
       if (CANCELADO.includes(estado)) { d.cancelados++; continue; }
-      const envio = num(r["COSTE DE ENVIO SIN IVA"]);
+      // hasta que no sale del almacén el envío viene a 0: se usa la tarifa estándar para no inflar el beneficio
+      const envio = num(r["COSTE DE ENVIO SIN IVA"]) || num(state.cfg["p" + pack + "_logistica"]);
       d["p" + pack]++; pedidos++;
       if (estado === "entregado") { d["ent" + pack]++; d.envio_ent += envio; }
       else if (DEVUELTO.includes(estado)) d["dev" + pack]++;
