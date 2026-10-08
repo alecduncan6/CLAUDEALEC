@@ -120,7 +120,7 @@ gasto, CPA vs CPA break-even (~10,8 € con los datos actuales), beneficio proye
 - Liquidación almacén = PVP − coste del pedido de lo entregado (lo que paga el almacén).
 - IVA: se repercute el 21% del PVP y solo se deduce el IVA del producto. El envío viene "sin IVA" y el almacén
   no le suma IVA → no hay IVA de envío que deducir (`logistica_con_iva = false`).
-- Devuelto = −8,06 € (supuesto: se pierde el envío, el producto vuelve).
+- Devuelto = −8,06 € (confirmado con Dropi el 08/10: el envío inicial ya incluye la vuelta; se pierde el envío y el producto vuelve).
 - Comisión del almacén (Dropi): `comision_pedido` = 0,95 € por pedido confirmado, se entregue o se devuelva
   (no va en el "coste total pedido" del export, así que no entra en la liquidación; se resta aparte en cobrado y proyectado).
 - Dropi adelanta un préstamo de 600 €: el "Disponible" de su panel lo incluye, no es dinero propio.
@@ -128,5 +128,5 @@ gasto, CPA vs CPA break-even (~10,8 € con los datos actuales), beneficio proye
   Pendiente que Alec confirme si son reales (entonces `fecha_inicio` = 2026-10-03 y exportar desde el 03/10) o pruebas.
 - Proyección: pendientes (incluidas incidencias) × tasa de entrega (80% estimada hasta 30 pedidos resueltos; luego la real).
 
-Supuestos pendientes de confirmar con Alec: coste real de una devolución, si Meta le cobra IVA (ROI), si factura con IVA,
-si la comisión de 0,95 € lleva IVA. Excel de creativos: `cpa_be`/`ben_pedido` de `biblioteca.json` = break-even del dashboard.
+Supuestos pendientes de confirmar con Alec: si Meta le cobra IVA (ROI), si factura con IVA, si la comisión de 0,95 € lleva IVA,
+si Dropi le devuelve el coste del producto cuando un devuelto vuelve al almacén. Excel de creativos: `cpa_be`/`ben_pedido` de `biblioteca.json` = break-even del dashboard.

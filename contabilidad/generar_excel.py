@@ -181,7 +181,7 @@ params = [
     (21, "¿El envío lleva IVA deducible?", "SÍ" if cfg.get("logistica_con_iva") else "NO", None,
      "NO: el export dice 'Coste de envío (SIN IVA)' y el coste total no le suma IVA, así que no hay IVA que deducir."),
     (22, "Coste por pedido devuelto", cfg["coste_devolucion"], EUR,
-     "SUPUESTO: pierdes el envío (8,06 €) y el producto vuelve al stock. Confírmalo con tu almacén."),
+     "Confirmado con Dropi: el envío de ida ya incluye la vuelta, así que pierdes el envío (8,06 €) y el producto vuelve."),
     (23, "Recargo sobre el gasto en Ads", cfg["recargo_ads"], PCT,
      "0% si Meta factura sin IVA (alta en ROI) o lo deduces. 21% si te cobran IVA y no lo recuperas."),
     (24, "Tasa de entrega estimada", cfg["tasa_entrega_estimada"], PCT,
