@@ -24,11 +24,20 @@ from collections import defaultdict
 
 from openpyxl import load_workbook
 
+# El almacén añade sufijos al estado ("Rehusado - en tránsito", "Confirmado - Pendiente de preparación"): se compara
+# por prefijo, igual que la página. "Rehusado" = el cliente lo rechazó en la puerta y vuelve: es devolución.
+# "Rechazado" = anulado antes de salir del almacén: no es pedido.
 ENTREGADO = {"entregado"}
-DEVUELTO = {"devuelto", "devolución", "devolucion"}
+DEVUELTO = {"devuelto", "devolución", "devolucion", "rehusado"}
 INCIDENCIA = {"incidencia"}
-PENDIENTE = {"confirmado", "pedido confirmado", "preparado", "en ruta", "en reparto", "pendiente"}
+PENDIENTE = {"confirmado", "pedido confirmado", "pedido nuevo", "preparado", "enviado", "en ruta", "en reparto",
+             "en tránsito", "en transito", "pendiente"}
 CANCELADO = {"rechazado", "cancelado", "anulado"}
+
+
+def es(lista, e):
+    return any(e == k or e.startswith(k + " ") or e.startswith(k + "-") for k in lista)
+
 
 ap = argparse.ArgumentParser()
 ap.add_argument("export")
@@ -81,10 +90,10 @@ for f in filas:
         continue
     # "¿Es carrito?" = 1 marca el origen; si el equipo lo recupera, Dropi le pone estado de pedido y cuenta como venta
     es_carrito = str(f[col["¿Es carrito?"]]).strip() == "1"
-    if "carrito" in estado or (es_carrito and estado in CANCELADO):
+    if "carrito" in estado or (es_carrito and es(CANCELADO, estado)):
         dia["carritos"] += 1
         continue
-    if estado in CANCELADO:
+    if es(CANCELADO, estado):
         dia["cancelados"] += 1
         continue
     uds = int(f[col["UD"]] or 0)
@@ -106,15 +115,15 @@ for f in filas:
     dia[f"p{pack}"] += 1
     if es_carrito:
         dia["recuperados"] += 1
-    if estado in ENTREGADO:
+    if es(ENTREGADO, estado):
         dia[f"ent{pack}"] += 1
         dia["envio_ent"] += envio
-    elif estado in DEVUELTO:
+    elif es(DEVUELTO, estado):
         dia[f"dev{pack}"] += 1
     else:
-        if estado in INCIDENCIA:
+        if es(INCIDENCIA, estado):
             dia["inc"] += 1
-        elif estado not in PENDIENTE:
+        elif not es(PENDIENTE, estado):
             avisos.append(f"pedido {pid}: estado '{estado}' desconocido (se cuenta como pendiente)")
         dia["envio_pend"] += envio
 

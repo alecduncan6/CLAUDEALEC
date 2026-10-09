@@ -4,6 +4,9 @@ Marca de e-commerce de Alec: spray reparación de arañazos 120ml, venta contra 
 Ads en Meta. Almacén COD con estados: Preparado → En ruta → Entregado / Devuelto, más INCIDENCIA
 (no se pudo entregar a la primera; sigue pendiente, NO es venta perdida hasta que pasa a Devuelto),
 Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
+Los estados llevan sufijos y se comparan por prefijo (página y `importar_almacen.py` igual): "Rehusado - en tránsito" = el
+cliente lo rechazó en la puerta → Devuelto; "Rechazado" = anulado antes de salir → no es pedido; "Pedido nuevo",
+"Confirmado - Pendiente de preparación", "Enviado", "En ruta"… → pendiente.
 
 ## Piezas
 
@@ -48,6 +51,9 @@ Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
     Fecha = día local de `createdAt`. Pack = 1 unidad → Pack 1; 2 → Pack 2; 3 o más → Pack 3. Los pedidos de Shopify cuyo ID no está
     en ningún `shopify_ids` se suman al día como pendientes ("aún no en almacén"); los de `shopify_test` se ignoran.
     Tabla "Cuadre": Shopify vs Meta (píxel) vs almacén por día y % que registra Meta. El #1158 es el pedido de test.
+  - Pestañas **Embudo** (mismos datos de Meta que Creatividades: impresión → clic → carga → carrito → compra, dinero
+    perdido por escalón y palancas a testear) y **Horas** (pedidos de Shopify por hora/franja/día de la semana + gasto
+    horario de Meta si lo devuelve; no repartir presupuesto por franjas hasta ~300 pedidos). Solo dueño.
   - Pestaña **Creatividades** (solo dueño): lee de Meta en directo `ads_get_ad_entities` a nivel `ad` (gasto, impresiones,
     clics, visitas, compras, vídeo al 25%, ThruPlays, tiempo medio) y filtra por `meta_filtro_campana`.
     Corrige las compras de Meta con pedidos reales del periodo (×pedidos/compras), calcula CPA real y beneficio estimado

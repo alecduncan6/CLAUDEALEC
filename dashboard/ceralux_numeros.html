@@ -216,6 +216,59 @@ details.panel[open] > summary { margin-bottom: 14px; }
 .chip[data-k="acordada"] { background: var(--good-soft); color: var(--good); }
 .cerrada { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .cerrada:last-child { border-bottom: 0; }
+/* horas */
+.hwrap { overflow-x: auto; }
+.hmap { display: grid; grid-template-columns: 38px repeat(24, minmax(0, 1fr)); gap: 2px; min-width: 580px; }
+.hmap .lbl { font-size: 11px; color: var(--muted); display: flex; align-items: center; }
+.hmap .hh { font-size: 10px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.hmap .cel { aspect-ratio: 1 / 1; border-radius: 2px; background: var(--soft); }
+.hmap .cel[data-n="1"] { background: color-mix(in oklab, var(--accent) 22%, var(--surface)); }
+.hmap .cel[data-n="2"] { background: color-mix(in oklab, var(--accent) 42%, var(--surface)); }
+.hmap .cel[data-n="3"] { background: color-mix(in oklab, var(--accent) 62%, var(--surface)); }
+.hmap .cel[data-n="4"] { background: color-mix(in oklab, var(--accent) 81%, var(--surface)); }
+.hmap .cel[data-n="5"] { background: var(--accent); }
+#hBarras svg { min-width: 540px; }
+.escala { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.escala i { width: 16px; height: 10px; border-radius: 2px; display: inline-block; background: var(--soft); }
+.escala i[data-n="1"] { background: color-mix(in oklab, var(--accent) 22%, var(--surface)); }
+.escala i[data-n="2"] { background: color-mix(in oklab, var(--accent) 42%, var(--surface)); }
+.escala i[data-n="3"] { background: color-mix(in oklab, var(--accent) 62%, var(--surface)); }
+.escala i[data-n="4"] { background: color-mix(in oklab, var(--accent) 81%, var(--surface)); }
+.escala i[data-n="5"] { background: var(--accent); }
+.franjas { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.franjas .franja:last-child { grid-column: 1 / -1; }
+@media (min-width: 760px) { .franjas { grid-template-columns: repeat(5, minmax(0, 1fr)); } .franjas .franja:last-child { grid-column: auto; } }
+.franja { background: var(--surface); padding: 13px 14px; display: grid; gap: 2px; }
+.franja .l { font-size: 12px; color: var(--muted); }
+.franja .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.franja .s { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.franja[data-top="1"] .v { color: var(--good); }
+.fiab { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.fiab .barra { flex: 1 1 180px; height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; min-width: 120px; }
+.fiab .barra > div { height: 100%; background: var(--accent); border-radius: 4px; }
+/* embudo */
+.emb { display: grid; }
+.epaso { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 14px; }
+.epaso .n { font-size: 15px; font-weight: 600; }
+.epaso .v { font-family: var(--display); font-stretch: 112%; font-weight: 800; font-size: 26px; font-variant-numeric: tabular-nums; }
+.esalto { display: grid; gap: 7px; margin: 10px 0 10px 9px; padding: 0 0 12px 18px; border-left: 2px solid var(--line); }
+.ebar { position: relative; height: 10px; border-radius: 5px; background: var(--soft); }
+.ebar > div { max-width: 100%; }
+.ebar::after { content: ""; position: absolute; top: -3px; bottom: -3px; left: 75%; width: 2px; background: var(--ink); opacity: .35; border-radius: 1px; }
+.ebar > div { height: 100%; border-radius: 5px; background: var(--good); }
+.esalto .leyenda { font-size: 11px; color: var(--muted); text-align: right; margin-top: -3px; }
+.esalto[data-k="warn"] .ebar > div { background: var(--warn); }
+.esalto[data-k="bad"] .ebar > div { background: var(--bad); }
+.esalto .m { display: flex; flex-wrap: wrap; gap: 3px 14px; font-size: 13px; color: var(--muted); }
+.esalto .m b { color: var(--ink); font-weight: 600; }
+.esalto .m .fuga { color: var(--bad); font-weight: 700; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.pcard[data-top="1"] { border-color: var(--accent); }
+.pcard h3 { margin: 0; font-size: 17px; font-weight: 700; font-family: var(--display); font-stretch: 108%; }
+.pcard ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: 14px; }
+.pcard .gana { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 13px; color: var(--muted); }
+.pcard .gana b { color: var(--good); font-weight: 700; font-variant-numeric: tabular-nums; }
+.pord { font-family: var(--display); font-stretch: 112%; font-weight: 900; font-size: 15px; color: var(--muted); }
 @media (prefers-reduced-motion: no-preference) { .bar > div, .meter .cur { transition: all .4s ease; } }
 </style>
 
@@ -234,6 +287,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
   <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones">
     <button type="button" role="tab" id="tNum" data-v="num" aria-selected="true">Números</button>
     <button type="button" role="tab" id="tCre" data-v="cre" aria-selected="false">Creatividades</button>
+    <button type="button" role="tab" id="tEmb" data-v="emb" aria-selected="false">Embudo</button>
+    <button type="button" role="tab" id="tHor" data-v="hor" aria-selected="false">Horas</button>
     <button type="button" role="tab" id="tInc" data-v="inc" aria-selected="false">Incidencias <span class="badge" id="incBadge" hidden>0</span></button>
   </nav>
 
@@ -435,6 +490,109 @@ details.panel[open] > summary { margin-bottom: 14px; }
     </section>
   </div>
 
+  <div class="view" id="vEmb" hidden>
+    <nav class="periodos" aria-label="Periodo del embudo">
+      <div class="seg" id="segEmb">
+        <button type="button" data-p="hoy">Hoy</button>
+        <button type="button" data-p="ayer">Ayer</button>
+        <button type="button" data-p="7d">7 días</button>
+        <button type="button" data-p="mes">Este mes</button>
+        <button type="button" data-p="todo">Desde el inicio</button>
+        <div class="dia" id="diaWrapEmb"><span aria-hidden="true">Día</span><input type="date" id="diaSelEmb" aria-label="Ver el embudo de un día concreto"></div>
+      </div>
+    </nav>
+    <div class="avisos" id="eAvisos"></div>
+
+    <section class="hero">
+      <div class="panel">
+        <h2 id="eHeroLabel">El escalón que más dinero te cuesta</h2>
+        <div class="big num" id="eHeroNum">—</div>
+        <div class="split" id="eHeroSplit"><span>Leyendo tus anuncios de Meta…</span></div>
+      </div>
+      <div class="panel">
+        <h2>Si lo arreglas</h2>
+        <div class="unit" id="eHeroSi"></div>
+        <p class="small muted" id="eHeroTxt" style="margin:12px 0 0"></p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>De la impresión a la compra</h2>
+      <div class="emb" id="eEmbudo"></div>
+      <p class="small muted" id="eEmbudoTxt" style="margin:14px 0 0"></p>
+    </section>
+
+    <section>
+      <h2>Palancas que testear, de más a menos dinero</h2>
+      <div class="cards" id="ePalancas"></div>
+      <p class="small muted" id="ePalancasTxt" style="margin:12px 0 0"></p>
+    </section>
+
+    <section>
+      <h2>Dónde pierde cada anuncio</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Anuncio</th><th>Gasto</th><th>Gancho</th><th>CTR</th><th>Llega</th><th>Carrito</th><th>Compra</th><th>Dónde pierde</th></tr></thead>
+          <tbody id="eAds"><tr><td colspan="8" class="empty">Leyendo…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="small muted" id="eAdsTxt" style="margin:10px 0 0">Si todos los anuncios pierden en el mismo escalón, el problema es la tienda. Si solo pierden algunos, es el creativo o el ángulo.</p>
+    </section>
+  </div>
+
+  <div class="view" id="vHor" hidden>
+    <nav class="periodos" aria-label="Periodo de horas">
+      <div class="seg" id="segHor">
+        <button type="button" data-p="hoy">Hoy</button>
+        <button type="button" data-p="ayer">Ayer</button>
+        <button type="button" data-p="7d">7 días</button>
+        <button type="button" data-p="mes">Este mes</button>
+        <button type="button" data-p="todo">Desde el inicio</button>
+        <div class="dia" id="diaWrapHor"><span aria-hidden="true">Día</span><input type="date" id="diaSelHor" aria-label="Ver las horas de un día concreto"></div>
+      </div>
+    </nav>
+
+    <section class="panel">
+      <h2>¿Hay suficientes datos para repartir el presupuesto por franjas?</h2>
+      <div class="fiab">
+        <div class="big num" id="hFiabNum" style="margin:0;font-size:38px">—</div>
+        <div class="barra"><div id="hFiabBar" style="width:0%"></div></div>
+        <span class="chip" id="hFiabChip" data-k="">—</span>
+      </div>
+      <p class="small muted" id="hFiabTxt" style="margin:12px 0 0">Para comparar seis franjas de cuatro horas con fiabilidad hacen falta unos 50 pedidos por franja, es decir ~300 en total. Por debajo de eso las diferencias que veas son ruido, no patrón.</p>
+    </section>
+
+    <section>
+      <h2>Franjas del día</h2>
+      <div class="franjas" id="hFranjas"></div>
+      <p class="small muted" id="hFranjasTxt" style="margin:10px 0 0"></p>
+    </section>
+
+    <section class="panel chart">
+      <h2>Pedidos por hora</h2>
+      <div class="hwrap"><div id="hBarras"></div></div>
+      <p class="small muted" id="hBarrasTxt" style="margin:8px 0 0"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Mapa hora × día de la semana</h2>
+      <div class="hwrap"><div class="hmap" id="hMapa"></div></div>
+      <div class="escala"><span>Menos</span><i data-n="0"></i><i data-n="1"></i><i data-n="2"></i><i data-n="3"></i><i data-n="4"></i><i data-n="5"></i><span>Más pedidos</span></div>
+      <p class="small muted" id="hMapaTxt" style="margin:12px 0 0"></p>
+    </section>
+
+    <section>
+      <h2>Detalle por hora</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Hora</th><th>Pedidos</th><th>% del total</th><th>Facturado</th><th>Ticket</th><th>Gasto Ads</th><th>CPA</th></tr></thead>
+          <tbody id="hTabla"><tr><td colspan="7" class="empty">Leyendo Shopify…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="small muted" id="hTablaTxt" style="margin:10px 0 0"></p>
+    </section>
+  </div>
+
   <div class="view" id="vInc" hidden>
     <section class="panel">
       <h2>Incidencias de entrega</h2>
@@ -523,6 +681,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     rol: "owner", user: null, uid: null, alias: lsGet("ceralux.alias") || "",
     incid: {}, incidLoaded: false, acciones: [], ultimaImport: null, caja: null,
     periodoCre: lsGet("ceralux.periodoCre") || "todo", cre: { status: "idle", msg: "", ads: [], at: null },
+    periodoHor: lsGet("ceralux.periodoHor") || "todo", hor: { status: "idle", msg: "", gasto: null, at: null },
     vista: location.hash === "#incidencias" ? "inc" : (lsGet("ceralux.vista") || "num")
   };
 
@@ -1047,10 +1206,12 @@ details.panel[open] > summary { margin-bottom: 14px; }
       if (x.test) continue;
       const f = iso(new Date(x.createdAt));
       if (f < desde) continue;
-      (byDate[f] ||= []).push({ id: str(x.legacyResourceId), pack: packDe(Number(x.subtotalLineItemsQuantity) || 1), cancelada: !!x.cancelledAt });
+      const cuando = new Date(x.createdAt);
+      (byDate[f] ||= []).push({ id: str(x.legacyResourceId), pack: packDe(Number(x.subtotalLineItemsQuantity) || 1), cancelada: !!x.cancelledAt,
+        h: cuando.getHours(), dow: cuando.getDay() });
     }
     state.shop = { byDate, desde }; state.shopStatus = "ok"; state.shopMsg = "";
-    render(); if (state.vista === "cre") renderCre();
+    render(); if (state.vista === "cre") pintaCre(); if (state.vista === "hor") renderHoras();
   }
   async function startShop() {
     const cfg = state.cfg;
@@ -1133,12 +1294,13 @@ details.panel[open] > summary { margin-bottom: 14px; }
       if (s.exists) state.cfgExiste = true;
       state.cfgLoaded = true;
       llenarCfg(); render(); startMeta(); startShop();
-      if (state.vista === "cre") startCre();
+      if (state.vista === "cre" || state.vista === "emb") startCre();
+      if (state.vista === "hor") startHoras();
     }, fallo);
     db.collection("dias").onSnapshot((s) => {
       const m = {}; for (const d of s.docs) m[d.id] = d.data();
       state.dias = m; state.diasLoaded = true; render();
-      if (state.vista === "cre") renderCre();
+      if (state.vista === "cre") pintaCre();
     }, fallo);
     db.collection("caja").onSnapshot((s) => {
       const docs = s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((d) => d.en).sort((a, b) => String(b.en).localeCompare(String(a.en)));
@@ -1159,13 +1321,14 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
   /* ---------- vistas y rol ---------- */
   function setVista(v) {
-    state.vista = ["num", "cre", "inc"].includes(v) ? v : "num";
+    state.vista = ["num", "cre", "emb", "hor", "inc"].includes(v) ? v : "num";
     lsSet("ceralux.vista", state.vista);
-    for (const [k, vid, tid] of [["num", "vNum", "tNum"], ["cre", "vCre", "tCre"], ["inc", "vInc", "tInc"]]) {
+    for (const [k, vid, tid] of [["num", "vNum", "tNum"], ["cre", "vCre", "tCre"], ["emb", "vEmb", "tEmb"], ["hor", "vHor", "tHor"], ["inc", "vInc", "tInc"]]) {
       $(vid).hidden = state.vista !== k;
       $(tid).setAttribute("aria-selected", String(state.vista === k));
     }
-    if (state.vista === "cre") startCre();
+    if (state.vista === "cre" || state.vista === "emb") startCre();
+    if (state.vista === "hor") startHoras();
   }
   function aplicarRol() {
     const equipo = state.rol === "equipo";
@@ -1187,16 +1350,16 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
   async function startCre() {
     const cfg = state.cfg;
-    if (state.rol !== "owner" || !cfg.meta_ad_account_id) { renderCre(); return; }
+    if (state.rol !== "owner" || !cfg.meta_ad_account_id) { pintaCre(); return; }
     const [since, until] = rango(state.periodoCre);
     const key = [cfg.meta_ad_account_id, since, until].join("|");
-    if (key === creKey) { renderCre(); return; }
+    if (key === creKey) { pintaCre(); return; }
     creKey = key;
     mcpNs = mcpNs || await window.claude?.use?.("mcp");
-    if (!mcpNs) { state.cre = { ...state.cre, status: "bad", msg: "Esta vista no puede leer Meta Ads. Ábrela desde claude.ai." }; renderCre(); return; }
+    if (!mcpNs) { state.cre = { ...state.cre, status: "bad", msg: "Esta vista no puede leer Meta Ads. Ábrela desde claude.ai." }; pintaCre(); return; }
     if (creUnsub) creUnsub();
     state.cre = { status: "loading", msg: "", ads: [], at: null };
-    renderCre();
+    pintaCre();
     const input = { ad_account_id: String(cfg.meta_ad_account_id), level: "ad", fields: CRE_FIELDS,
       time_range: JSON.stringify({ since, until }), limit: 500, include_additional_context: false,
       client_conversation_id: convId, advertiser_request: "ver el rendimiento real de cada creativo y saber cuales replicar" };
@@ -1205,11 +1368,11 @@ details.panel[open] > summary { margin-bottom: 14px; }
         const code = ev.error?.code || "upstream_error";
         const transitorio = ["server_unavailable", "rate_limited", "upstream_error"].includes(code);
         state.cre = { ...state.cre, status: transitorio && state.cre.ads.length ? "ok" : "bad", ads: transitorio ? state.cre.ads : [], msg: textoMeta(ev.error).replace(" · uso el gasto guardado", "") };
-        renderCre(); return;
+        pintaCre(); return;
       }
       let p = ev.result?.payload, rows = null;
       try { if (typeof p === "string") p = JSON.parse(p); rows = typeof p?.ad_entities === "string" ? JSON.parse(p.ad_entities) : p?.ad_entities; } catch { rows = null; }
-      if (!Array.isArray(rows)) { state.cre = { status: "bad", msg: "Respuesta de Meta no reconocida.", ads: [], at: null }; renderCre(); return; }
+      if (!Array.isArray(rows)) { state.cre = { status: "bad", msg: "Respuesta de Meta no reconocida.", ads: [], at: null }; pintaCre(); return; }
       const filtro = str(state.cfg.meta_filtro_campana).toLowerCase();
       const ads = rows.map((r) => ({
         id: str(r.id), nombre: str(r.name), angulo: str(r.adset_name) || "Sin conjunto", campana: str(r.campaign_name), estado: str(r.effective_status),
@@ -1218,7 +1381,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
         p25: val(r.video_p25_watched_actions), thru: val(r.video_thruplay_watched_actions), tmedio: val(r.video_avg_time_watched_actions), freq: val(r.frequency)
       })).filter((a) => (!filtro || a.campana.toLowerCase().includes(filtro)) && (a.gasto > 0 || a.impr > 0));
       state.cre = { status: "ok", msg: "", ads, at: ev.result?.cache?.storedAt || Date.now() };
-      renderCre();
+      pintaCre();
     }, { refetchInterval: 10 * 60 * 1000, cache: { staleTime: 2 * 60 * 1000 } });
   }
 
@@ -1250,6 +1413,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
     return out;
   }
   const marca = (x, m, fmt) => x == null ? "—" : `<b class="${m && x < 0.7 * m ? "baja" : m && x >= 1.3 * m ? "alta" : ""}">${fmt(x)}</b>`;
+
+  function pintaCre() { renderCre(); renderEmbudo(); }
 
   function renderCre() {
     const cKpis = $("cKpis"), decis = $("cDecis");
@@ -1336,6 +1501,391 @@ details.panel[open] > summary { margin-bottom: 14px; }
     state.periodoCre = b.dataset.p; lsSet("ceralux.periodoCre", state.periodoCre); startCre();
   });
   elegirDia("diaSelCre", (p) => { state.periodoCre = p; startCre(); });
+
+  /* ---------- embudo ---------- */
+  // Mismos datos que Creatividades (una sola lectura de Meta) vistos como recorrido del cliente.
+  // Lo que convierte esto en decisiones: el dinero perdido en cada escalón y qué testear en cada uno.
+  // Las "zonas sanas" son reglas de oro de COD en España, no leyes: sirven para priorizar, no para puntuar.
+  const PALANCAS = {
+    creativo: { t: "El anuncio no hace clicar", q: [
+      "Probar otros 3 primeros segundos con el mismo cuerpo de vídeo",
+      "Poner la oferta y el precio en el texto del anuncio",
+      "Primer frame con el daño ya visible, sin introducción"] },
+    velocidad: { t: "Pagas el clic y la tienda no llega a cargar", q: [
+      "EasySell → Settings → Visibility → ocultar el botón «Comprar ahora»",
+      "Reexportar las imágenes grandes a la mitad de ancho",
+      "Desinstalar las apps que no uses",
+      "Objetivo: menos de 60 peticiones y menos de 300 KB"] },
+    oferta: { t: "Llegan, miran y no añaden", q: [
+      "Pack de 2 preseleccionado por defecto",
+      "Subir el antes/después por encima del botón de compra",
+      "Prueba social pegada al precio",
+      "Duplicar el ad set con un precio 2-3 € más bajo y dejar que la CBO decida"] },
+    carrito: { t: "Añaden al carrito y no abren el formulario", q: [
+      "Que el botón lleve directo al formulario, sin paso intermedio",
+      "Gastos de envío visibles antes de pulsar",
+      "Quitar cualquier campo o elección antes del formulario"] },
+    formulario: { t: "Abren el formulario y no lo terminan", q: [
+      "Menos campos: nombre, teléfono, dirección y poco más",
+      "Activar el autocompletado de direcciones de Google en EasySell",
+      "Recordar junto al botón que se paga al recibir",
+      "Probarlo tú desde el móvil con datos reales"] }
+  };
+
+  function construirEmbudo(T) {
+    // Cada escalón: nombre, cuántos llegan, conversión desde el anterior y zona sana.
+    const pasos = [{ k: "impr", n: "Impresiones", v: T.impr }];
+    pasos.push({ k: "clics", n: "Clics en el enlace", v: T.clics, sano: 0.010, flojo: 0.006, pal: "creativo", dinero: false });
+    pasos.push({ k: "lpv", n: "Llegan a cargar la web", v: T.lpv, sano: 0.70, flojo: 0.55, pal: "velocidad", dinero: true });
+    // EasySell dispara carrito y checkout a la vez: si son el mismo número, es un escalón, no dos.
+    const dosPasos = T.checkout > 0 && Math.abs(T.checkout - T.atc) / Math.max(1, T.atc) > 0.05;
+    pasos.push({ k: "atc", n: "Añaden al carrito", v: T.atc, sano: 0.08, flojo: 0.05, pal: "oferta", dinero: true });
+    if (dosPasos) pasos.push({ k: "ic", n: "Abren el formulario", v: T.checkout, sano: 0.80, flojo: 0.65, pal: "carrito", dinero: true });
+    pasos.push({ k: "compras", n: "Compran", v: T.compras, sano: 0.35, flojo: 0.25, pal: "formulario", dinero: true });
+    for (let i = 1; i < pasos.length; i++) {
+      const p = pasos[i], prev = pasos[i - 1].v;
+      p.r = prev > 0 ? p.v / prev : null;
+      p.estado = p.r == null ? "" : p.r >= p.sano ? "ok" : p.r >= p.flojo ? "warn" : "bad";
+      p.perdidos = Math.max(0, prev - p.v);
+    }
+    return { pasos, dosPasos };
+  }
+
+  function renderEmbudo() {
+    if (state.rol !== "owner") return;
+    for (const b of $("segEmb").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.p === state.periodoCre));
+    pintarDia("diaWrapEmb", "diaSelEmb", state.periodoCre);
+
+    const vacio = (txt) => {
+      $("eHeroNum").textContent = "—"; $("eHeroNum").className = "big num";
+      $("eHeroSplit").innerHTML = `<span>${esc(txt)}</span>`;
+      $("eHeroSi").innerHTML = ""; $("eHeroTxt").textContent = "";
+      $("eEmbudo").innerHTML = `<div class="empty">${esc(txt)}</div>`; $("eEmbudoTxt").textContent = "";
+      $("ePalancas").innerHTML = `<div class="panel empty">${esc(txt)}</div>`; $("ePalancasTxt").textContent = "";
+      $("eAds").innerHTML = `<tr><td colspan="8" class="empty">${esc(txt)}</td></tr>`;
+      $("eAvisos").innerHTML = "";
+    };
+    if (!state.cfgLoaded) return vacio("Cargando…");
+    if (!state.cfg.meta_ad_account_id) return vacio("Falta la cuenta de Meta en Ajustes.");
+    if (state.cre.status === "loading" || state.cre.status === "idle") return vacio("Leyendo tus anuncios de Meta…");
+    if (state.cre.status === "bad") return vacio(state.cre.msg);
+
+    const u = unit(state.cfg), h = historico(), be = breakEven(u, h);
+    const [desde, hasta] = rango(state.periodoCre);
+    const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
+    const ads = state.cre.ads;
+    const T = ads.reduce((t, a) => { for (const k of ["gasto", "impr", "clics", "lpv", "atc", "checkout", "compras", "p25"]) t[k] += a[k]; return t; },
+      { gasto: 0, impr: 0, clics: 0, lpv: 0, atc: 0, checkout: 0, compras: 0, p25: 0 });
+    if (!T.clics) return vacio("Sin clics en este periodo.");
+
+    const { pasos, dosPasos } = construirEmbudo(T);
+    const cpc = T.clics > 0 ? T.gasto / T.clics : 0;
+    const cpaHoy = T.compras > 0 ? T.gasto / T.compras : null;
+
+    /* ---- palancas: qué gano si llevo cada escalón a su zona sana ---- */
+    const TOPE = 3;                                        // no proyectar mejoras de más del triple
+    const palancas = pasos.filter((p) => p.r != null && p.r < p.sano && p.pal).map((p) => {
+      const mult = Math.min(TOPE, p.sano / p.r);
+      const prevV = pasos[pasos.indexOf(p) - 1]?.v ?? 0;
+      const comprasProy = T.compras * mult;
+      const extraMes = (comprasProy - T.compras) * 30 / nDias;
+      return { ...p, mult, comprasProy, extraMes, prevV,
+        eurosMes: extraMes * be.benPedido,
+        cpaNuevo: comprasProy > 0 ? T.gasto / comprasProy : null,
+        fuga: p.dinero ? p.perdidos * cpc : null };
+    }).sort((a, b) => b.eurosMes - a.eurosMes);
+    const top = palancas[0];
+
+    /* ---- héroe ---- */
+    if (top) {
+      $("eHeroNum").textContent = top.fuga != null ? E(top.fuga) : P(top.r);
+      $("eHeroNum").className = "big num neg";
+      const porDia = top.fuga != null ? top.fuga / nDias : null;
+      $("eHeroSplit").innerHTML = `<span><b>${esc(PALANCAS[top.pal].t)}</b></span>`
+        + `<span>${N(top.perdidos)} de ${N(top.prevV)} se quedan aquí</span>`
+        + `<span>${P(top.r)} pasan · sano ${P(top.sano)}</span>`
+        + (porDia != null ? `<span><b>${E(porDia)} al día</b></span>` : "");
+      $("eHeroSi").innerHTML = `
+        <div><div class="small muted">Compras</div><div class="num">${N(Math.round(top.comprasProy))}</div><div class="small muted">hoy ${N(T.compras)}</div></div>
+        <div><div class="small muted">CPA</div><div class="num">${E(top.cpaNuevo)}</div><div class="small muted">hoy ${E(cpaHoy)}</div></div>
+        <div><div class="small muted">Beneficio/mes</div><div class="num" style="color:var(--good)">+${E0(top.eurosMes)}</div><div class="small muted">sin gastar más</div></div>`;
+      $("eHeroTxt").textContent = `Llevando solo este escalón del ${pct.format(top.r)} al ${pct.format(top.sano)}, con el mismo presupuesto. Todo lo que viene después se multiplica igual, por eso arreglar arriba vale más que arreglar abajo.`;
+    } else {
+      $("eHeroNum").textContent = "Sin fugas"; $("eHeroNum").className = "big num pos";
+      $("eHeroSplit").innerHTML = `<span>Todos los escalones están en su zona sana. Para crecer, más presupuesto y más creativos.</span>`;
+      $("eHeroSi").innerHTML = ""; $("eHeroTxt").textContent = "";
+    }
+
+    /* ---- avisos ---- */
+    const av = [];
+    const lpvP = pasos.find((p) => p.k === "lpv");
+    if (lpvP && lpvP.estado === "bad") av.push(["", `Solo el ${pct.format(lpvP.r)} de los clics llega a cargar tu web.`,
+      `Pagas ${eur.format(cpc)} por clic y ${int.format(lpvP.perdidos)} no llegan: ${eur.format(lpvP.perdidos * cpc)} en este periodo. Es un problema de velocidad y afecta a todos los anuncios por igual.`]);
+    if (!dosPasos && T.atc > 0) av.push(["info", "Carrito y formulario son el mismo escalón.",
+      "Tu formulario dispara los dos eventos a la vez, así que el embudo los junta en uno en lugar de enseñarte un 100 % que no significa nada."]);
+    if (T.compras < 20) av.push(["info", `Solo ${N(T.compras)} compras en el periodo.`, "Con pocos datos los escalones de abajo bailan mucho. Prioriza por el escalón de arriba, que se mide con miles de impresiones."]);
+    $("eAvisos").innerHTML = av.map(([c, b, t]) => `<div class="aviso ${c}"><span><b>${esc(b)}</b> ${esc(t)}</span></div>`).join("");
+
+    /* ---- el embudo ---- */
+    let html = "";
+    pasos.forEach((p, i) => {
+      html += `<div class="epaso"><span class="n">${esc(p.n)}</span><span class="v">${N(p.v)}</span></div>`;
+      const sig = pasos[i + 1];
+      if (!sig || sig.r == null) return;
+      // la marca de la barra está en el 75 %: ahí es donde cae un escalón que está justo en su zona sana
+      const ancho = Math.max(1.5, Math.min(100, sig.r / sig.sano * 75));
+      const fuga = sig.dinero ? sig.perdidos * cpc : null;
+      html += `<div class="esalto" data-k="${sig.estado}">
+        <div class="ebar"><div style="width:${ancho.toFixed(1)}%"></div></div>
+        <div class="m"><b>${P(sig.r)}</b> pasan al siguiente<span>zona sana desde ${P(sig.sano)}</span>${sig.dinero ? `<span>${N(sig.perdidos)} se quedan aquí</span>` : ""}${fuga ? `<span class="fuga">−${E(fuga)}</span>` : ""}</div>
+      </div>`;
+    });
+    $("eEmbudo").innerHTML = html;
+    const gancho = T.impr > 0 ? T.p25 / T.impr : null;
+    $("eEmbudoTxt").textContent = `${eur.format(T.gasto)} de gasto · ${int.format(T.clics)} clics a ${eur.format(cpc)} cada uno · CPA ${cpaHoy != null ? eur.format(cpaHoy) : "—"}. `
+      + `El ${gancho != null ? pct.format(gancho) : "—"} de las impresiones ve el 25 % del vídeo. Las barras miden la conversión de un escalón al siguiente, no el tamaño del escalón.`;
+
+    /* ---- palancas ---- */
+    $("ePalancas").innerHTML = palancas.length ? palancas.map((p, i) => `<article class="pcard" data-top="${i === 0 ? 1 : 0}">
+      <div class="ihead"><div><span class="pord">${i + 1}</span> <h3 style="display:inline">${esc(PALANCAS[p.pal].t)}</h3></div><span class="chip" data-k="${p.estado === "bad" ? "CORTAR" : "VIGILAR"}">${p.estado === "bad" ? "GRAVE" : "MEJORABLE"}</span></div>
+      <div class="gana"><span>Ahora ${P(p.r)}, sano ${P(p.sano)}</span><span>+${N(Math.round(p.extraMes))} pedidos/mes</span><span>CPA ${E(p.cpaNuevo)}</span><span><b>+${E0(p.eurosMes)}/mes</b></span></div>
+      <ol>${PALANCAS[p.pal].q.map((q) => `<li>${esc(q)}</li>`).join("")}</ol>
+    </article>`).join("") : `<div class="panel empty">Ningún escalón está por debajo de su zona sana en este periodo.</div>`;
+    $("ePalancasTxt").textContent = palancas.length
+      ? `El beneficio por mes supone arreglar solo ese escalón, con el mismo gasto y ${eur.format(be.benPedido)} de margen por pedido. Las proyecciones se topan en ×3 para no prometer de más.`
+      : "";
+
+    /* ---- por anuncio ---- */
+    const med = { gancho: T.impr > 0 ? T.p25 / T.impr : 0, ctr: T.impr > 0 ? T.clics / T.impr : 0,
+      web: T.clics > 0 ? T.lpv / T.clics : 0, carr: T.lpv > 0 ? T.atc / T.lpv : 0, compra: T.atc > 0 ? T.compras / T.atc : 0 };
+    const filas = ads.filter((a) => a.clics >= 5).sort((x, y) => y.gasto - x.gasto);
+    const col = (v, m) => v == null ? "—" : `<span class="${m > 0 && v < 0.7 * m ? "neg" : m > 0 && v >= 1.3 * m ? "pos" : ""}">${P(v)}</span>`;
+    $("eAds").innerHTML = filas.length ? filas.map((a) => {
+      const r = { gancho: a.impr > 0 ? a.p25 / a.impr : null, ctr: a.impr > 0 ? a.clics / a.impr : null,
+        web: a.clics > 0 ? a.lpv / a.clics : null, carr: a.lpv > 0 ? a.atc / a.lpv : null, compra: a.atc > 0 ? a.compras / a.atc : null };
+      const cand = [["el gancho", r.gancho, med.gancho], ["el clic", r.ctr, med.ctr], ["la carga", r.web, med.web],
+        ["el carrito", r.carr, med.carr], ["la compra", r.compra, med.compra]]
+        .filter(([, v, m]) => v != null && m > 0).map(([n, v, m]) => [n, v / m]).sort((x, y) => x[1] - y[1]);
+      const peor = cand[0] && cand[0][1] < 0.75 ? cand[0][0] : null;
+      return `<tr><td style="white-space:normal;min-width:160px">${esc(a.nombre)}</td><td>${E(a.gasto)}</td><td>${col(r.gancho, med.gancho)}</td><td>${col(r.ctr, med.ctr)}</td><td>${col(r.web, med.web)}</td><td>${col(r.carr, med.carr)}</td><td>${col(r.compra, med.compra)}</td><td style="white-space:normal">${peor ? esc("En " + peor) : "Nada destacable"}</td></tr>`;
+    }).join("") : `<tr><td colspan="8" class="empty">Ningún anuncio llega a 5 clics en este periodo.</td></tr>`;
+
+    const malWeb = filas.filter((a) => a.clics >= 15 && a.lpv / a.clics < 0.6).length;
+    $("eAdsTxt").textContent = filas.length && malWeb >= Math.max(2, filas.length * 0.7)
+      ? `${int.format(malWeb)} de ${int.format(filas.length)} anuncios pierden en la carga de la web. Cuando falla en casi todos, el problema es la tienda, no los creativos.`
+      : "Si todos los anuncios pierden en el mismo escalón, el problema es la tienda. Si solo pierden algunos, es el creativo o el ángulo.";
+  }
+
+  $("segEmb").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-p]"); if (!b) return;
+    state.periodoCre = b.dataset.p; lsSet("ceralux.periodoCre", state.periodoCre); startCre();
+  });
+  elegirDia("diaSelEmb", (p) => { state.periodoCre = p; startCre(); });
+
+  /* ---------- patrones por hora ---------- */
+  // Para repartir presupuesto por franjas ("dayparting") hace falta saber a qué hora compra la gente
+  // y, sobre todo, a qué hora sale barato el pedido. Lo primero sale de Shopify; lo segundo, del
+  // desglose horario de Meta, que no todas las cuentas devuelven: si no llega, se enseña solo lo primero.
+  const DOW = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+  const DOW_LARGO = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+  const DOW_JS = [1, 2, 3, 4, 5, 6, 0];          // getDay() del domingo es 0; aquí la semana empieza el lunes
+  const FRANJAS = [["Madrugada", 0, 5], ["Mañana", 6, 11], ["Mediodía", 12, 15], ["Tarde", 16, 19], ["Noche", 20, 23]];
+  const PED_POR_FRANJA = 50;                     // regla de oro para comparar franjas sin engañarse
+  const FIABLE = PED_POR_FRANJA * 6;             // seis franjas de cuatro horas
+  const hh = (h) => String(h).padStart(2, "0") + ":00";
+  const franjaDe = (h) => FRANJAS.findIndex(([, a, b]) => h >= a && h <= b);
+  let horUnsub = null, horKey = null;
+
+  function pedidosPorHora() {
+    const [desde, hasta] = rango(state.periodoHor);
+    const peds = [];
+    if (state.shop) {
+      idsAlmacen();                              // deja listo el conjunto de pedidos de prueba
+      for (const [f, lista] of Object.entries(state.shop.byDate)) {
+        if (f < desde || f > hasta) continue;
+        for (const o of lista) {
+          if (o.cancelada || testCache?.has(o.id) || typeof o.h !== "number") continue;
+          peds.push(o);
+        }
+      }
+    }
+    return { peds, desde, hasta };
+  }
+
+  function renderHoras() {
+    if (state.rol !== "owner") return;
+    for (const b of $("segHor").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.p === state.periodoHor));
+    pintarDia("diaWrapHor", "diaSelHor", state.periodoHor);
+
+    const u = unit(state.cfg);
+    const { peds, desde, hasta } = pedidosPorHora();
+    const vacio = (txt) => {
+      $("hFiabNum").textContent = "—"; $("hFiabBar").style.width = "0%";
+      $("hFiabChip").textContent = "—"; $("hFiabChip").dataset.k = "";
+      $("hFranjas").innerHTML = `<div class="franja" style="grid-column:1/-1"><span class="l">${esc(txt)}</span></div>`;
+      $("hFranjasTxt").textContent = ""; $("hBarras").innerHTML = ""; $("hBarrasTxt").textContent = "";
+      $("hMapa").innerHTML = ""; $("hMapaTxt").textContent = "";
+      $("hTabla").innerHTML = `<tr><td colspan="7" class="empty">${esc(txt)}</td></tr>`; $("hTablaTxt").textContent = "";
+    };
+    if (!state.shop) return vacio(state.shopStatus === "bad" || state.shopStatus === "warn" ? state.shopMsg : "Leyendo Shopify…");
+    if (!peds.length) return vacio("Sin pedidos en este periodo.");
+
+    /* ---- agregados ---- */
+    const horas = Array.from({ length: 24 }, () => ({ n: 0, eur: 0 }));
+    const mapa = Array.from({ length: 7 }, () => Array(24).fill(0));
+    for (const o of peds) {
+      const pvp = u["p" + o.pack].pvp;
+      horas[o.h].n++; horas[o.h].eur += pvp;
+      mapa[DOW_JS.indexOf(o.dow)][o.h]++;
+    }
+    const total = peds.length;
+    const gastoH = state.hor.status === "ok" ? state.hor.gasto : null;
+    const cpaDe = (i) => gastoH && horas[i].n > 0 && gastoH[i].gasto > 0 ? gastoH[i].gasto / horas[i].n : null;
+
+    /* ---- fiabilidad ---- */
+    const pctFiab = Math.min(1, total / FIABLE);
+    $("hFiabNum").textContent = N(total);
+    $("hFiabBar").style.width = (pctFiab * 100).toFixed(1) + "%";
+    const chip = total >= FIABLE ? "DECIDIR" : total >= FIABLE / 2 ? "OBSERVAR" : "APRENDIENDO";
+    $("hFiabChip").textContent = chip;
+    $("hFiabChip").dataset.k = total >= FIABLE ? "ESCALAR" : total >= FIABLE / 2 ? "VIGILAR" : "";
+    $("hFiabTxt").innerHTML = total >= FIABLE
+      ? `Tienes <b>${N(total)}</b> pedidos: suficiente para comparar franjas. Mira la columna de CPA antes de mover nada, porque lo que decide no es cuándo compran sino cuándo salen baratos.`
+      : `Llevas <b>${N(total)}</b> de los ~${N(FIABLE)} pedidos que hacen falta para comparar seis franjas de cuatro horas (unos ${N(PED_POR_FRANJA)} por franja). Hasta entonces esto es para mirar, no para repartir presupuesto: las diferencias que veas todavía son ruido.`;
+
+    /* ---- franjas ---- */
+    const fr = FRANJAS.map(([nom, a, b]) => {
+      let n = 0, eur = 0, gasto = 0, conGasto = false;
+      for (let h = a; h <= b; h++) {
+        n += horas[h].n; eur += horas[h].eur;
+        if (gastoH) { gasto += gastoH[h].gasto; conGasto = true; }
+      }
+      return { nom, a, b, n, eur, gasto, cpa: conGasto && n > 0 && gasto > 0 ? gasto / n : null };
+    });
+    const topFr = fr.reduce((m, f) => (f.n > m.n ? f : m), fr[0]);
+    $("hFranjas").innerHTML = fr.map((f) => `<div class="franja" data-top="${f === topFr && f.n > 0 ? 1 : 0}">
+      <span class="l">${esc(f.nom)} · ${hh(f.a)}-${hh(f.b)}</span>
+      <span class="v">${N(f.n)}</span>
+      <span class="s">${P(f.n / total)} · ${E0(f.eur)}${f.cpa != null ? ` · CPA ${E(f.cpa)}` : ""}</span>
+    </div>`).join("");
+    const mejorCpa = fr.filter((f) => f.cpa != null && f.n >= 3).sort((x, y) => x.cpa - y.cpa)[0];
+    const peorCpa = fr.filter((f) => f.cpa != null && f.n >= 3).sort((x, y) => y.cpa - x.cpa)[0];
+    $("hFranjasTxt").textContent = topFr.n > 0
+      ? `La franja de ${topFr.nom.toLowerCase()} concentra el ${pct.format(topFr.n / total)} de tus pedidos.`
+        + (mejorCpa && peorCpa && mejorCpa !== peorCpa
+          ? ` El pedido te sale más barato en ${mejorCpa.nom.toLowerCase()} (${eur.format(mejorCpa.cpa)}) y más caro en ${peorCpa.nom.toLowerCase()} (${eur.format(peorCpa.cpa)}).`
+          : " El gasto por horas de Meta todavía no está disponible, así que aquí solo se ve cuándo compran, no cuánto cuesta cada hora.")
+      : "";
+
+    /* ---- barras por hora ---- */
+    const W = 720, H = 210, L = 34, R = 8, T = 12, B = 28;
+    const maxN = Math.max(1, ...horas.map((x) => x.n));
+    const paso = maxN <= 4 ? 1 : maxN <= 10 ? 2 : maxN <= 25 ? 5 : maxN <= 60 ? 10 : 25;
+    const hi = Math.max(paso, Math.ceil(maxN / paso) * paso);
+    const y = (v) => T + (1 - v / hi) * (H - T - B);
+    const bw = (W - L - R) / 24;
+    const mejorH = horas.reduce((m, x, i) => (x.n > horas[m].n ? i : m), 0);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Pedidos por hora del día">`;
+    for (let v = 0; v <= hi + 1e-9; v += paso) {
+      svg += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="${v === 0 ? 1.5 : 1}"/>`;
+      svg += `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${N(v)}</text>`;
+    }
+    horas.forEach((x, h) => {
+      if (x.n > 0) {
+        const alto = Math.max(2, y(0) - y(x.n));
+        const cpa = cpaDe(h);
+        svg += `<rect x="${(L + bw * h + bw * 0.16).toFixed(1)}" y="${(y(0) - alto).toFixed(1)}" width="${(bw * 0.68).toFixed(1)}" height="${alto.toFixed(1)}" rx="2" fill="${h === mejorH ? "var(--good)" : "var(--accent)"}"><title>${hh(h)} · ${N(x.n)} ${x.n === 1 ? "pedido" : "pedidos"} · ${eur.format(x.eur)}${cpa != null ? ` · CPA ${eur.format(cpa)}` : ""}</title></rect>`;
+      }
+      if (h % 3 === 0) svg += `<text x="${(L + bw * h + bw / 2).toFixed(1)}" y="${H - 9}" text-anchor="middle">${String(h).padStart(2, "0")}</text>`;
+    });
+    svg += `</svg>`;
+    $("hBarras").innerHTML = svg;
+    $("hBarrasTxt").textContent = `Hora punta: ${hh(mejorH)} con ${int.format(horas[mejorH].n)} ${horas[mejorH].n === 1 ? "pedido" : "pedidos"}. Hora local de tu ordenador, que es la del cliente. Pasa el dedo o el ratón por una barra para ver su facturación.`;
+
+    /* ---- mapa hora × día ---- */
+    const maxCel = Math.max(1, ...mapa.flat());
+    const nivel = (n) => n === 0 ? 0 : Math.min(5, 1 + Math.floor((n / maxCel) * 4.999));
+    let html = `<span class="lbl"></span>` + Array.from({ length: 24 }, (_, h) => `<span class="hh">${h % 3 === 0 ? String(h).padStart(2, "0") : ""}</span>`).join("");
+    mapa.forEach((fila, d) => {
+      html += `<span class="lbl">${DOW[d]}</span>`;
+      html += fila.map((n, h) => `<span class="cel" data-n="${nivel(n)}" title="${DOW[d]} ${hh(h)} · ${n} ${n === 1 ? "pedido" : "pedidos"}"></span>`).join("");
+    });
+    $("hMapa").innerHTML = html;
+    const porDia = mapa.map((f, d) => ({ d, n: f.reduce((s, x) => s + x, 0) }));
+    const mejorDia = porDia.reduce((m, x) => (x.n > m.n ? x : m), porDia[0]);
+    const diasConDatos = porDia.filter((x) => x.n > 0).length;
+    $("hMapaTxt").textContent = diasConDatos < 7
+      ? `Solo hay pedidos de ${int.format(diasConDatos)} ${diasConDatos === 1 ? "día" : "días"} de la semana. El mapa se llena cuando la campaña lleve al menos dos semanas completas.`
+      : `Tu mejor día es el ${DOW_LARGO[mejorDia.d]} con ${int.format(mejorDia.n)} pedidos. Las celdas son recuentos, no medias: un día de la semana que haya ocurrido más veces en el periodo sale más oscuro por eso.`;
+
+    /* ---- tabla ---- */
+    $("hTabla").innerHTML = horas.map((x, h) => {
+      const cpa = cpaDe(h), g = gastoH ? gastoH[h].gasto : null;
+      return `<tr><td>${hh(h)}</td><td>${x.n ? `<b>${N(x.n)}</b>` : "—"}</td><td>${x.n ? P(x.n / total) : "—"}</td><td>${x.n ? E(x.eur) : "—"}</td><td>${x.n ? E(x.eur / x.n) : "—"}</td><td>${g != null && g > 0 ? E(g) : "—"}</td><td>${E(cpa)}</td></tr>`;
+    }).join("");
+    const estadoGasto = {
+      ok: "", loading: "Leyendo el gasto por horas de Meta…", idle: "",
+      warn: state.hor.msg, bad: state.hor.msg
+    }[state.hor.status] || "";
+    $("hTablaTxt").textContent = `${total} pedidos entre ${corta(desde)} y ${corta(hasta)}. `
+      + (gastoH ? "El gasto y el CPA vienen del desglose por horas de Meta, en la zona horaria de la cuenta publicitaria."
+               : (estadoGasto || "El gasto por horas de Meta no está disponible: la tabla muestra solo lo que viene de Shopify."));
+  }
+
+  async function startHoras() {
+    const cfg = state.cfg;
+    if (state.rol !== "owner") return;
+    renderHoras();
+    if (!cfg.meta_ad_account_id) return;
+    const [since, until] = rango(state.periodoHor);
+    const key = [cfg.meta_ad_account_id, cfg.meta_filtro_campana, since, until].join("|");
+    if (key === horKey) return;
+    horKey = key;
+    mcpNs = mcpNs || await window.claude?.use?.("mcp");
+    if (!mcpNs) { state.hor = { status: "bad", msg: "Esta vista no puede leer Meta Ads. Ábrela desde claude.ai.", gasto: null, at: null }; renderHoras(); return; }
+    if (horUnsub) horUnsub();
+    state.hor = { status: "loading", msg: "", gasto: null, at: null };
+    renderHoras();
+    const input = {
+      ad_account_id: String(cfg.meta_ad_account_id), level: cfg.meta_filtro_campana ? "campaign" : "ad_account",
+      fields: ["amount_spent", "omni_purchase"],
+      breakdowns: ["hourly_stats_aggregated_by_advertiser_time_zone"],
+      time_range: JSON.stringify({ since, until }), limit: 1000, include_additional_context: false,
+      client_conversation_id: convId,
+      advertiser_request: "ver a que horas del dia vendo mas para mas adelante repartir el presupuesto por franjas"
+    };
+    if (cfg.meta_filtro_campana) input.filtering = [{ field: "campaign.name", operator: "CONTAIN", value: [String(cfg.meta_filtro_campana)] }];
+    horUnsub = mcpNs.watchTool(SERVER, TOOL, input, (ev) => {
+      if (ev.type === "error") {
+        state.hor = { status: "bad", gasto: null, at: null, msg: textoMeta(ev.error).replace(" · uso el gasto guardado", "") };
+        renderHoras(); return;
+      }
+      let p = ev.result?.payload, rows = null;
+      try { if (typeof p === "string") p = JSON.parse(p); rows = typeof p?.ad_entities === "string" ? JSON.parse(p.ad_entities) : p?.ad_entities; } catch { rows = null; }
+      if (!Array.isArray(rows)) { state.hor = { status: "bad", msg: "Meta no devolvió el gasto por horas.", gasto: null, at: null }; renderHoras(); return; }
+      const g = Array.from({ length: 24 }, () => ({ gasto: 0, compras: 0 }));
+      let leidas = 0;
+      for (const r of rows) {
+        // Meta devuelve la franja como "00:00:00 - 00:59:59"; basta con la hora de inicio
+        const campo = str(r?.hourly_stats_aggregated_by_advertiser_time_zone ?? r?.hourly_stats_aggregated_by_advertiser_timezone);
+        const m = /^(\d{1,2})/.exec(campo);
+        if (!m) continue;
+        const h = Number(m[1]);
+        if (!(h >= 0 && h < 24)) continue;
+        g[h].gasto += val(r.amount_spent); g[h].compras += val(r.omni_purchase); leidas++;
+      }
+      state.hor = leidas
+        ? { status: "ok", msg: "", gasto: g, at: ev.result?.cache?.storedAt || Date.now() }
+        : { status: "warn", msg: "Meta no devolvió desglose por horas en este periodo.", gasto: null, at: null };
+      renderHoras();
+    }, { refetchInterval: 15 * 60 * 1000, cache: { staleTime: 5 * 60 * 1000 } });
+  }
+
+  $("segHor").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-p]"); if (!b) return;
+    state.periodoHor = b.dataset.p; lsSet("ceralux.periodoHor", state.periodoHor); startHoras();
+  });
+  elegirDia("diaSelHor", (p) => { state.periodoHor = p; startHoras(); });
 
   /* ---------- incidencias ---------- */
   const TIPOS = {
@@ -1475,7 +2025,11 @@ details.panel[open] > summary { margin-bottom: 14px; }
     return m ? m[0] : null;
   }
   const r2 = (x) => Math.round(x * 100) / 100;
-  const DEVUELTO = ["devuelto", "devolucion", "devolución"], CANCELADO = ["rechazado", "cancelado", "anulado"];
+  // El almacén añade sufijos al estado ("Rehusado - en tránsito", "Confirmado - Pendiente de preparación"),
+  // así que se compara por prefijo. "Rehusado" = el cliente lo rechazó en la puerta: salió y volvió, es devolución.
+  // "Rechazado" = anulado antes de salir del almacén: no es un pedido.
+  const DEVUELTO = ["devuelto", "devolucion", "devolución", "rehusado"], CANCELADO = ["rechazado", "cancelado", "anulado"];
+  const esEstado = (lista, e) => lista.some((k) => e === k || e.startsWith(k + " ") || e.startsWith(k + "-"));
   function estadoImport(txt, tipo) { const el = $("iMsg"); el.textContent = txt; el.className = "msg " + (tipo || ""); }
 
   async function importar(file) {
@@ -1506,17 +2060,17 @@ details.panel[open] > summary { margin-bottom: 14px; }
       // "¿Es carrito?" = 1 marca el origen; mientras el estado sea de carrito no es venta. Si el equipo lo recupera,
       // Dropi le pone estado de pedido (Preparado, En ruta…) y desde ahí cuenta como pedido (sin pedido en Shopify).
       const esCarrito = str(r["ES CARRITO"]) === "1";
-      if (estado.includes("carrito") || (esCarrito && CANCELADO.includes(estado))) { d.carritos++; continue; }
+      if (estado.includes("carrito") || (esCarrito && esEstado(CANCELADO, estado))) { d.carritos++; continue; }
       const pack = packDe(Number(r["UD"]) || 1);
       vistos[id] = { estado: estadoTxt, r, fecha, pack };
-      if (CANCELADO.includes(estado)) { d.cancelados++; continue; }
+      if (esEstado(CANCELADO, estado)) { d.cancelados++; continue; }
       // hasta que no sale del almacén el envío viene a 0: se usa la tarifa estándar para no inflar el beneficio
       const envio = num(r["COSTE DE ENVIO SIN IVA"]) || num(state.cfg["p" + pack + "_logistica"]);
       d["p" + pack]++; pedidos++;
       if (esCarrito) d.recuperados++;
-      if (estado === "entregado") { d["ent" + pack]++; d.envio_ent += envio; }
-      else if (DEVUELTO.includes(estado)) d["dev" + pack]++;
-      else { if (estado === "incidencia") d.inc++; d.envio_pend += envio; }
+      if (esEstado(["entregado"], estado)) { d["ent" + pack]++; d.envio_ent += envio; }
+      else if (esEstado(DEVUELTO, estado)) d["dev" + pack]++; // el coste de un paquete rehusado está pendiente de confirmar con Dropi
+      else { if (esEstado(["incidencia"], estado)) d.inc++; d.envio_pend += envio; }
     }
 
     const ahora = new Date().toISOString(), hoyS = iso(new Date());
@@ -1532,7 +2086,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
       }
       for (const [id, v] of Object.entries(vistos)) {
         const prev = state.incid[id], e = v.estado.toLowerCase();
-        if (e === "incidencia") {
+        if (esEstado(["incidencia"], e)) {
           const r = v.r;
           const doc = { pedido: id, tracking: str(r["TRACKING"]), fecha_pedido: v.fecha, pack: v.pack, pack_nombre: PACK_NOMBRE[v.pack],
             importe: num(r["PRECIO"]), nombre: str(r["NOMBRE COMPLETO"]), telefono: str(r["TELF"]), ciudad: str(r["CIUDAD"]),
@@ -1540,7 +2094,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
           const igual = prev && prev.abierta && ["tracking", "motivo", "estado_almacen", "telefono", "nombre"].every((k) => str(prev[k]) === str(doc[k]));
           if (!igual) { await db.doc("incidencias/" + id).set({ ...doc, actualizado: ahora }); if (!prev?.abierta) nuevas++; }
         } else if (prev?.abierta) {
-          const resultado = e === "entregado" ? "entregado" : (DEVUELTO.includes(e) || CANCELADO.includes(e)) ? "devuelto" : null;
+          const resultado = esEstado(["entregado"], e) ? "entregado" : (esEstado(DEVUELTO, e) || esEstado(CANCELADO, e)) ? "devuelto" : null;
           if (resultado) {
             const { nombre, telefono, ...resto } = prev; // al cerrarse se borran los datos personales
             await db.doc("incidencias/" + id).set({ ...resto, abierta: false, resultado, cerrada: hoyS, estado_almacen: v.estado, actualizado: ahora });
