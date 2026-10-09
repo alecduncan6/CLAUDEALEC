@@ -1,0 +1,55 @@
+GUION DEMO · 3 HOOKS · CeraLux (voz para ElevenLabs)
+Números escritos en letra para que la voz los lea bien.
+
+MONTAJE EN DAVINCI
+  DEMO_PRECIO_H1  =  HOOK 1 + CUERPO + CIERRE
+  DEMO_MIRA_H2    =  HOOK 2 + PUENTE + CUERPO + CIERRE
+  DEMO_TIENES_H3  =  HOOK 3 + PUENTE + CUERPO + CIERRE
+  (El HOOK 1 ya es la frase del precio, por eso no lleva PUENTE)
+
+
+==================== HOOK 1 · PRECIO ====================
+Pulir el coche en España te puede costar cuatrocientos euros. Esto, menos de treinta.
+
+Texto en pantalla:  PULIR: 400 € · ESTO: MENOS DE 30 €
+
+
+==================== HOOK 2 · MIRA ====================
+Mira lo que pasa cuando echas este spray en los rayones de tu coche.
+
+Texto en pantalla:  MIRA LO QUE PASA
+
+
+==================== HOOK 3 · TIENES ====================
+¿Tienes un arañazo como este? No lo lleves a pulir todavía.
+
+Texto en pantalla:  ¿TIENES UNO ASÍ?
+
+
+==================== PUENTE (solo hooks 2 y 3) ====================
+Pulir el coche en España te puede costar cuatrocientos euros. Esto, menos de treinta.
+
+
+==================== CUERPO (igual en los 3) ====================
+Y eso sin quedarte tirado dos días sin coche.
+
+Y sí, ya lo has probado: la pasta de dientes, lo del súper, los rotuladores esos que anuncian... y la raya ahí sigue.
+
+Dos pulsaciones sobre el paño, y lo pasamos directamente por encima del arañazo. La fórmula de nanopolímeros rellena la marca y te alisa la superficie al instante, sin estropear el barniz. ¿Esa raya blanca que ves cada vez que te acercas al coche? Un par de pasadas, y deja de verse.
+
+Te preguntarás si te va a servir a ti. Pasa la uña por la raya. Si no se engancha, esto es para ti. Si se engancha, es de taller. Así de claro.
+
+
+==================== CIERRE (igual en los 3) ====================
+Y por su lanzamiento, solo hasta el treinta y uno de octubre, te llevas dos botes por treinta y nueve noventa. El segundo te sale a menos de diez euros. Envío gratis, y no pagas nada hasta que te llega a casa. Pulsa el enlace de abajo y pídelo ahora.
+
+Texto en pantalla:  OFERTA DE LANZAMIENTO · HASTA EL 31/10
+                    2 BOTES: 39,90 € · PAGAS AL RECIBIR
+                    PÍDELO AQUÍ ABAJO
+
+
+==================== ANTES DE ACTIVAR ====================
+[ ] Pack 2 a 39,90 € en EasySell (si no, "el segundo a menos de 10 €" no es verdad)
+[ ] Los 3 vídeos con el MISMO visual inicial: raya blanca en primer plano + mano con el bote
+    pulverizando el paño, sin enseñar el resultado
+[ ] Cambiar el vídeo en los 3 anuncios plantilla y quitar "CAMBIAR VIDEO →" del nombre
