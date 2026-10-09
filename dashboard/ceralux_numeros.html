@@ -185,6 +185,15 @@ details.panel[open] > summary { margin-bottom: 14px; }
 @media (min-width: 760px) { .decis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .decis h3 { margin: 0 0 6px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 .decis ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.filtros .periodos { flex: 0 1 auto; min-width: 0; }
+label.camp { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; max-width: 460px; font-size: 13px; font-weight: 500; }
+label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surface); }
+.pend { display: grid; gap: 0; }
+.pend > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.pend > div:last-child { border-bottom: 0; }
+.pend .e { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 5px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+.pend .e[data-k="mal"] { background: var(--bad-soft); color: var(--bad); }
 /* incidencias */
 .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
 @media (min-width: 760px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -454,6 +463,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
   </div>
 
   <div class="view" id="vCre" hidden>
+    <div class="filtros">
     <nav class="periodos" aria-label="Periodo de creatividades">
       <div class="seg" id="segCre">
         <button type="button" data-p="hoy">Hoy</button>
@@ -464,11 +474,17 @@ details.panel[open] > summary { margin-bottom: 14px; }
         <div class="dia" id="diaWrapCre"><span aria-hidden="true">Día</span><input type="date" id="diaSelCre" aria-label="Ver los anuncios de un día concreto"></div>
       </div>
     </nav>
+    <label class="camp" for="campCre"><span>Campaña</span><select id="campCre"><option value="">Todas las campañas</option></select></label>
+    </div>
     <div class="avisos" id="cAvisos"></div>
     <section class="panel">
       <h2>Qué hacer con tus anuncios</h2>
       <div class="decis" id="cDecis"><div class="empty">Leyendo tus anuncios de Meta…</div></div>
       <p class="small muted" id="cRatio" style="margin:14px 0 0"></p>
+    </section>
+    <section id="cPendWrap" hidden>
+      <h2 id="cPendTit">Encendidos, sin impresiones en este periodo</h2>
+      <div class="panel pend" id="cPend"></div>
     </section>
     <section>
       <h2>Resumen del periodo</h2>
@@ -486,11 +502,12 @@ details.panel[open] > summary { margin-bottom: 14px; }
     <section>
       <h2>Por anuncio</h2>
       <div class="cards" id="cAds"></div>
-      <p class="small muted" style="margin:12px 0 0">Gancho = % de impresiones que ven al menos el 25% del vídeo. CTR = clics en el enlace ÷ impresiones. Llega a la web = visitas que cargan ÷ clics. Compra = compras ÷ clics. Lo que está por debajo o por encima de la media de la campaña sale marcado.</p>
+      <p class="small muted" style="margin:12px 0 0">Gancho = % de impresiones que ven al menos el 25% del vídeo. CTR = clics en el enlace ÷ impresiones. Llega a la web = visitas que cargan ÷ clics. Compra = compras ÷ clics. Se marca lo que queda muy por debajo o por encima de la media de todos tus anuncios de CeraLux en el periodo, así un anuncio nuevo se compara con lo que ya funciona.</p>
     </section>
   </div>
 
   <div class="view" id="vEmb" hidden>
+    <div class="filtros">
     <nav class="periodos" aria-label="Periodo del embudo">
       <div class="seg" id="segEmb">
         <button type="button" data-p="hoy">Hoy</button>
@@ -501,6 +518,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
         <div class="dia" id="diaWrapEmb"><span aria-hidden="true">Día</span><input type="date" id="diaSelEmb" aria-label="Ver el embudo de un día concreto"></div>
       </div>
     </nav>
+    <label class="camp" for="campEmb"><span>Campaña</span><select id="campEmb"><option value="">Todas las campañas</option></select></label>
+    </div>
     <div class="avisos" id="eAvisos"></div>
 
     <section class="hero">
@@ -680,7 +699,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
     periodo: lsGet("ceralux.periodo") || "mes",
     rol: "owner", user: null, uid: null, alias: lsGet("ceralux.alias") || "",
     incid: {}, incidLoaded: false, acciones: [], ultimaImport: null, caja: null,
-    periodoCre: lsGet("ceralux.periodoCre") || "todo", cre: { status: "idle", msg: "", ads: [], at: null },
+    periodoCre: lsGet("ceralux.periodoCre") || "todo", campCre: lsGet("ceralux.campCre") || "",
+    cre: { status: "idle", msg: "", ads: [], todos: [], at: null },
     periodoHor: lsGet("ceralux.periodoHor") || "todo", hor: { status: "idle", msg: "", gasto: null, at: null },
     vista: location.hash === "#incidencias" ? "inc" : (lsGet("ceralux.vista") || "num")
   };
@@ -1342,7 +1362,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
   $("avisos").addEventListener("click", (ev) => { if (ev.target.closest("[data-ir]")) { setVista("inc"); window.scrollTo({ top: 0 }); } });
 
   /* ---------- creatividades ---------- */
-  const CRE_FIELDS = ["id", "name", "adset_name", "campaign_name", "effective_status", "amount_spent", "impressions", "cpm", "frequency",
+  const CRE_FIELDS = ["id", "name", "adset_name", "campaign_id", "campaign_name", "effective_status", "amount_spent", "impressions", "cpm", "frequency",
     "link_click", "landing_page_view", "omni_add_to_cart", "omni_initiated_checkout", "omni_purchase",
     "video_p25_watched_actions", "video_thruplay_watched_actions", "video_avg_time_watched_actions"];
   let creUnsub = null, creKey = null;
@@ -1358,7 +1378,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     mcpNs = mcpNs || await window.claude?.use?.("mcp");
     if (!mcpNs) { state.cre = { ...state.cre, status: "bad", msg: "Esta vista no puede leer Meta Ads. Ábrela desde claude.ai." }; pintaCre(); return; }
     if (creUnsub) creUnsub();
-    state.cre = { status: "loading", msg: "", ads: [], at: null };
+    state.cre = { status: "loading", msg: "", ads: [], todos: [], at: null };
     pintaCre();
     const input = { ad_account_id: String(cfg.meta_ad_account_id), level: "ad", fields: CRE_FIELDS,
       time_range: JSON.stringify({ since, until }), limit: 500, include_additional_context: false,
@@ -1367,20 +1387,24 @@ details.panel[open] > summary { margin-bottom: 14px; }
       if (ev.type === "error") {
         const code = ev.error?.code || "upstream_error";
         const transitorio = ["server_unavailable", "rate_limited", "upstream_error"].includes(code);
-        state.cre = { ...state.cre, status: transitorio && state.cre.ads.length ? "ok" : "bad", ads: transitorio ? state.cre.ads : [], msg: textoMeta(ev.error).replace(" · uso el gasto guardado", "") };
+        state.cre = { ...state.cre, status: transitorio && state.cre.ads.length ? "ok" : "bad", ads: transitorio ? state.cre.ads : [],
+          todos: transitorio ? state.cre.todos : [], msg: textoMeta(ev.error).replace(" · uso el gasto guardado", "") };
         pintaCre(); return;
       }
       let p = ev.result?.payload, rows = null;
       try { if (typeof p === "string") p = JSON.parse(p); rows = typeof p?.ad_entities === "string" ? JSON.parse(p.ad_entities) : p?.ad_entities; } catch { rows = null; }
-      if (!Array.isArray(rows)) { state.cre = { status: "bad", msg: "Respuesta de Meta no reconocida.", ads: [], at: null }; pintaCre(); return; }
+      if (!Array.isArray(rows)) { state.cre = { status: "bad", msg: "Respuesta de Meta no reconocida.", ads: [], todos: [], at: null }; pintaCre(); return; }
       const filtro = str(state.cfg.meta_filtro_campana).toLowerCase();
-      const ads = rows.map((r) => ({
-        id: str(r.id), nombre: str(r.name), angulo: str(r.adset_name) || "Sin conjunto", campana: str(r.campaign_name), estado: str(r.effective_status),
+      // Meta devuelve todos los anuncios de la cuenta, también los que aún no han gastado: se guardan aparte
+      // para enseñar los recién lanzados (y poder elegir su campaña) antes de que tengan datos.
+      const todos = rows.map((r) => ({
+        id: str(r.id), nombre: str(r.name), angulo: str(r.adset_name) || "Sin conjunto", campId: str(r.campaign_id), campana: str(r.campaign_name), estado: str(r.effective_status),
         gasto: val(r.amount_spent), impr: val(r.impressions), clics: val(r.link_click), lpv: val(r.landing_page_view),
         atc: val(r.omni_add_to_cart), checkout: val(r.omni_initiated_checkout), compras: val(r.omni_purchase),
         p25: val(r.video_p25_watched_actions), thru: val(r.video_thruplay_watched_actions), tmedio: val(r.video_avg_time_watched_actions), freq: val(r.frequency)
-      })).filter((a) => (!filtro || a.campana.toLowerCase().includes(filtro)) && (a.gasto > 0 || a.impr > 0));
-      state.cre = { status: "ok", msg: "", ads, at: ev.result?.cache?.storedAt || Date.now() };
+      })).filter((a) => !filtro || a.campana.toLowerCase().includes(filtro));
+      const ads = todos.filter((a) => a.gasto > 0 || a.impr > 0);
+      state.cre = { status: "ok", msg: "", ads, todos, at: ev.result?.cache?.storedAt || Date.now() };
       pintaCre();
     }, { refetchInterval: 10 * 60 * 1000, cache: { staleTime: 2 * 60 * 1000 } });
   }
@@ -1414,7 +1438,44 @@ details.panel[open] > summary { margin-bottom: 14px; }
   }
   const marca = (x, m, fmt) => x == null ? "—" : `<b class="${m && x < 0.7 * m ? "baja" : m && x >= 1.3 * m ? "alta" : ""}">${fmt(x)}</b>`;
 
-  function pintaCre() { renderCre(); renderEmbudo(); }
+  /* ---------- selector de campaña (Creatividades y Embudo) ---------- */
+  // "CeraLux ES — TESTING — BROAD C4 BOLARDO — Oct 2026" → "TESTING — BROAD C4 BOLARDO"
+  const campCorto = (n) => n.replace(/^\s*CeraLux\s*(ES)?\s*[—–-]\s*/i, "").replace(/\s*[—–-]\s*[A-Za-zÁÉÍÓÚáéíóú]{3,4}\.?\s+\d{4}\s*$/, "") || n;
+  const claveCamp = (a) => a.campId || a.campana;
+  const enCamp = (a) => !state.campCre || claveCamp(a) === state.campCre;
+  const ESTADO_TXT = { ACTIVE: "Activo", IN_PROCESS: "En revisión", PENDING_REVIEW: "En revisión", PREAPPROVED: "Preaprobado",
+    WITH_ISSUES: "Con problemas", DISAPPROVED: "Rechazado", PENDING_BILLING_INFO: "Falta el método de pago", PAUSED: "En pausa",
+    CAMPAIGN_PAUSED: "Campaña en pausa", ADSET_PAUSED: "Conjunto en pausa", ARCHIVED: "Archivado", DELETED: "Borrado" };
+  const estadoTxt = (e) => ESTADO_TXT[e] || e.toLowerCase().replace(/_/g, " ");
+  // los que deberían estar entregando (o tienen un problema que lo impide); los pausados sin datos no se enseñan
+  const VIVOS = new Set(["ACTIVE", "IN_PROCESS", "PENDING_REVIEW", "PREAPPROVED", "WITH_ISSUES", "DISAPPROVED", "PENDING_BILLING_INFO"]);
+  function campanas() {
+    const m = new Map();
+    for (const a of state.cre.todos || []) {
+      const k = claveCamp(a);
+      const c = m.get(k) || { id: k, nombre: a.campana, gasto: 0, vivos: 0 };
+      c.gasto += a.gasto; if (VIVOS.has(a.estado)) c.vivos++;
+      m.set(k, c);
+    }
+    return [...m.values()].sort((x, y) => (y.vivos > 0) - (x.vivos > 0) || y.gasto - x.gasto);
+  }
+  function pintarCampanas() {
+    const lista = campanas();
+    // si la campaña elegida ya no existe en la cuenta, se vuelve a "Todas"
+    if (state.cre.status === "ok" && state.campCre && !lista.some((c) => c.id === state.campCre)) { state.campCre = ""; lsSet("ceralux.campCre", ""); }
+    const html = [`<option value="">Todas las campañas${lista.length > 1 ? ` (${lista.length})` : ""}</option>`]
+      .concat(lista.map((c) => `<option value="${esc(c.id)}">${esc(campCorto(c.nombre))} · ${E0(c.gasto)}${c.vivos ? "" : " · en pausa"}</option>`)).join("");
+    for (const id of ["campCre", "campEmb"]) {
+      const sel = $(id);
+      if (sel.dataset.html !== html) { sel.innerHTML = html; sel.dataset.html = html; }
+      sel.value = state.campCre;
+    }
+  }
+  for (const id of ["campCre", "campEmb"]) $(id).addEventListener("change", (ev) => {
+    state.campCre = ev.target.value; lsSet("ceralux.campCre", state.campCre); pintaCre();
+  });
+
+  function pintaCre() { pintarCampanas(); renderCre(); renderEmbudo(); }
 
   function renderCre() {
     const cKpis = $("cKpis"), decis = $("cDecis");
@@ -1425,16 +1486,21 @@ details.panel[open] > summary { margin-bottom: 14px; }
     if (!state.cfgLoaded) { decis.innerHTML = `<div class="empty">Cargando…</div>`; return; }
     if (!state.cfg.meta_ad_account_id) { decis.innerHTML = `<div class="empty">Falta la cuenta de Meta en Ajustes.</div>`; return; }
     if (state.cre.status === "loading" || state.cre.status === "idle") { decis.innerHTML = `<div class="empty">Leyendo tus anuncios de Meta…</div>`; return; }
-    if (state.cre.status === "bad") { decis.innerHTML = `<div class="empty">${esc(state.cre.msg)}</div>`; $("cAds").innerHTML = ""; $("cAngulos").innerHTML = ""; cKpis.innerHTML = ""; return; }
+    if (state.cre.status === "bad") { decis.innerHTML = `<div class="empty">${esc(state.cre.msg)}</div>`; $("cAds").innerHTML = ""; $("cAngulos").innerHTML = ""; cKpis.innerHTML = ""; $("cPendWrap").hidden = true; return; }
 
     const u = unit(state.cfg), h = historico(), be = breakEven(u, h), BE = be.cpaBE;
     const [desde, hasta] = rango(state.periodoCre);
     const reales = agregar(desde, hasta, u, h.tasa).H;
-    const ads = state.cre.ads.map((a) => ({ ...a }));
-    const pixel = ads.reduce((s, a) => s + a.compras, 0);
+    // La corrección con pedidos reales y las medias se calculan con TODAS las campañas: los pedidos de Shopify no
+    // dicen de qué campaña vienen, y así un anuncio nuevo se compara con lo que ya funciona. Lo que se enseña es la campaña elegida.
+    const sumar = (lista) => lista.reduce((t, a) => { for (const k of ["gasto", "impr", "clics", "lpv", "compras", "p25"]) t[k] += a[k]; return t; }, { gasto: 0, impr: 0, clics: 0, lpv: 0, compras: 0, p25: 0 });
+    const TT = sumar(state.cre.ads);
+    const pixel = TT.compras;
     const ratio = reales > 0 && pixel > 0 ? reales / pixel : 1;
-    const T = ads.reduce((t, a) => { for (const k of ["gasto", "impr", "clics", "lpv", "compras", "p25"]) t[k] += a[k]; return t; }, { gasto: 0, impr: 0, clics: 0, lpv: 0, compras: 0, p25: 0 });
-    const media = { gancho: ratioDe(T.p25, T.impr), ctr: ratioDe(T.clics, T.impr), cvr: ratioDe(T.compras, T.clics), web: ratioDe(T.lpv, T.clics) };
+    const media = { gancho: ratioDe(TT.p25, TT.impr), ctr: ratioDe(TT.clics, TT.impr), cvr: ratioDe(TT.compras, TT.clics), web: ratioDe(TT.lpv, TT.clics) };
+    const ads = state.cre.ads.filter(enCamp).map((a) => ({ ...a }));
+    const T = sumar(ads);
+    const varias = new Set(ads.map(claveCamp)).size > 1;
     for (const a of ads) {
       a.pedidos = a.compras * ratio;
       a.cpaReal = a.pedidos > 0 ? a.gasto / a.pedidos : null;
@@ -1445,7 +1511,8 @@ details.panel[open] > summary { margin-bottom: 14px; }
     ads.sort((x, y) => y.benef - x.benef || y.gasto - x.gasto);
 
     // avisos globales
-    if (media.web != null && T.clics >= 50 && media.web < 0.6) avisos.push(["", `Solo el ${P(media.web)} de los clics llega a cargar tu web.`, "Afecta a todos los anuncios: revisa la velocidad de la tienda y del formulario contra reembolso. Lo sano es más del 70%."]);
+    const webSel = ratioDe(T.lpv, T.clics);
+    if (webSel != null && T.clics >= 50 && webSel < 0.32) avisos.push(["", `Solo el ${P(webSel)} de los clics llega a cargar tu web.`, "En móvil lo normal está entre el 35% y el 45%. Por debajo del 32% merece mirar la velocidad de la página, y antes comprobar si cae solo en una ubicación."]);
     if (reales > 0 && pixel > 0 && (ratio < 0.8 || ratio > 1.25)) avisos.push(["info", `Meta cuenta ${N(pixel)} compras y tienes ${N(reales)} pedidos reales.`, "Los CPA de abajo ya están corregidos con esa diferencia."]);
     $("cAvisos").innerHTML = avisos.map(([c, b, t]) => `<div class="aviso ${c}"><span><b>${esc(b)}</b> ${esc(t)}</span></div>`).join("");
 
@@ -1458,20 +1525,20 @@ details.panel[open] > summary { margin-bottom: 14px; }
       <div><h3 style="color:var(--good)">Replicar y escalar</h3>${lista(repl, (a) => `<li><b>${esc(a.nombre)}</b> · CPA real ${E(a.cpaReal)} · ${a.benef >= 0 ? "+" : ""}${E(a.benef)}</li>`)}</div>
       <div><h3 style="color:var(--bad)">Apagar</h3>${lista(apagar, (a) => `<li><b>${esc(a.nombre)}</b> · ${E(a.gasto)} gastados${a.compras ? ` · CPA real ${E(a.cpaReal)}` : " sin ventas"}</li>`)}</div>
       <div><h3 style="color:var(--warn)">Dar más datos</h3>${lista(esperar, (a) => `<li><b>${esc(a.nombre)}</b> · ${a.compras ? `${N(a.compras)} ${a.compras === 1 ? "venta" : "ventas"}, CPA ${E(a.cpaReal)}` : `${E(a.gasto)} sin ventas: decide al llegar a ${E0(1.5 * BE)}`}</li>`)}</div>`;
-    $("cRatio").textContent = `CPA máximo rentable: ${E(BE)} (de la pestaña Números). ${reales > 0 && pixel > 0 ? `Corrección: ${N(reales)} pedidos reales ÷ ${N(pixel)} compras de Meta = ×${dec2.format(ratio)}.` : "Sin pedidos reales registrados en el periodo: uso las compras de Meta tal cual."}${state.cre.at ? ` Actualizado ${fechaHora(new Date(state.cre.at).toISOString())}.` : ""}`;
+    $("cRatio").textContent = `CPA máximo rentable: ${E(BE)} (de la pestaña Números). ${reales > 0 && pixel > 0 ? `Corrección: ${N(reales)} pedidos reales ÷ ${N(pixel)} compras de Meta en todas las campañas = ×${dec2.format(ratio)}.` : "Sin pedidos reales registrados en el periodo: uso las compras de Meta tal cual."}${state.cre.at ? ` Actualizado ${fechaHora(new Date(state.cre.at).toISOString())}.` : ""}`;
 
     // kpis
     const cpaT = T.compras > 0 ? T.gasto / (T.compras * ratio) : null;
     const benT = ads.reduce((s, a) => s + a.benef, 0);
     cKpis.innerHTML = [
-      ["Gasto", E(T.gasto), `${N(ads.length)} anuncios con impresiones`],
+      ["Gasto", E(T.gasto), `${N(ads.length)} anuncios con impresiones${state.campCre ? " · esta campaña" : ""}`],
       ["Compras (Meta)", N(T.compras), `≈ ${N(Math.round(T.compras * ratio))} pedidos reales`],
       ["CPA real", E(cpaT), `máx. rentable ${E(BE)}`, cpaT != null && cpaT > BE],
       ["Beneficio estimado", E(benT), "antes de otros gastos", benT < 0],
-      ["Gancho medio", P(media.gancho), "ven el 25% del vídeo"],
-      ["CTR medio", P(media.ctr), "clics en el enlace"],
-      ["Llega a la web", P(media.web), "de los que hacen clic", media.web != null && media.web < 0.6],
-      ["Compra / clic", P(media.cvr), `${N(T.clics)} clics`]
+      ["Gancho medio", P(ratioDe(T.p25, T.impr)), "ven el 25% del vídeo"],
+      ["CTR medio", P(ratioDe(T.clics, T.impr)), "clics en el enlace"],
+      ["Llega a la web", P(webSel), "de los que hacen clic", webSel != null && webSel < 0.32],
+      ["Compra / clic", P(ratioDe(T.compras, T.clics)), `${N(T.clics)} clics`]
     ].map(([l, v, s2, bad]) => `<div class="kpi"><span class="l">${l}</span><span class="v num${bad ? " bad" : ""}">${v}</span><span class="s">${esc(s2)}</span></div>`).join("");
 
     // por ángulo
@@ -1483,7 +1550,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
 
     // por anuncio
     $("cAds").innerHTML = ads.length ? ads.map((a) => `<article class="icard">
-      <div class="ihead"><div><h3>${esc(a.nombre)}</h3><div class="imeta"><span>${esc(a.angulo)}</span><span>${a.estado === "ACTIVE" ? "Activo" : esc(a.estado.toLowerCase().replace(/_/g, " "))}</span></div></div><span class="chip" data-k="${a.v}">${a.v}</span></div>
+      <div class="ihead"><div><h3>${esc(a.nombre)}</h3><div class="imeta">${varias ? `<span><b>${esc(campCorto(a.campana))}</b></span>` : ""}<span>${esc(a.angulo)}</span><span>${esc(estadoTxt(a.estado))}</span></div></div><span class="chip" data-k="${a.v}">${a.v}</span></div>
       <div class="nums4">
         <div><span class="l">Gasto</span><span class="v">${E(a.gasto)}</span></div>
         <div><span class="l">Compras</span><span class="v">${N(a.compras)}</span></div>
@@ -1493,7 +1560,17 @@ details.panel[open] > summary { margin-bottom: 14px; }
       <div class="funnel"><span>${N(a.impr)} impr.</span><span>Gancho ${marca(a.gancho, a.impr >= 300 ? media.gancho : 0, P)}</span><span>CTR ${marca(a.ctr, a.impr >= 300 ? media.ctr : 0, P)}</span><span>Llega a la web ${marca(a.web, a.clics >= 15 ? media.web : 0, P)}</span><span>Compra ${marca(a.cvr, a.clics >= 15 ? media.cvr : 0, P)}</span><span>Visto ${a.tmedio ? N(a.tmedio) + " s" : "—"}</span></div>
       <div class="small">${esc(VEREDICTOS[a.v])}${a.v === "VIGILAR" && !a.compras ? ` Si no vende antes de ${E0(1.5 * BE)}, apágalo.` : ""}</div>
       ${a.diag.length ? `<ul class="diag">${a.diag.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
-    </article>`).join("") : `<div class="panel empty">Sin anuncios con gasto en este periodo.</div>`;
+    </article>`).join("") : `<div class="panel empty">Sin anuncios con gasto en este periodo${state.campCre ? " en esta campaña" : ""}.</div>`;
+
+    // anuncios encendidos que aún no tienen impresiones en el periodo (recién lanzados, programados, en revisión o con problemas)
+    const pend = (state.cre.todos || []).filter((a) => enCamp(a) && !(a.gasto > 0 || a.impr > 0) && VIVOS.has(a.estado))
+      .sort((x, y) => x.campana.localeCompare(y.campana) || x.nombre.localeCompare(y.nombre));
+    $("cPendWrap").hidden = !pend.length;
+    $("cPendTit").textContent = `Encendidos, sin impresiones en este periodo (${pend.length})`;
+    $("cPend").innerHTML = pend.map((a) => {
+      const mal = a.estado === "WITH_ISSUES" || a.estado === "DISAPPROVED" || a.estado === "PENDING_BILLING_INFO";
+      return `<div><span><b>${esc(a.nombre)}</b><span class="muted"> · ${esc(campCorto(a.campana))} · ${esc(a.angulo)}</span></span><span class="e" data-k="${mal ? "mal" : ""}">${esc(estadoTxt(a.estado))}</span></div>`;
+    }).join("") + `<p class="small muted" style="margin:10px 0 0">Recién lanzados, programados para más tarde (por ejemplo, desde las 00:00) o anuncios a los que Meta no está dando entrega. En cuanto tengan las primeras impresiones pasan a las tarjetas de arriba.</p>`;
   }
 
   $("segCre").addEventListener("click", (ev) => {
@@ -1536,7 +1613,12 @@ details.panel[open] > summary { margin-bottom: 14px; }
     // Cada escalón: nombre, cuántos llegan, conversión desde el anterior y zona sana.
     const pasos = [{ k: "impr", n: "Impresiones", v: T.impr }];
     pasos.push({ k: "clics", n: "Clics en el enlace", v: T.clics, sano: 0.010, flojo: 0.006, pal: "creativo", dinero: false });
-    pasos.push({ k: "lpv", n: "Llegan a cargar la web", v: T.lpv, sano: 0.70, flojo: 0.55, pal: "velocidad", dinero: true });
+    // Referencia medida en esta cuenta (9 oct 2026, trafico 100% movil): clic>LPV real 23-47% segun ubicacion,
+    // 37,5% de media, y uniforme en TODAS incluido Feed. Meta cuenta el clic al tocar el enlace (toques accidentales,
+    // dobles toques, vuelta atras inmediata); el pixel solo dispara si la pagina llega a abrir. Verificado el 9 oct:
+    // el pixel dispara a 414 ms y las compras de Meta cuadran con los pedidos del almacen, asi que no hay subconteo
+    // ni problema de velocidad. El 0,70 anterior era una referencia de escritorio y marcaba como fuga algo normal.
+    pasos.push({ k: "lpv", n: "Llegan a cargar la web", v: T.lpv, sano: 0.45, flojo: 0.32, pal: "velocidad", dinero: true });
     // EasySell dispara carrito y checkout a la vez: si son el mismo número, es un escalón, no dos.
     const dosPasos = T.checkout > 0 && Math.abs(T.checkout - T.atc) / Math.max(1, T.atc) > 0.05;
     pasos.push({ k: "atc", n: "Añaden al carrito", v: T.atc, sano: 0.08, flojo: 0.05, pal: "oferta", dinero: true });
@@ -1573,10 +1655,10 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const u = unit(state.cfg), h = historico(), be = breakEven(u, h);
     const [desde, hasta] = rango(state.periodoCre);
     const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
-    const ads = state.cre.ads;
+    const ads = state.cre.ads.filter(enCamp);
     const T = ads.reduce((t, a) => { for (const k of ["gasto", "impr", "clics", "lpv", "atc", "checkout", "compras", "p25"]) t[k] += a[k]; return t; },
       { gasto: 0, impr: 0, clics: 0, lpv: 0, atc: 0, checkout: 0, compras: 0, p25: 0 });
-    if (!T.clics) return vacio("Sin clics en este periodo.");
+    if (!T.clics) return vacio(state.campCre ? "Esta campaña aún no tiene clics en este periodo." : "Sin clics en este periodo.");
 
     const { pasos, dosPasos } = construirEmbudo(T);
     const cpc = T.clics > 0 ? T.gasto / T.clics : 0;
@@ -1620,7 +1702,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
     const av = [];
     const lpvP = pasos.find((p) => p.k === "lpv");
     if (lpvP && lpvP.estado === "bad") av.push(["", `Solo el ${pct.format(lpvP.r)} de los clics llega a cargar tu web.`,
-      `Pagas ${eur.format(cpc)} por clic y ${int.format(lpvP.perdidos)} no llegan: ${eur.format(lpvP.perdidos * cpc)} en este periodo. Es un problema de velocidad y afecta a todos los anuncios por igual.`]);
+      `En movil lo normal está entre el 35% y el 45%: Meta cuenta el clic al tocar el enlace, incluidos los toques sin intención. Por debajo del 32% sí merece mirar la velocidad de la página, y antes de eso comprueba si cae solo en una ubicación.`]);
     if (!dosPasos && T.atc > 0) av.push(["info", "Carrito y formulario son el mismo escalón.",
       "Tu formulario dispara los dos eventos a la vez, así que el embudo los junta en uno en lugar de enseñarte un 100 % que no significa nada."]);
     if (T.compras < 20) av.push(["info", `Solo ${N(T.compras)} compras en el periodo.`, "Con pocos datos los escalones de abajo bailan mucho. Prioriza por el escalón de arriba, que se mide con miles de impresiones."]);
@@ -1655,9 +1737,11 @@ details.panel[open] > summary { margin-bottom: 14px; }
       ? `El beneficio por mes supone arreglar solo ese escalón, con el mismo gasto y ${eur.format(be.benPedido)} de margen por pedido. Las proyecciones se topan en ×3 para no prometer de más.`
       : "";
 
-    /* ---- por anuncio ---- */
-    const med = { gancho: T.impr > 0 ? T.p25 / T.impr : 0, ctr: T.impr > 0 ? T.clics / T.impr : 0,
-      web: T.clics > 0 ? T.lpv / T.clics : 0, carr: T.lpv > 0 ? T.atc / T.lpv : 0, compra: T.atc > 0 ? T.compras / T.atc : 0 };
+    /* ---- por anuncio: comparado con la media de TODOS los anuncios de CeraLux, como en Creatividades ---- */
+    const TA = state.cre.ads.reduce((t, a) => { for (const k of ["impr", "clics", "lpv", "atc", "compras", "p25"]) t[k] += a[k]; return t; },
+      { impr: 0, clics: 0, lpv: 0, atc: 0, compras: 0, p25: 0 });
+    const med = { gancho: TA.impr > 0 ? TA.p25 / TA.impr : 0, ctr: TA.impr > 0 ? TA.clics / TA.impr : 0,
+      web: TA.clics > 0 ? TA.lpv / TA.clics : 0, carr: TA.lpv > 0 ? TA.atc / TA.lpv : 0, compra: TA.atc > 0 ? TA.compras / TA.atc : 0 };
     const filas = ads.filter((a) => a.clics >= 5).sort((x, y) => y.gasto - x.gasto);
     const col = (v, m) => v == null ? "—" : `<span class="${m > 0 && v < 0.7 * m ? "neg" : m > 0 && v >= 1.3 * m ? "pos" : ""}">${P(v)}</span>`;
     $("eAds").innerHTML = filas.length ? filas.map((a) => {
@@ -1670,7 +1754,7 @@ details.panel[open] > summary { margin-bottom: 14px; }
       return `<tr><td style="white-space:normal;min-width:160px">${esc(a.nombre)}</td><td>${E(a.gasto)}</td><td>${col(r.gancho, med.gancho)}</td><td>${col(r.ctr, med.ctr)}</td><td>${col(r.web, med.web)}</td><td>${col(r.carr, med.carr)}</td><td>${col(r.compra, med.compra)}</td><td style="white-space:normal">${peor ? esc("En " + peor) : "Nada destacable"}</td></tr>`;
     }).join("") : `<tr><td colspan="8" class="empty">Ningún anuncio llega a 5 clics en este periodo.</td></tr>`;
 
-    const malWeb = filas.filter((a) => a.clics >= 15 && a.lpv / a.clics < 0.6).length;
+    const malWeb = filas.filter((a) => a.clics >= 15 && a.lpv / a.clics < 0.32).length;
     $("eAdsTxt").textContent = filas.length && malWeb >= Math.max(2, filas.length * 0.7)
       ? `${int.format(malWeb)} de ${int.format(filas.length)} anuncios pierden en la carga de la web. Cuando falla en casi todos, el problema es la tienda, no los creativos.`
       : "Si todos los anuncios pierden en el mismo escalón, el problema es la tienda. Si solo pierden algunos, es el creativo o el ángulo.";

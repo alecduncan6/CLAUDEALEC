@@ -51,11 +51,15 @@ cliente lo rechazó en la puerta → Devuelto; "Rechazado" = anulado antes de sa
     Fecha = día local de `createdAt`. Pack = 1 unidad → Pack 1; 2 → Pack 2; 3 o más → Pack 3. Los pedidos de Shopify cuyo ID no está
     en ningún `shopify_ids` se suman al día como pendientes ("aún no en almacén"); los de `shopify_test` se ignoran.
     Tabla "Cuadre": Shopify vs Meta (píxel) vs almacén por día y % que registra Meta. El #1158 es el pedido de test.
-  - Pestañas **Embudo** (mismos datos de Meta que Creatividades: impresión → clic → carga → carrito → compra, dinero
-    perdido por escalón y palancas a testear) y **Horas** (pedidos de Shopify por hora/franja/día de la semana + gasto
+  - Pestañas **Embudo** (mismos datos de Meta que Creatividades, con el mismo selector de campaña: impresión → clic → carga →
+    carrito → compra, dinero perdido por escalón y palancas a testear; clic→carga sano ≥45%, en móvil lo normal es 35-45%) y **Horas** (pedidos de Shopify por hora/franja/día de la semana + gasto
     horario de Meta si lo devuelve; no repartir presupuesto por franjas hasta ~300 pedidos). Solo dueño.
   - Pestaña **Creatividades** (solo dueño): lee de Meta en directo `ads_get_ad_entities` a nivel `ad` (gasto, impresiones,
     clics, visitas, compras, vídeo al 25%, ThruPlays, tiempo medio) y filtra por `meta_filtro_campana`.
+    **Selector de campaña** (compartido con Embudo, se recuerda en el navegador): "Todas" o una campaña (por `campaign_id`).
+    La corrección con pedidos reales y las medias de comparación usan SIEMPRE todas las campañas (los pedidos de Shopify no
+    dicen de qué campaña vienen); lo que se enseña es la campaña elegida. Lista aparte "Encendidos, sin impresiones en este
+    periodo": anuncios activos/en revisión/con problemas sin datos (recién lanzados, programados o sin entrega).
     Corrige las compras de Meta con pedidos reales del periodo (×pedidos/compras), calcula CPA real y beneficio estimado
     (pedidos × beneficio esperado por pedido − gasto) y da veredicto por anuncio con el CPA break-even (BE):
     ESCALAR (≥3 compras y CPA ≤ 75% BE) · MANTENER (≥3 y ≤ BE) · PROMETEDOR (<3 y ≤ BE) · VIGILAR · APAGAR
