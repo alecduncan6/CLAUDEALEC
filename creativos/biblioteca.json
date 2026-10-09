@@ -51,6 +51,20 @@
    "cta": "Pagas en casa cuando te llegue. El enlace está aquí abajo.",
    "precio": "39,90 € (2 botes)",
    "notas": "El precio del Pack 2 en la tienda es 39,99 €."
+  },
+  {
+   "id": "C4",
+   "nombre": "Demo · uña + oferta octubre",
+   "angulo": "BROAD — demostración + oferta de lanzamiento",
+   "formato": "Demostración real (UGC) + voz",
+   "apertura": "Y eso sin quedarte tirado dos días sin coche. Y sí, ya lo has probado: la pasta de dientes, lo del súper, los rotuladores esos que anuncian... y la raya ahí sigue.",
+   "solucion": "Dos pulsaciones sobre el paño, y lo pasamos directamente por encima del arañazo.",
+   "mecanismo": "La fórmula de nanopolímeros rellena la marca y te alisa la superficie al instante, sin estropear el barniz. ¿Esa raya blanca que ves cada vez que te acercas al coche? Un par de pasadas, y deja de verse.",
+   "prueba": "Te preguntarás si te va a servir a ti. Pasa la uña por la raya. Si no se engancha, esto es para ti. Si se engancha, es de taller. Así de claro.",
+   "oferta": "Por su lanzamiento, solo hasta el 31 de octubre, te llevas dos botes por 39,90. El segundo te sale a menos de diez euros. Envío gratis, y no pagas nada hasta que te llega a casa.",
+   "cta": "Pulsa el enlace de abajo y pídelo ahora.",
+   "precio": "39,90 € (2 botes)",
+   "notas": "Va detrás de los hooks PRECIO, MIRA y TIENES sobre el visual BOLARDO (guion: creativos/guiones/guion_DEMO_3hooks.txt). Necesita el Pack 2 a 39,90 € en EasySell."
   }
  ],
  "anuncios": [
@@ -222,5 +236,10 @@
    "estado": "ACTIVE",
    "notas": ""
   }
- ]
+ ],
+ "hooks": {
+  "PRECIO": "Pulir el coche en España te puede costar 400 €. Esto, menos de 30.",
+  "MIRA": "Mira lo que pasa cuando echas este spray en los rayones de tu coche.",
+  "TIENES": "¿Tienes un arañazo como este? No lo lleves a pulir todavía."
+ }
 }

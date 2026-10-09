@@ -69,7 +69,10 @@ cliente lo rechazó en la puerta → Devuelto; "Rechazado" = anulado antes de sa
   `creativos/historico.json` (Meta por anuncio y día + `pedidos_reales` por día de Shopify).
   Hojas: Panel (periodo DESDE/HASTA, KPIs, veredictos, Top 5, por ángulo/cuerpo/concepto), Mapa (ángulo → cuerpo →
   hooks), Creativos, Cuerpos, Matriz (concepto de hook × cuerpo; "—" = sin probar), Histórico, Pedidos, Config, Guía.
-  Mismos veredictos que la pestaña Creatividades. Al regenerar, el script recoge antes lo editado a mano en el Excel
+  Mismos veredictos que la pestaña Creatividades. Nomenclatura de anuncios (y del vídeo en el PC):
+  `ÁNGULO_CUERPO_VISUAL_HOOK_VN`, p. ej. `BROAD_C4_BOLARDO_PRECIO_V1` (VISUAL = concepto del primer plano; HOOK = lo que
+  dice la voz, `MUDO` si nada; textos de los hooks en `biblioteca.json` → `hooks`). Con ese nombre el script rellena
+  cuerpo, formato, concepto, tipo y hook vacíos, y toma siempre el último nombre de Meta. Al regenerar, el script recoge antes lo editado a mano en el Excel
   (hooks, cuerpos, notas, ajustes, pedidos) y lo guarda en `biblioteca.json`; los anuncios nuevos de Meta se añaden solos.
 
 ## Meta Ads

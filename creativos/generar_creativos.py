@@ -9,6 +9,7 @@ reales de Shopify). Si el Excel ya existe, antes de regenerarlo recoge lo que se
 """
 import datetime as dt
 import json
+import re
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
@@ -168,6 +169,22 @@ for fila in hist["filas"]:
                                 "campana": fila["campana"], "cuerpo": vecino.get("cuerpo", ""), "formato": vecino.get("formato", ""),
                                 "tipo_hook": "", "concepto": "", "hook": "", "alta": fila["fecha"], "estado": "", "notas": ""})
         conocidos.add(fila["ad_id"])
+# 3) nomenclatura ÁNGULO_CUERPO_VISUAL_HOOK_VN (ej.: BROAD_C4_BOLARDO_PRECIO_V1): el nombre de Meta rellena lo vacío.
+#    VISUAL = concepto del hook (primer plano del vídeo); HOOK = lo que dice la voz (MUDO si no habla).
+NOMEN = re.compile(r"^([A-Z0-9]+)_(C\d+)_([A-Z0-9]+)_([A-Z0-9]+)_V\d+$")
+ultimo_nombre = {f["ad_id"]: f["nombre"] for f in sorted(hist["filas"], key=lambda x: x["fecha"])}
+formato_de = {c["id"]: c.get("formato", "") for c in bib["cuerpos"]}
+for a in bib["anuncios"]:
+    a["nombre"] = ultimo_nombre.get(a["id"], a["nombre"])   # si se renombra en Meta, aquí también
+    m = NOMEN.match(a["nombre"].strip().upper())
+    if not m:
+        continue
+    _, cid, visual, hook = m.groups()
+    for k, v in (("cuerpo", cid), ("formato", formato_de.get(cid, "")), ("concepto", visual.capitalize()),
+                 ("tipo_hook", "Visual" if hook == "MUDO" else "Texto + visual"),
+                 ("hook", "" if hook == "MUDO" else bib.get("hooks", {}).get(hook, hook.capitalize()))):
+        if not a.get(k):
+            a[k] = v
 estado_ult = {}
 for fila in sorted(hist["filas"], key=lambda x: x["fecha"]):
     if fila.get("estado"):
@@ -641,7 +658,8 @@ lineas = [
     ("t", "Veredicto (igual que en el dashboard): ESCALAR (≥3 compras y CPA ≤ 75% del break-even) · MANTENER (≥3 y ≤ break-even) · "
           "PROMETEDOR (<3 compras y ≤ break-even) · VIGILAR · APAGAR (sin ventas al gastar 1,5 × break-even, o caro al gastar 2 ×) · APRENDIENDO."),
     ("h", "Para sacarle partido"),
-    ("t", "Nombra los anuncios ÁNGULO_CONCEPTO_HOOK_VERSIÓN (ej.: BROAD_LLAVES_H2_V3). Así cada variación se agrupa sola por concepto."),
+    ("t", "Nombra los anuncios ÁNGULO_CUERPO_VISUAL_HOOK_VERSIÓN (ej.: BROAD_C4_BOLARDO_PRECIO_V1; MUDO si la voz no dice hook). "
+          "Con ese nombre el cuerpo, el concepto y el hook se rellenan solos al regenerar. Mismo nombre en el vídeo del PC."),
     ("t", "Testea hooks nuevos sobre un cuerpo ganador (mismo cuerpo, distinto inicio): así sabes si lo que gana es el hook o el cuerpo."),
     ("t", "Colores: azul sobre amarillo = lo escribes tú. Negro = fórmula."),
 ]

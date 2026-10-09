@@ -2,9 +2,11 @@ GUION DEMO · 3 HOOKS · CeraLux (voz para ElevenLabs)
 Números escritos en letra para que la voz los lea bien.
 
 MONTAJE EN DAVINCI
-  DEMO_PRECIO_H1  =  HOOK 1 + CUERPO + CIERRE
-  DEMO_MIRA_H2    =  HOOK 2 + PUENTE + CUERPO + CIERRE
-  DEMO_TIENES_H3  =  HOOK 3 + PUENTE + CUERPO + CIERRE
+  BROAD_C4_BOLARDO_PRECIO_V1  =  HOOK 1 + CUERPO + CIERRE
+  BROAD_C4_BOLARDO_MIRA_V1    =  HOOK 2 + PUENTE + CUERPO + CIERRE
+  BROAD_C4_BOLARDO_TIENES_V1  =  HOOK 3 + PUENTE + CUERPO + CIERRE
+  (Mismo nombre en el export de DaVinci, en el archivo del PC y en el anuncio de Meta.
+   ÁNGULO_CUERPO_VISUAL_HOOK_VERSIÓN · C4 = este cuerpo · BOLARDO = visual del winner)
   (El HOOK 1 ya es la frase del precio, por eso no lleva PUENTE)
 
 
@@ -52,4 +54,5 @@ Texto en pantalla:  OFERTA DE LANZAMIENTO · HASTA EL 31/10
 [ ] Pack 2 a 39,90 € en EasySell (si no, "el segundo a menos de 10 €" no es verdad)
 [ ] Los 3 vídeos con el MISMO visual inicial: raya blanca en primer plano + mano con el bote
     pulverizando el paño, sin enseñar el resultado
-[ ] Cambiar el vídeo en los 3 anuncios plantilla y quitar "CAMBIAR VIDEO →" del nombre
+[ ] Cambiar el vídeo en los 3 anuncios plantilla y renombrarlos exactamente como arriba
+    (BROAD_C4_BOLARDO_PRECIO_V1, BROAD_C4_BOLARDO_MIRA_V1, BROAD_C4_BOLARDO_TIENES_V1)
