@@ -2144,12 +2144,14 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       // "¿Es carrito?" = 1 marca el origen; mientras el estado sea de carrito no es venta. Si el equipo lo recupera,
       // Dropi le pone estado de pedido (Preparado, En ruta…) y desde ahí cuenta como pedido (sin pedido en Shopify).
       const esCarrito = str(r["ES CARRITO"]) === "1";
-      if (estado.includes("carrito") || (esCarrito && esEstado(CANCELADO, estado))) { d.carritos++; continue; }
+      // un carrito "Pendiente de confirmación" aún no lo ha aceptado el cliente: sigue siendo carrito, no pedido
+      if (estado.includes("carrito") || (esCarrito && (esEstado(CANCELADO, estado) || estado.startsWith("pendiente de confirm")))) { d.carritos++; continue; }
       const pack = packDe(Number(r["UD"]) || 1);
       vistos[id] = { estado: estadoTxt, r, fecha, pack };
       if (esEstado(CANCELADO, estado)) { d.cancelados++; continue; }
       // hasta que no sale del almacén el envío viene a 0: se usa la tarifa estándar para no inflar el beneficio
-      const envio = num(r["COSTE DE ENVIO SIN IVA"]) || num(state.cfg["p" + pack + "_logistica"]);
+      // desde el export del 14/10 Dropi escribe "COSTO" en vez de "COSTE": se aceptan las dos cabeceras
+      const envio = num(r["COSTE DE ENVIO SIN IVA"] ?? r["COSTO DE ENVIO SIN IVA"]) || num(state.cfg["p" + pack + "_logistica"]);
       d["p" + pack]++; pedidos++;
       if (esCarrito) d.recuperados++;
       if (esEstado(["entregado"], estado)) { d["ent" + pack]++; d.envio_ent += envio; }

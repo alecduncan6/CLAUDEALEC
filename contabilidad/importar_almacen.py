@@ -54,6 +54,10 @@ ws = load_workbook(args.export, read_only=True, data_only=True).worksheets[0]
 filas = ws.iter_rows(values_only=True)
 cab = [str(c).strip() if c is not None else "" for c in next(filas)]
 col = {nombre: i for i, nombre in enumerate(cab)}
+# desde el export del 14/10 Dropi escribe "COSTO" en vez de "COSTE" en las cabeceras de costes: se aceptan las dos
+for nombre in list(col):
+    if nombre.startswith("COSTO "):
+        col.setdefault("COSTE " + nombre[len("COSTO "):], col[nombre])
 for necesario in ("ESTADO", "UD", "PRECIO", "NOMBRE COMPLETO", "ID PEDIDO", "COSTE DE ENVÍO (SIN IVA)",
                   "Fecha del pedido", "¿Es carrito?"):
     if necesario not in col:
@@ -90,7 +94,8 @@ for f in filas:
         continue
     # "¿Es carrito?" = 1 marca el origen; si el equipo lo recupera, Dropi le pone estado de pedido y cuenta como venta
     es_carrito = str(f[col["¿Es carrito?"]]).strip() == "1"
-    if "carrito" in estado or (es_carrito and es(CANCELADO, estado)):
+    # un carrito "Pendiente de confirmación" aún no lo ha aceptado el cliente: sigue siendo carrito, no pedido
+    if "carrito" in estado or (es_carrito and (es(CANCELADO, estado) or estado.startswith("pendiente de confirm"))):
         dia["carritos"] += 1
         continue
     if es(CANCELADO, estado):

@@ -6,7 +6,12 @@ Ads en Meta. Almacén COD con estados: Preparado → En ruta → Entregado / Dev
 Rechazado/Cancelado (no cuenta como pedido) y Carrito Abandonado (no es pedido).
 Los estados llevan sufijos y se comparan por prefijo (página y `importar_almacen.py` igual): "Rehusado - en tránsito" = el
 cliente lo rechazó en la puerta → Devuelto; "Rechazado" = anulado antes de salir → no es pedido; "Pedido nuevo",
-"Confirmado - Pendiente de preparación", "Enviado", "En ruta"… → pendiente.
+"Confirmado - Pendiente de preparación", "Enviado", "En ruta"… → pendiente. Un carrito ("¿Es carrito?" = 1) en
+"Pendiente de confirmación" aún no lo ha aceptado el cliente → sigue siendo carrito, no pedido.
+Desde el export del 14/10 Dropi escribe "COSTO" en vez de "COSTE" en las cabeceras de costes: los dos importadores aceptan ambas.
+Envío real por transportista (sin IVA): Correos Express 6,85 · CTT 7,20 · MRW 24/48H 7,39 · MRW 14H 8,06 (columna sin
+título al final del export). Motivo "Pendiente de recoger en Franquicia destino" = el paquete espera en la oficina de la
+transportista a que el cliente lo recoja.
 
 ## Piezas
 
@@ -147,6 +152,7 @@ gasto, CPA vs CPA break-even (~11,2 € con los datos actuales), beneficio proye
 - Dropi adelanta un préstamo de 600 €: el "Disponible" de su panel lo incluye, no es dinero propio.
 - Pedidos #1154–#1157 (3 y 4 de octubre, CeraLux, sincronizados con Dropi) quedan fuera porque `fecha_inicio` es el 05/10.
   Pendiente que Alec confirme si son reales (entonces `fecha_inicio` = 2026-10-03 y exportar desde el 03/10) o pruebas.
+  Meta gastó 0 € el 3 y 4 de octubre: no vienen de los anuncios de esta cuenta.
 - Proyección: pendientes (incluidas incidencias) × tasa de entrega (80% estimada hasta 30 pedidos resueltos; luego la real).
 
 Supuestos pendientes de confirmar con Alec: si Meta le cobra IVA (ROI), si factura con IVA, si la comisión de 0,95 € lleva IVA,
