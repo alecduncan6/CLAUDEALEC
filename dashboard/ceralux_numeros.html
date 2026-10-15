@@ -986,9 +986,10 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     if (inc) out.push(["", `${N(inc)} ${inc === 1 ? "pedido" : "pedidos"} en incidencia${sinTocar ? ` (${N(sinTocar)} sin contactar)` : ""}.`, "Cada uno que tu equipo salve es beneficio que no pierdes.", "inc"]);
     // pedidos de Shopify de hace más de 1 hora que Dropi no ha importado: sin etiqueta "Sync OK" y fuera del Excel del almacén
     if (state.shop) {
-      const conocidos = idsAlmacen(), hace1h = Date.now() - 3600 * 1000;
+      // sync_manual: pedidos que Alec metió en Dropi a mano o por CSV (Dropi no les pone la etiqueta en Shopify)
+      const conocidos = idsAlmacen(), hace1h = Date.now() - 3600 * 1000, aMano = new Set((state.cfg.sync_manual || []).map(String));
       const sinDropi = Object.values(state.shop.byDate).flat()
-        .filter((o) => !o.cancelada && !o.sync && o.en < hace1h && !conocidos.has(o.id) && !testCache.has(o.id))
+        .filter((o) => !o.cancelada && !o.sync && o.en < hace1h && !conocidos.has(o.id) && !testCache.has(o.id) && !aMano.has(o.id))
         .sort((a, b) => a.en - b.en);
       if (sinDropi.length) out.unshift(["bad", `${N(sinDropi.length)} ${sinDropi.length === 1 ? "pedido de Shopify no ha llegado" : "pedidos de Shopify no han llegado"} a Dropi:`,
         `${sinDropi.map((o) => o.nombre || o.id).join(", ")}. Sin sincronizar no se preparan ni se envían: impórtalos en Dropi o avisa a soporte.`]);

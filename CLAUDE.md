@@ -64,6 +64,8 @@ transportista a que el cliente lo recoja.
     Tabla "Cuadre": Shopify vs Meta (píxel) vs almacén por día y % que registra Meta. El #1158 es el pedido de test.
     La consulta pide también `name` y `tags`: Dropi etiqueta cada pedido que importa con "Sync OK - Dropi PRO". Aviso rojo arriba
     si un pedido de Shopify de hace más de 1 h no tiene esa etiqueta ni está en ningún `shopify_ids` (no ha llegado a Dropi).
+    `config/main` → `sync_manual`: IDs de Shopify metidos en Dropi a mano o por "Importar CSV Shopify" (no reciben la etiqueta);
+    el aviso los ignora. Hoy: #1242–#1245 (15/10). Si el siguiente Excel no trae su "ID pedido Shopify", se contarían dos veces: enlazarlos.
   - Pestañas **Embudo** (mismos datos de Meta que Creatividades, con el mismo selector de campaña: impresión → clic → carga →
     carrito → compra, dinero perdido por escalón y palancas a testear; clic→carga sano ≥45%, en móvil lo normal es 35-45%) y **Horas** (pedidos de Shopify por hora/franja/día de la semana + gasto
     horario de Meta si lo devuelve; no repartir presupuesto por franjas hasta ~300 pedidos). Solo dueño.
