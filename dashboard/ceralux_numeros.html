@@ -65,6 +65,8 @@ button, input, select { font: inherit; color: inherit; }
 .aviso b { color: var(--warn); }
 .aviso.info { background: var(--soft); }
 .aviso.info b { color: var(--ink); }
+.aviso.bad { background: var(--bad-soft); }
+.aviso.bad b { color: var(--bad); }
 
 /* héroe */
 .hero { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -982,6 +984,15 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const inc = state.incidLoaded ? abiertas.length : todos.reduce((s, d) => s + d.inc, 0);
     const sinTocar = abiertas.filter((i) => !state.acciones.some((a) => a.pedido === i.pedido)).length;
     if (inc) out.push(["", `${N(inc)} ${inc === 1 ? "pedido" : "pedidos"} en incidencia${sinTocar ? ` (${N(sinTocar)} sin contactar)` : ""}.`, "Cada uno que tu equipo salve es beneficio que no pierdes.", "inc"]);
+    // pedidos de Shopify de hace más de 1 hora que Dropi no ha importado: sin etiqueta "Sync OK" y fuera del Excel del almacén
+    if (state.shop) {
+      const conocidos = idsAlmacen(), hace1h = Date.now() - 3600 * 1000;
+      const sinDropi = Object.values(state.shop.byDate).flat()
+        .filter((o) => !o.cancelada && !o.sync && o.en < hace1h && !conocidos.has(o.id) && !testCache.has(o.id))
+        .sort((a, b) => a.en - b.en);
+      if (sinDropi.length) out.unshift(["bad", `${N(sinDropi.length)} ${sinDropi.length === 1 ? "pedido de Shopify no ha llegado" : "pedidos de Shopify no han llegado"} a Dropi:`,
+        `${sinDropi.map((o) => o.nombre || o.id).join(", ")}. Sin sincronizar no se preparan ni se envían: impórtalos en Dropi o avisa a soporte.`]);
+    }
     const desde3 = iso(addDays(new Date(), -2));
     const carr = todos.filter((d) => d.fecha >= desde3).reduce((s, d) => s + d.carritos, 0);
     const recu = todos.filter((d) => d.fecha >= desde3).reduce((s, d) => s + d.recuperados, 0);
@@ -1187,7 +1198,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
 
   /* ---------- Shopify en directo ---------- */
   const SHOP = "Shopify", SHOP_TOOL = "graphql_query";
-  const SHOP_QUERY = "query Pedidos($q: String!, $after: String) { orders(first: 250, after: $after, query: $q, sortKey: CREATED_AT) { nodes { legacyResourceId createdAt cancelledAt test subtotalLineItemsQuantity } pageInfo { hasNextPage endCursor } } }";
+  const SHOP_QUERY = "query Pedidos($q: String!, $after: String) { orders(first: 250, after: $after, query: $q, sortKey: CREATED_AT) { nodes { legacyResourceId name createdAt cancelledAt test subtotalLineItemsQuantity tags } pageInfo { hasNextPage endCursor } } }";
   let shopUnsub = null, shopKey = null, shopTimer = null;
   function textoShop(e) {
     const code = e?.code || "upstream_error";
@@ -1227,8 +1238,10 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       const f = iso(new Date(x.createdAt));
       if (f < desde) continue;
       const cuando = new Date(x.createdAt);
+      // Dropi marca en Shopify cada pedido que importa con la etiqueta "Sync OK - Dropi"
+      const sync = (x.tags || []).some((t) => /sync ok/i.test(str(t)) && /dropi/i.test(str(t)));
       (byDate[f] ||= []).push({ id: str(x.legacyResourceId), pack: packDe(Number(x.subtotalLineItemsQuantity) || 1), cancelada: !!x.cancelledAt,
-        h: cuando.getHours(), dow: cuando.getDay() });
+        h: cuando.getHours(), dow: cuando.getDay(), nombre: str(x.name), en: cuando.getTime(), sync });
     }
     state.shop = { byDate, desde }; state.shopStatus = "ok"; state.shopMsg = "";
     render(); if (state.vista === "cre") pintaCre(); if (state.vista === "hor") renderHoras();
