@@ -79,6 +79,20 @@
    "cta": "Pulsa el enlace de abajo y pídelo ahora.",
    "precio": "menos de 40 € (2 botes)",
    "notas": "Igual que C4 pero el cierre no caduca el 31/10. Va detrás de TIENES/PRECIO sobre visuales nuevos (COLUMNA, LLAVES, PERRO, MANILLA, RAMAS). Guion: creativos/guiones/guion_C5_visuales_nuevos.txt."
+  },
+  {
+   "id": "C6",
+   "nombre": "Presentador en directo · uña + oferta sin fecha",
+   "angulo": "BROAD — demostración + oferta 2 botes",
+   "formato": "Persona real hablando a cámara en su coche + prueba en directo",
+   "apertura": "Y eso sin quedarte tirado dos días sin coche. Y sí, ya lo has probado: la pasta de dientes, lo del súper, los rotuladores esos que anuncian... y la raya ahí sigue.",
+   "solucion": "Dos pulsaciones sobre el paño, y lo pasamos directamente por encima del arañazo.",
+   "mecanismo": "La fórmula de nanopolímeros rellena la marca y te alisa la superficie al instante, sin estropear el barniz. ¿Esa raya blanca que ves cada vez que te acercas al coche? Un par de pasadas, y deja de verse.",
+   "prueba": "Te preguntarás si te va a servir a ti. Pasa la uña por la raya. Si no se engancha, esto es para ti. Si se engancha, es de taller. Así de claro.",
+   "oferta": "Y si te llevas dos botes, te salen por menos de cuarenta euros. Envío gratis, y no pagas nada hasta que te llega a casa.",
+   "cta": "Pulsa el enlace de abajo y pídelo ahora.",
+   "precio": "menos de 40 € (2 botes)",
+   "notas": "Mismo texto que C5 dicho por una persona (ideal 45-55 años) en vez de voz en off. Sirve para comparar formato: BROAD_C6_MANILLA_TIENES_V1 frente a BROAD_C5_MANILLA_TIENES_V1."
   }
  ],
  "anuncios": [

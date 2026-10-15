@@ -2,12 +2,17 @@ GUION C5 · 3 VISUALES NUEVOS · CeraLux (voz para ElevenLabs)
 Números escritos en letra para que la voz los lea bien.
 C5 = el cuerpo C4 con un CIERRE SIN FECHA (no caduca el 31 de octubre).
 
-MONTAJE EN DAVINCI
+MONTAJE EN DAVINCI · 6 ANUNCIOS DE HOY
   BROAD_C5_COLUMNA_TIENES_V1  =  APERTURA COLUMNA + HOOK TIENES + PUENTE + CUERPO + CIERRE C5
   BROAD_C5_LLAVES_TIENES_V1   =  APERTURA LLAVES  + HOOK TIENES + PUENTE + CUERPO + CIERRE C5
+  BROAD_C5_MANILLA_TIENES_V1  =  APERTURA MANILLA + HOOK TIENES + PUENTE + CUERPO + CIERRE C5
   BROAD_C5_PERRO_PRECIO_V1    =  APERTURA PERRO   + HOOK PRECIO          + CUERPO + CIERRE C5
-  (HOOK, PUENTE y CUERPO ya los tienes grabados del C4: solo es nuevo el CIERRE y las aperturas)
-  (Si no encuentras uno de los arañazos: BROAD_C5_MANILLA_TIENES_V1, rayitas alrededor de la manilla)
+  BROAD_C5_RAMAS_PRECIO_V1    =  APERTURA RAMAS   + HOOK PRECIO          + CUERPO + CIERRE C5
+  BROAD_C6_MANILLA_TIENES_V1  =  PRESENTADOR: una persona real en su coche dice el mismo texto
+                                 (TIENES + PUENTE + CUERPO + CIERRE C5) y hace la prueba en directo.
+                                 Mejor alguien de 45-55 años; si no hay nadie, tú.
+  (C5 y C6 llevan el mismo texto: así sabemos si gana la voz en off o la persona hablando)
+  (HOOK, PUENTE y CUERPO de voz en off ya los tienes del C4: solo es nuevo el CIERRE)
 
 
 ==================== APERTURAS (lo único que hay que grabar) ====================
@@ -20,7 +25,9 @@ LLAVES   Puerta con una raya fina y larga a la altura de la manilla, llave en la
          Macro de la raya. No grabar a nadie rayando un coche: solo el arañazo ya hecho.
 PERRO    Rayitas finas de uñas de perro bajo la manilla o en el maletero. Si tienes perro, que salga
          en el plano 1 segundo junto al coche. Macro de las rayas.
-MANILLA  (reserva) Las rayitas que dejan uñas y anillos en el hueco de la manilla. Macro.
+MANILLA  Las rayitas que dejan uñas y anillos en el hueco de la manilla. Mano abriendo la puerta y macro.
+RAMAS    Rayas finas a lo largo del lateral por ramas o zarzas (camino de campo, aparcar junto a un seto).
+         Plano del lateral y macro.
 
 Mismo estilo que BOLARDO: coche normal, luz natural, sin efectos, el resultado real en el cuerpo.
 
