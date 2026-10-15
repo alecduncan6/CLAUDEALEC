@@ -13,6 +13,12 @@ Envío real por transportista (sin IVA): Correos Express 6,85 · CTT 7,20 · MRW
 título al final del export). Motivo "Pendiente de recoger en Franquicia destino" = el paquete espera en la oficina de la
 transportista a que el cliente lo recoja.
 
+## Cómo trabajar con Alec
+
+- Está a tiempo completo con la tienda: los planes son de jornada completa y van a escalar (creativos, oferta, mercados).
+- Las incidencias las gestiona Goverify: no ponérselas a Alec como tareas.
+- El precio del Pack 2 (39,99 vs 39,90) no se vuelve a sacar; los guiones nuevos dicen "dos botes por menos de 40 €".
+
 ## Piezas
 
 - **Dashboard en vivo (fuente de verdad):** https://claude.ai/artifact/A45KKiFp9hR3ZavkXX1be2

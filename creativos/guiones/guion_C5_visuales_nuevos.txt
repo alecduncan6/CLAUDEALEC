@@ -52,14 +52,13 @@ Te preguntarás si te va a servir a ti. Pasa la uña por la raya. Si no se engan
 
 
 ==================== CIERRE C5 (NUEVO, sin fecha) ====================
-Y si te llevas dos botes, te salen por treinta y nueve noventa. El segundo, a menos de diez euros. Envío gratis, y no pagas nada hasta que te llega a casa. Pulsa el enlace de abajo y pídelo ahora.
+Y si te llevas dos botes, te salen por menos de cuarenta euros. Envío gratis, y no pagas nada hasta que te llega a casa. Pulsa el enlace de abajo y pídelo ahora.
 
-Texto en pantalla:  2 BOTES: 39,90 € · PAGAS AL RECIBIR
+Texto en pantalla:  2 BOTES POR MENOS DE 40 € · PAGAS AL RECIBIR
                     PÍDELO AQUÍ ABAJO
 
 
 ==================== ANTES DE SUBIRLOS ====================
-[ ] Pack 2 a 39,90 € en EasySell (si no, "el segundo a menos de diez euros" no es verdad)
 [ ] Ninguna mención a "octubre", "este mes" ni "hasta el 31"
 [ ] Exportar con el nombre exacto de arriba (mismo nombre en el PC y en Meta)
 [ ] Subirlos a la biblioteca de vídeos de la cuenta HeatioShop y avisar a Claude: monta el conjunto
