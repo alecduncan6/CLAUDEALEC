@@ -204,6 +204,12 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
 .stat .l { font-size: 12px; color: var(--muted); }
 .cards { display: grid; gap: 12px; }
 @media (min-width: 760px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.prueba { display: grid; gap: 14px; }
+.prueba .phead { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.prueba .phead h3 { margin: 2px 0 4px; font-size: 18px; line-height: 1.25; }
+.prueba .kpis { margin: 0; }
+.prueba .bar { margin: 0; }
+.prueba td:first-child { white-space: normal; min-width: 150px; }
 .icard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 10px; min-width: 0; align-content: start; }
 .icard[data-k="contactar"] { border-color: var(--bad); }
 .icard h3 { margin: 0; font-size: 18px; font-weight: 700; font-family: var(--display); font-stretch: 108%; overflow-wrap: anywhere; }
@@ -479,6 +485,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     <label class="camp" for="campCre"><span>Campaña</span><select id="campCre"><option value="">Todas las campañas</option></select></label>
     </div>
     <div class="avisos" id="cAvisos"></div>
+    <section class="panel prueba" id="cPrueba" hidden></section>
     <section class="panel">
       <h2>Qué hacer con tus anuncios</h2>
       <div class="decis" id="cDecis"><div class="empty">Leyendo tus anuncios de Meta…</div></div>
@@ -705,6 +712,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     incid: {}, incidLoaded: false, acciones: [], ultimaImport: null, caja: null,
     periodoCre: lsGet("ceralux.periodoCre") || "todo", campCre: lsGet("ceralux.campCre") || "",
     cre: { status: "idle", msg: "", ads: [], todos: [], at: null },
+    prueba: { status: "idle", todos: [], p: null, at: null },
     periodoHor: lsGet("ceralux.periodoHor") || "todo", hor: { status: "idle", msg: "", gasto: null, at: null },
     vista: location.hash === "#incidencias" ? "inc" : (lsGet("ceralux.vista") || "num")
   };
@@ -1396,8 +1404,24 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   let creUnsub = null, creKey = null;
   const val = (x) => x == null ? 0 : typeof x === "object" ? (parseFloat(x.value) || 0) : (parseFloat(x) || 0);
 
+  function filasCre(rows) {
+    const filtro = str(state.cfg.meta_filtro_campana).toLowerCase();
+    return rows.map((r) => ({
+      id: str(r.id), nombre: str(r.name), angulo: str(r.adset_name) || "Sin conjunto", campId: str(r.campaign_id), campana: str(r.campaign_name), estado: str(r.effective_status),
+      gasto: val(r.amount_spent), impr: val(r.impressions), clics: val(r.link_click), lpv: val(r.landing_page_view),
+      atc: val(r.omni_add_to_cart), checkout: val(r.omni_initiated_checkout), compras: val(r.omni_purchase),
+      p25: val(r.video_p25_watched_actions), thru: val(r.video_thruplay_watched_actions), tmedio: val(r.video_avg_time_watched_actions), freq: val(r.frequency)
+    })).filter((a) => !filtro || a.campana.toLowerCase().includes(filtro));
+  }
+  const filasDe = (ev) => {
+    let p = ev.result?.payload;
+    try { if (typeof p === "string") p = JSON.parse(p); const rows = typeof p?.ad_entities === "string" ? JSON.parse(p.ad_entities) : p?.ad_entities; return Array.isArray(rows) ? rows : null; }
+    catch { return null; }
+  };
+
   async function startCre() {
     const cfg = state.cfg;
+    startPrueba();
     if (state.rol !== "owner" || !cfg.meta_ad_account_id) { pintaCre(); return; }
     const [since, until] = rango(state.periodoCre);
     const key = [cfg.meta_ad_account_id, since, until].join("|");
@@ -1422,19 +1446,119 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       let p = ev.result?.payload, rows = null;
       try { if (typeof p === "string") p = JSON.parse(p); rows = typeof p?.ad_entities === "string" ? JSON.parse(p.ad_entities) : p?.ad_entities; } catch { rows = null; }
       if (!Array.isArray(rows)) { state.cre = { status: "bad", msg: "Respuesta de Meta no reconocida.", ads: [], todos: [], at: null }; pintaCre(); return; }
-      const filtro = str(state.cfg.meta_filtro_campana).toLowerCase();
       // Meta devuelve todos los anuncios de la cuenta, también los que aún no han gastado: se guardan aparte
       // para enseñar los recién lanzados (y poder elegir su campaña) antes de que tengan datos.
-      const todos = rows.map((r) => ({
-        id: str(r.id), nombre: str(r.name), angulo: str(r.adset_name) || "Sin conjunto", campId: str(r.campaign_id), campana: str(r.campaign_name), estado: str(r.effective_status),
-        gasto: val(r.amount_spent), impr: val(r.impressions), clics: val(r.link_click), lpv: val(r.landing_page_view),
-        atc: val(r.omni_add_to_cart), checkout: val(r.omni_initiated_checkout), compras: val(r.omni_purchase),
-        p25: val(r.video_p25_watched_actions), thru: val(r.video_thruplay_watched_actions), tmedio: val(r.video_avg_time_watched_actions), freq: val(r.frequency)
-      })).filter((a) => !filtro || a.campana.toLowerCase().includes(filtro));
+      const todos = filasCre(rows);
       const ads = todos.filter((a) => a.gasto > 0 || a.impr > 0);
       state.cre = { status: "ok", msg: "", ads, todos, at: ev.result?.cache?.storedAt || Date.now() };
       pintaCre();
     }, { refetchInterval: 10 * 60 * 1000, cache: { staleTime: 2 * 60 * 1000 } });
+  }
+
+  /* ---------- prueba en curso (config/main → pruebas) ---------- */
+  // Una prueba = una campaña nueva con fecha de inicio y de decisión ({id, nombre, campaign_id, inicio, decision,
+  // presupuesto, corte, nota, cerrada?}). Se lee de Meta desde su inicio hasta hoy, sea cual sea el periodo elegido,
+  // y se compara con el resto de campañas de CeraLux en las mismas fechas (el "control").
+  let prUnsub = null, prKey = null;
+  const pruebaActual = () => (Array.isArray(state.cfg.pruebas) ? state.cfg.pruebas : [])
+    .filter((p) => p && p.campaign_id && p.inicio && !p.cerrada).sort((x, y) => str(y.inicio).localeCompare(str(x.inicio)))[0] || null;
+  async function startPrueba() {
+    const p = pruebaActual(), cfg = state.cfg, hoyS = iso(new Date());
+    if (!p || state.rol !== "owner" || !cfg.meta_ad_account_id || hoyS < p.inicio) {
+      if (prUnsub) { prUnsub(); prUnsub = null; } prKey = null;
+      state.prueba = { status: "idle", todos: [], p, at: null }; renderPrueba(); return;
+    }
+    const key = [cfg.meta_ad_account_id, p.campaign_id, p.inicio, hoyS].join("|");
+    if (key === prKey) { renderPrueba(); return; }
+    mcpNs = mcpNs || await window.claude?.use?.("mcp");
+    if (!mcpNs) return;
+    prKey = key;
+    if (prUnsub) prUnsub();
+    state.prueba = { status: "loading", todos: [], p, at: null }; renderPrueba();
+    const input = { ad_account_id: String(cfg.meta_ad_account_id), level: "ad", fields: CRE_FIELDS,
+      time_range: JSON.stringify({ since: p.inicio, until: hoyS }), limit: 500, include_additional_context: false,
+      client_conversation_id: convId, advertiser_request: "seguir la prueba nueva desde que empezo y compararla con lo que ya funciona" };
+    prUnsub = mcpNs.watchTool(SERVER, TOOL, input, (ev) => {
+      if (ev.type === "error") {
+        if (!state.prueba.todos.length) state.prueba = { ...state.prueba, status: "bad", msg: textoMeta(ev.error).replace(" · uso el gasto guardado", "") };
+        renderPrueba(); return;
+      }
+      const rows = filasDe(ev);
+      if (!rows) { state.prueba = { ...state.prueba, status: "bad", msg: "Respuesta de Meta no reconocida." }; renderPrueba(); return; }
+      state.prueba = { status: "ok", todos: filasCre(rows), p, at: ev.result?.cache?.storedAt || Date.now() };
+      renderPrueba();
+    }, { refetchInterval: 10 * 60 * 1000, cache: { staleTime: 2 * 60 * 1000 } });
+  }
+
+  function renderPrueba() {
+    const box = $("cPrueba"), pr = state.prueba, p = pr.p || pruebaActual();
+    if (state.rol !== "owner" || !p) { box.hidden = true; return; }
+    box.hidden = false;
+    const ahora = new Date(), ini = parseISO(p.inicio), fin = p.decision ? parseISO(p.decision) : addDays(ini, 3);
+    const totalDias = Math.max(1, Math.round((fin - ini) / 864e5));
+    const horas = Math.max(0, (ahora - ini) / 36e5);
+    const dia = Math.min(totalDias, Math.floor(horas / 24) + 1);
+    const presu = num(p.presupuesto);
+    const cab = (extra) => `<div class="phead"><div><h2 style="margin:0">Prueba en curso</h2><h3>${esc(p.nombre || campCorto(str(p.campaign_id)))}</h3>
+      <div class="small muted">${ahora < ini ? "Empieza" : "Empezó"} el ${esc(corta(p.inicio))}${presu ? ` · ${E0(presu)}/día` : ""} · decides el ${esc(corta(iso(fin)))}</div></div>
+      <span class="chip" data-k="${ahora >= fin ? "ESCALAR" : "PROMETEDOR"}">${ahora < ini ? "EMPIEZA " + esc(corta(p.inicio)).toUpperCase() : ahora >= fin ? "TOCA DECIDIR" : `DÍA ${dia} DE ${totalDias}`}</span></div>${extra || ""}`;
+    if (horas <= 0) { box.innerHTML = cab(`<p class="small muted" style="margin:0">Arranca a las 00:00 del ${esc(corta(p.inicio))}.</p>`); return; }
+    if (pr.status === "loading" || pr.status === "idle") { box.innerHTML = cab(`<div class="empty">Leyendo la prueba en Meta…</div>`); return; }
+    if (pr.status === "bad") { box.innerHTML = cab(`<div class="empty">${esc(pr.msg || "No se pudo leer Meta.")}</div>`); return; }
+
+    const u = unit(state.cfg), h = historico(), BE = breakEven(u, h).cpaBE, benPedido = breakEven(u, h).benPedido;
+    const corte = num(p.corte) || 1.5 * BE;
+    const enPrueba = (a) => a.campId === String(p.campaign_id);
+    const todos = pr.todos, test = todos.filter(enPrueba), ctrl = todos.filter((a) => !enPrueba(a));
+    const sum = (l) => l.reduce((t, a) => { for (const k of ["gasto", "impr", "clics", "lpv", "compras", "p25"]) t[k] += a[k]; return t; }, { gasto: 0, impr: 0, clics: 0, lpv: 0, compras: 0, p25: 0 });
+    const T = sum(test), C = sum(ctrl), TT = sum(todos);
+    // misma corrección que Creatividades: pedidos reales de esas fechas ÷ compras de Meta de todas las campañas
+    const reales = agregar(p.inicio, iso(ahora), u, h.tasa).H;
+    const ratio = reales > 0 && TT.compras > 0 ? reales / TT.compras : 1;
+    const cpa = (g, c) => c > 0 ? g / (c * ratio) : null;
+    const cpaT = cpa(T.gasto, T.compras), cpaC = cpa(C.gasto, C.compras);
+    const previsto = presu ? presu * Math.min(horas, totalDias * 24) / 24 : 0;
+    const benT = T.compras * ratio * benPedido - T.gasto * (1 + u.recargo);
+    const ads = test.map((a) => {
+      const x = { ...a, pedidos: a.compras * ratio };
+      x.cpaReal = x.pedidos > 0 ? x.gasto / x.pedidos : null;
+      x.v = x.gasto > 0 || x.impr > 0 ? veredicto(x, BE) : "";
+      x.gancho = x.p25 > 0 ? ratioDe(x.p25, x.impr) : null; x.ctr = ratioDe(x.clics, x.impr); x.web = ratioDe(x.lpv, x.clics);
+      return x;
+    }).sort((x, y) => y.compras - x.compras || y.gasto - x.gasto || x.nombre.localeCompare(y.nombre));
+    const conDatos = ads.filter((a) => a.impr > 0);
+    const gastoMedio = conDatos.length && horas >= 6 ? T.gasto / conDatos.length / (horas / 24) : 0;
+    const mGancho = ratioDe(C.p25, C.impr), mCtr = ratioDe(C.clics, C.impr), mWeb = ratioDe(C.lpv, C.clics);
+    const kpis = [
+      ["Gasto", E(T.gasto), previsto ? `de ${E0(previsto)} previstos` : `${N(conDatos.length)} anuncios con datos`, previsto && T.gasto < 0.6 * previsto && horas >= 12],
+      ["Compras (Meta)", N(T.compras), `≈ ${N(Math.round(T.compras * ratio))} pedidos reales`],
+      ["CPA real", E(cpaT), `máx. rentable ${E(BE)}`, cpaT != null && cpaT > BE],
+      ["Resto de campañas", E(cpaC), `CPA real en las mismas fechas (${E0(C.gasto)})`],
+      ["Beneficio estimado", E(benT), "de la prueba, antes de otros gastos", benT < 0],
+      ["Llega a la web", P(ratioDe(T.lpv, T.clics)), `resto de campañas ${P(mWeb)}`]
+    ].map(([l, v, s2, bad]) => `<div class="kpi"><span class="l">${l}</span><span class="v num${bad ? " bad" : ""}">${v}</span><span class="s">${esc(s2)}</span></div>`).join("");
+    const fila = (a) => `<tr><td><b>${esc(a.nombre)}</b><div class="small muted">${esc(estadoTxt(a.estado))}</div></td><td>${E(a.gasto)}</td>
+      <td>${marca(a.gancho, a.impr >= 300 ? mGancho : 0, P)}</td><td>${marca(a.ctr, a.impr >= 300 ? mCtr : 0, P)}</td><td>${marca(a.web, a.clics >= 15 ? mWeb : 0, P)}</td>
+      <td>${N(a.compras)}</td><td class="${a.cpaReal != null && a.cpaReal > BE ? "neg" : ""}">${E(a.cpaReal)}</td>
+      <td>${a.v ? `<span class="chip" data-k="${a.v}">${a.v}</span>` : `<span class="small muted">sin impresiones</span>`}</td></tr>`;
+    // qué hacer hoy con la prueba
+    const corta1 = ads.filter((a) => a.compras === 0 && a.gasto >= corte);
+    const ganan = ads.filter((a) => a.compras >= 2 && a.cpaReal != null && a.cpaReal <= BE);
+    const pasos = [];
+    if (corta1.length) pasos.push(`<b>Apaga</b> ${corta1.map((a) => esc(a.nombre)).join(", ")}: ${E0(corte)} gastados sin ninguna venta.`);
+    if (ganan.length) pasos.push(`<b>${ahora >= fin ? "Pásalo a la campaña principal" : "Va ganando"}</b>: ${ganan.map((a) => `${esc(a.nombre)} (CPA ${E(a.cpaReal)})`).join(", ")}.`);
+    if (ahora >= fin && !ganan.length) pasos.push(`<b>Toca decidir</b>: ningún anuncio ha llegado a 2 ventas con CPA por debajo de ${E(BE)}. Apaga los que no venden y deja como mucho uno o dos con más datos.`);
+    if (!pasos.length) pasos.push(`Aún sin decisiones: cada anuncio se juzga al gastar ${E0(corte)} (o con 2 ventas por debajo de ${E(BE)}).`);
+    if (ahora < fin && gastoMedio > 0 && gastoMedio * totalDias < corte) pasos.push(`Con ${N(ads.length)} anuncios cada uno gasta unos ${E(gastoMedio)}/día: no llegarán a ${E0(corte)} en ${totalDias} días. Para decidir antes, apaga los de gancho flojo o súbele el presupuesto a la prueba.`);
+    box.innerHTML = cab(`
+      <div class="bar" title="Tiempo de la prueba"><div style="width:${Math.min(100, horas / (totalDias * 24) * 100).toFixed(1)}%"></div></div>
+      <div class="kpis">${kpis}</div>
+      <div class="avisos">${pasos.map((t) => `<div class="aviso info"><span>${t}</span></div>`).join("")}</div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Anuncio</th><th>Gasto</th><th>Gancho</th><th>CTR</th><th>Llega a la web</th><th>Compras</th><th>CPA real</th><th>Veredicto</th></tr></thead>
+        <tbody>${ads.length ? ads.map(fila).join("") : `<tr><td colspan="8" class="empty">Meta todavía no devuelve anuncios de esta campaña.</td></tr>`}</tbody>
+      </table></div>
+      <p class="small muted" style="margin:0">Desde el ${esc(corta(p.inicio))} hasta hoy, sea cual sea el periodo de arriba. Gancho, CTR y llegada a la web se marcan frente al resto de campañas en las mismas fechas.${p.nota ? " " + esc(p.nota) : ""}${pr.at ? ` Actualizado ${fechaHora(new Date(pr.at).toISOString())}.` : ""}</p>`);
   }
 
   const VEREDICTOS = {
@@ -1503,7 +1627,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     state.campCre = ev.target.value; lsSet("ceralux.campCre", state.campCre); pintaCre();
   });
 
-  function pintaCre() { pintarCampanas(); renderCre(); renderEmbudo(); }
+  function pintaCre() { pintarCampanas(); renderCre(); renderEmbudo(); renderPrueba(); }
 
   function renderCre() {
     const cKpis = $("cKpis"), decis = $("cDecis");

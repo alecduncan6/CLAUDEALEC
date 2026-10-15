@@ -80,6 +80,12 @@ transportista a que el cliente lo recoja.
     ESCALAR (≥3 compras y CPA ≤ 75% BE) · MANTENER (≥3 y ≤ BE) · PROMETEDOR (<3 y ≤ BE) · VIGILAR · APAGAR
     (0 compras con gasto ≥ 1,5×BE, o CPA > BE con gasto ≥ 2×BE) · APRENDIENDO (gasto < 0,5×BE sin compras).
     Diagnóstico frente a la media de la campaña: gancho (vídeo al 25% ÷ impresiones), CTR, llegada a la web, compra/clic.
+    **Prueba en curso** (arriba de Creatividades): `config/main` → `pruebas` = `[{id, nombre, campaign_id, inicio, decision,
+    presupuesto, corte, nota, cerrada?}]`. Lee Meta desde `inicio` hasta hoy (sea cual sea el periodo) y compara con el resto
+    de campañas en esas fechas: gasto vs previsto, CPA real, llegada a la web, tabla por anuncio con veredicto y qué hacer
+    (apagar a `corte` € sin ventas; ganador = ≥2 ventas con CPA ≤ BE → a la principal). Al terminar, `cerrada: true`.
+    Hoy: `rip1` = campaña `CeraLux ES — TESTING 2 — RIP COMPETENCIA` (120255201430200271), 16/10 → 19/10, 30 €/día,
+    FINISH RIP 1-4 (vídeos de la competencia adaptados) + IMAGEN 1-3.
 - **Excel de contabilidad:** `contabilidad/CeraLux_Contabilidad.xlsx`, generado por `contabilidad/generar_excel.py`
   desde `contabilidad/datos.json`. Todo con fórmulas (Dashboard, Diario, Gastos, Config, Guía).
 - **Excel de creativos (aparte de la app):** `creativos/CeraLux_Creativos.xlsx`, generado por
