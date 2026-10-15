@@ -657,6 +657,8 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     ["p1_pvp", "PVP Pack 1 (€)", "eur"], ["p2_pvp", "PVP Pack 2 (€)", "eur"], ["p3_pvp", "PVP Pack 3 (€)", "eur"],
     ["p1_coste_ud", "Coste producto / ud sin IVA (€)", "eur"], ["p2_coste_ud", "Coste producto / ud Pack 2 (€)", "eur"],
     ["p3_coste_ud", "Coste producto / ud Pack 3 (€)", "eur"],
+    ["p3_desde", "Pack 3 actual vigente desde", "date"], ["p3_antes_pvp", "PVP Pack 3 antes de esa fecha (€)", "eur"],
+    ["p3_antes_coste_ud", "Coste / ud Pack 3 antes (€)", "eur"],
     ["p1_logistica", "Envío estándar Pack 1 (€, sin IVA)", "eur"], ["p2_logistica", "Envío estándar Pack 2 (€, sin IVA)", "eur"],
     ["p3_logistica", "Envío estándar Pack 3 (€, sin IVA)", "eur"],
     ["p1_uds", "Unidades Pack 1", "int"], ["p2_uds", "Unidades Pack 2", "int"], ["p3_uds", "Unidades Pack 3", "int"],
@@ -784,7 +786,19 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     return r;
   }
 
-  function calcDia(fecha, u, tasa) {
+  // Pack 3 cambió el 15/10 (59,99 € con aspirador de regalo): los días anteriores usan su precio y coste de antes
+  let uAntesDe = null, uAntesCache = null;
+  function unitDia(fecha, u) {
+    const c = state.cfg;
+    if (!c.p3_desde || fecha >= c.p3_desde) return u;
+    if (uAntesDe !== u) {
+      uAntesDe = u;
+      uAntesCache = unit({ ...c, p3_pvp: num(c.p3_antes_pvp) || c.p3_pvp, p3_coste_ud: num(c.p3_antes_coste_ud) || c.p3_coste_ud });
+    }
+    return uAntesCache;
+  }
+  function calcDia(fecha, uHoy, tasa) {
+    const u = unitDia(fecha, uHoy);
     const d = state.dias[fecha];
     const pk = (n) => u["p" + n], p = {}, e = {}, dv = {}, nv = {}, x = {}, z = {};
     for (const n of PK) { p[n] = num(d?.["p" + n]); e[n] = num(d?.["ent" + n]); dv[n] = num(d?.["dev" + n]); nv[n] = 0; }
@@ -2294,7 +2308,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       if (t === "bool") return `<label for="${id}">${l}<select id="${id}"><option value="1"${c[k] ? " selected" : ""}>Sí</option><option value="0"${c[k] ? "" : " selected"}>No</option></select></label>`;
       const v = t === "pct" ? +(num(c[k]) * 100).toFixed(2) : (c[k] ?? "");
       const type = t === "date" ? "date" : t === "text" ? "text" : "number";
-      const step = t === "int" ? "1" : "0.01";
+      const step = t === "int" ? "1" : "any";
       return `<label for="${id}">${l}<input id="${id}" type="${type}"${type === "number" ? ` step="${step}" min="0"` : ""} value="${esc(v)}"></label>`;
     }).join("");
     box.dataset.ready = "1";

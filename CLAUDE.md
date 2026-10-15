@@ -65,7 +65,7 @@ transportista a que el cliente lo recoja.
     La consulta pide también `name` y `tags`: Dropi etiqueta cada pedido que importa con "Sync OK - Dropi PRO". Aviso rojo arriba
     si un pedido de Shopify de hace más de 1 h no tiene esa etiqueta ni está en ningún `shopify_ids` (no ha llegado a Dropi).
     `config/main` → `sync_manual`: IDs de Shopify metidos en Dropi a mano o por "Importar CSV Shopify" (no reciben la etiqueta);
-    el aviso los ignora. Hoy: #1242–#1245 (15/10). Si el siguiente Excel no trae su "ID pedido Shopify", se contarían dos veces: enlazarlos.
+    el aviso los ignora. Hoy: #1242–#1245 (15/10); el export del 15/10 ya los trae enlazados (sin doble conteo).
   - Pestañas **Embudo** (mismos datos de Meta que Creatividades, con el mismo selector de campaña: impresión → clic → carga →
     carrito → compra, dinero perdido por escalón y palancas a testear; clic→carga sano ≥45%, en móvil lo normal es 35-45%) y **Horas** (pedidos de Shopify por hora/franja/día de la semana + gasto
     horario de Meta si lo devuelve; no repartir presupuesto por franjas hasta ~300 pedidos). Solo dueño.
@@ -148,8 +148,13 @@ gasto, CPA vs CPA break-even (~11,2 € con los datos actuales), beneficio proye
 
 ## Modelo (igual en Excel y dashboard)
 
-- Packs: Pack 1 = 1 ud a 29,99 €, Pack 2 = 2 uds a 39,99 €, Pack 3 = 3 uds a 49,99 € (`p3_*` en config; primera venta el 08/10, #1193).
-- Coste del pedido (almacén) = uds × 1,99 × 1,21 + envío real sin IVA (6,85-8,06 €) → 10,47 € / 12,88 € / 15,28 € con 8,06 €.
+- Packs: Pack 1 = 1 ud a 29,99 €, Pack 2 = 2 uds a 39,99 €, Pack 3 = 3 uds + aspirador de regalo (SKU `ASPIRADORPEQ`, 4,19 € sin IVA,
+  sin coste logístico extra) a 59,99 € desde el 15/10 (`p3_desde`): `p3_coste_ud` = (3 × 1,99 + 4,19) / 3 = 3,3867.
+  Los pedidos de Pack 3 anteriores (3 uds a 49,99 €, primera venta el 08/10, #1193) usan `p3_antes_pvp`/`p3_antes_coste_ud`
+  (página: `unitDia`; Excel: columna G de Config y `IF($A<P3_DESDE,…)` en el Diario) para que la liquidación siga cuadrando con Dropi.
+  En EasySell el aspirador es el producto de Shopify "Aspirador de coche (REGALO)" a 0 €: revisar en el siguiente export
+  cómo lo pinta Dropi en UDS/PRODUCTOS (si cuenta 4 uds, el importador lo sigue clasificando como Pack 3).
+- Coste del pedido (almacén) = uds × 1,99 × 1,21 + envío real sin IVA (6,85-8,06 €) → 10,47 € / 12,88 € / 20,35 € (Pack 3 + aspirador; 15,28 € el de antes) con 8,06 €.
   Envío estándar del Pack 3 = 8,06 € (supuesto hasta ver el real en el export).
 - Excel de contabilidad, Diario: B-D pedidos P1-P3, E-G entregados, H-J devueltos, K incidencias, L-M envío real, N Ads, O notas,
   P-Y cálculos (W liquidación, X cobrado, Y proyectado), AA-AO auxiliares. Config: packs en C/D/E, notas en F.

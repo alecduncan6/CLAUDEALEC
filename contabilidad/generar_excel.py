@@ -147,7 +147,7 @@ P3_DEF = {"pvp": 49.99, "uds": 3, "coste_ud": 1.99, "logistica": 8.06}
 filas_pack = [
     (5, "PVP contra reembolso (IVA incl.)", "pvp", EUR, "Importe que cobra el repartidor. Dato de Alec."),
     (6, "Unidades en el pack", "uds", ENTERO, "Dato de Alec."),
-    (7, "Coste producto por unidad (sin IVA)", "coste_ud", EUR, "Export del almacén: 1,99 € por spray (sin IVA)."),
+    (7, "Coste producto por unidad (sin IVA)", "coste_ud", EUR, "Export del almacén: 1,99 € por spray (sin IVA). Pack 3 desde el 15/10: (3 × 1,99 + aspirador 4,19) / 3."),
     (8, "Coste de envío estándar (sin IVA)", "logistica", EUR,
      "Tarifa máxima del almacén (8,06 €). Si el día tiene envío real del export, se usa el real (6,85-8,06 €)."),
 ]
@@ -160,8 +160,8 @@ for f, etiqueta, clave, fmt, nota in filas_pack:
 
 calc_pack = [
     (9, "Coste producto (IVA incl.)", "={c}6*{c}7*(1+IVA_PROD)", "Uds × coste × (1 + IVA producto)."),
-    (10, "Coste total del pedido", "={c}9+{c}8", "Cuadra con 'Coste total pedido' del almacén: 10,47 €, 12,88 € y 15,28 €."),
-    (11, "Beneficio dropshipper por pedido ENTREGADO", "={c}5-{c}10", "Lo que te liquida el almacén: 19,52 €, 27,11 € y 34,71 €."),
+    (10, "Coste total del pedido", "={c}9+{c}8", "Cuadra con 'Coste total pedido' del almacén: 10,47 €, 12,88 € y 20,35 € (Pack 3 + aspirador; 15,28 € el de antes)."),
+    (11, "Beneficio dropshipper por pedido ENTREGADO", "={c}5-{c}10", "Lo que te liquida el almacén: 19,52 €, 27,11 € y 39,64 € (34,71 € el Pack 3 de antes)."),
     (12, "IVA repercutido (dentro del PVP)", "={c}5*IVA_VENTAS/(1+IVA_VENTAS)", "PVP × 21/121."),
     (13, "IVA soportado deducible", "={c}6*{c}7*IVA_PROD+IF(LOG_IVA=1,{c}8*IVA_VENTAS/(1+IVA_VENTAS),0)",
      "IVA del producto (+ IVA del envío solo si en Parámetros dices que lo lleva)."),
@@ -174,6 +174,17 @@ for f, etiqueta, formula, nota in calc_pack:
     for c in "CDE":
         celda(ws, f"{c}{f}", formula.format(c=c), fmt=EUR, bold=(f in (11, 15)), borde=BORDE)
     celda(ws, f"F{f}", nota, color=GRIS, size=9)
+
+# Pack 3 de antes del cambio (G): los días anteriores a P3_DESDE se calculan con estos valores
+ws.column_dimensions["G"].width = 17
+cabecera(ws, 4, 7, ["Pack 3 antes"])
+for f, _, clave, fmt, _ in filas_pack:
+    antes = cfg.get(f"p3_antes_{clave}", cfg.get(f"p3_{clave}", P3_DEF[clave]))
+    entrada(ws, f"G{f}", antes, fmt)
+for f, _, formula, _ in calc_pack:
+    celda(ws, f"G{f}", formula.format(c="G"), fmt=EUR, bold=(f in (11, 15)), borde=BORDE)
+celda(ws, "B16", "Pack 3 actual vigente desde (antes: columna G)")
+entrada(ws, "C16", dt.date.fromisoformat(cfg["p3_desde"]) if cfg.get("p3_desde") else dt.date(2000, 1, 1), FECHA)
 
 cabecera(ws, 17, 2, ["Parámetros", "Valor", "", "", "Qué significa"])
 ws["B17"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
@@ -256,6 +267,7 @@ for n, ref in {
     "P1_PVP": "$C$5", "P2_PVP": "$D$5", "P1_CPROD": "$C$9", "P2_CPROD": "$D$9",
     "P1_LOG": "$C$8", "P2_LOG": "$D$8", "P1_IVAN": "$C$14", "P2_IVAN": "$D$14",
     "P3_PVP": "$E$5", "P3_CPROD": "$E$9", "P3_LOG": "$E$8", "P3_IVAN": "$E$14",
+    "P3A_PVP": "$G$5", "P3A_CPROD": "$G$9", "P3A_IVAN": "$G$14", "P3_DESDE": "$C$16",
     "IVA_VENTAS": "$C$18", "IVA_PROD": "$C$19", "COSTE_DEV": "$C$22", "RECARGO_ADS": "$C$23",
     "OBJETIVO_MES": "$C$27", "FECHA_INICIO": "$C$28", "APLICA_IVA": "$C$33", "LOG_IVA": "$C$34",
     "IVA_DEV": "$C$35", "COMISION": "$C$31", "TASA_USADA": "$C$39", "BEN_PEDIDO": "$C$45", "CPA_BE": "$C$46", "ROAS_BE": "$C$47",
@@ -294,16 +306,16 @@ cols = [
     ("O", "Notas", 24, None, None),
     ("P", "Pedidos totales", 8, ENTERO, "=B{r}+C{r}+D{r}"),
     ("Q", "Pendientes", 9, ENTERO, "=AA{r}+AB{r}+AC{r}"),
-    ("R", "Facturación bruta", 11, EUR, "=B{r}*P1_PVP+C{r}*P2_PVP+D{r}*P3_PVP"),
+    ("R", "Facturación bruta", 11, EUR, "=B{r}*P1_PVP+C{r}*P2_PVP+D{r}*IF($A{r}<P3_DESDE,P3A_PVP,P3_PVP)"),
     ("S", "Ticket medio", 9, EUR, '=IF(P{r}>0,R{r}/P{r},"")'),
     ("T", "CPA", 9, EUR, '=IF(P{r}>0,N{r}/P{r},"")'),
     ("U", "ROAS", 8, ROAS, '=IF(N{r}>0,R{r}/N{r},"")'),
     ("V", "Tasa de entrega", 9, PCT,
      '=IF(E{r}+F{r}+G{r}+H{r}+I{r}+J{r}>0,(E{r}+F{r}+G{r})/(E{r}+F{r}+G{r}+H{r}+I{r}+J{r}),"")'),
     ("W", "Liquidación almacén (entregados)", 12, EUR,
-     "=E{r}*(P1_PVP-P1_CPROD)+F{r}*(P2_PVP-P2_CPROD)+G{r}*(P3_PVP-P3_CPROD)-" + D_ENVIO_ENT),
+     "=E{r}*(P1_PVP-P1_CPROD)+F{r}*(P2_PVP-P2_CPROD)+G{r}*(IF($A{r}<P3_DESDE,P3A_PVP,P3_PVP)-IF($A{r}<P3_DESDE,P3A_CPROD,P3_CPROD))-" + D_ENVIO_ENT),
     ("X", "Beneficio cobrado (real)", 12, EUR,
-     "=W{r}-(E{r}*P1_IVAN+F{r}*P2_IVAN+G{r}*P3_IVAN)-(H{r}+I{r}+J{r})*(COSTE_DEV-IVA_DEV)-AM{r}-AO{r}"),
+     "=W{r}-(E{r}*P1_IVAN+F{r}*P2_IVAN+G{r}*IF($A{r}<P3_DESDE,P3A_IVAN,P3_IVAN))-(H{r}+I{r}+J{r})*(COSTE_DEV-IVA_DEV)-AM{r}-AO{r}"),
     ("Y", "Beneficio proyectado", 12, EUR, "=AH{r}-AI{r}-AJ{r}-AK{r}-AL{r}-AM{r}-AO{r}"),
     ("Z", "", 2, None, None),
     ("AA", "Pendientes Pack 1", 9, ENTERO, "=MAX(0,B{r}-E{r}-H{r})"),
@@ -313,11 +325,11 @@ cols = [
     ("AE", "Entregados proy. P2", 9, '0.0;-0.0;"-"', "=F{r}+AB{r}*TASA_USADA"),
     ("AF", "Entregados proy. P3", 9, '0.0;-0.0;"-"', "=G{r}+AC{r}*TASA_USADA"),
     ("AG", "Devueltos proy.", 9, '0.0;-0.0;"-"', "=H{r}+I{r}+J{r}+(AA{r}+AB{r}+AC{r})*(1-TASA_USADA)"),
-    ("AH", "Ventas proy. (IVA incl.)", 11, EUR, "=AD{r}*P1_PVP+AE{r}*P2_PVP+AF{r}*P3_PVP"),
-    ("AI", "Coste producto proy.", 10, EUR, "=AD{r}*P1_CPROD+AE{r}*P2_CPROD+AF{r}*P3_CPROD"),
+    ("AH", "Ventas proy. (IVA incl.)", 11, EUR, "=AD{r}*P1_PVP+AE{r}*P2_PVP+AF{r}*IF($A{r}<P3_DESDE,P3A_PVP,P3_PVP)"),
+    ("AI", "Coste producto proy.", 10, EUR, "=AD{r}*P1_CPROD+AE{r}*P2_CPROD+AF{r}*IF($A{r}<P3_DESDE,P3A_CPROD,P3_CPROD)"),
     ("AJ", "Envíos proy.", 10, EUR, "=" + D_ENVIO_ENT + "+" + D_ENVIO_PEND + "*TASA_USADA"),
     ("AK", "Devoluciones proy.", 10, EUR, "=AG{r}*COSTE_DEV"),
-    ("AL", "IVA neto proy.", 10, EUR, "=AD{r}*P1_IVAN+AE{r}*P2_IVAN+AF{r}*P3_IVAN-AG{r}*IVA_DEV"),
+    ("AL", "IVA neto proy.", 10, EUR, "=AD{r}*P1_IVAN+AE{r}*P2_IVAN+AF{r}*IF($A{r}<P3_DESDE,P3A_IVAN,P3_IVAN)-AG{r}*IVA_DEV"),
     ("AM", "Ads total (con recargo)", 10, EUR, "=N{r}*(1+RECARGO_ADS)"),
     ("AN", "Pedidos con envío real", 9, ENTERO, "=IF(ISNUMBER(L{r}),E{r}+F{r}+G{r}+AA{r}+AB{r}+AC{r},0)"),
     ("AO", "Comisión almacén", 9, EUR, "=P{r}*COMISION"),
