@@ -657,7 +657,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     p2_nombre: "Pack 2 uds", p2_pvp: 39.99, p2_uds: 2, p2_coste_ud: 1.99, p2_logistica: 8.06,
     p3_nombre: "Pack 3 uds", p3_pvp: 49.99, p3_uds: 3, p3_coste_ud: 1.99, p3_logistica: 8.06,
     iva_ventas: 0.21, iva_producto: 0.21, aplicar_iva: true, coste_devolucion: 8.06, comision_pedido: 0.95, recargo_ads: 0,
-    tasa_entrega_estimada: 0.8, min_resueltos: 30, pct_pack2_estimado: 0.3, pct_pack3_estimado: 0.05, objetivo_mensual: 10000, logistica_con_iva: false,
+    tasa_entrega_estimada: 0.8, tasa_incidencias: 0.35, min_resueltos: 30, pct_pack2_estimado: 0.3, pct_pack3_estimado: 0.05, objetivo_mensual: 10000, logistica_con_iva: false,
     fecha_inicio: "", meta_ad_account_id: "", meta_filtro_campana: ""
   };
   const CFG_FIELDS = [
@@ -670,7 +670,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     ["p3_logistica", "Envío estándar Pack 3 (€, sin IVA)", "eur"],
     ["p1_uds", "Unidades Pack 1", "int"], ["p2_uds", "Unidades Pack 2", "int"], ["p3_uds", "Unidades Pack 3", "int"],
     ["coste_devolucion", "Coste por pedido devuelto (€)", "eur"], ["comision_pedido", "Comisión almacén por pedido confirmado (€)", "eur"],
-    ["tasa_entrega_estimada", "Tasa de entrega estimada (%)", "pct"],
+    ["tasa_entrega_estimada", "Tasa de entrega estimada (%)", "pct"], ["tasa_incidencias", "Incidencias que acaban entregadas (%)", "pct"],
     ["min_resueltos", "Pedidos resueltos para usar tu tasa real", "int"], ["pct_pack2_estimado", "% Pack 2 estimado", "pct"],
     ["pct_pack3_estimado", "% Pack 3 estimado", "pct"],
     ["iva_ventas", "IVA ventas (%)", "pct"], ["iva_producto", "IVA producto (%)", "pct"],
@@ -748,17 +748,33 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const cfg = state.cfg, res = ent + dev, tot = sumPK((n) => ped[n]);
     const s2 = num(cfg.pct_pack2_estimado), s3 = num(cfg.pct_pack3_estimado);
     const mix = tot > 0 ? { 1: ped[1] / tot, 2: ped[2] / tot, 3: ped[3] / tot } : { 1: Math.max(0, 1 - s2 - s3), 2: s2, 3: s3 };
-    const real = res > 0 ? ent / res : null;
-    const usarReal = real != null && res >= num(cfg.min_resueltos);
+    // La tasa de los resueltos engaña: los pedidos que se entregan salen pronto de "pendientes" y las incidencias se quedan.
+    // Por eso se separan: pendientes normales a la tasa de los resueltos SIN incidencia, incidencias a la suya.
+    const cerr = Object.values(state.incid || {}).filter((i) => i && !i.abierta && (i.resultado === "entregado" || i.resultado === "devuelto"));
+    const incEnt = cerr.filter((i) => i.resultado === "entregado").length, incRes = cerr.length;
+    const resN = Math.max(0, res - incRes), entN = Math.max(0, ent - incEnt);
+    const realN = resN > 0 ? entN / resN : null;
+    const usarReal = realN != null && resN >= num(cfg.min_resueltos);
+    const tasa = usarReal ? realN : num(cfg.tasa_entrega_estimada);
+    const tasaInc = incRes >= 20 ? incEnt / incRes : (cfg.tasa_incidencias != null ? num(cfg.tasa_incidencias) : 0.35);
+    tasaIncG = tasaInc;
+    let pend = 0, pendInc = 0;
+    for (const d of Object.values(state.dias)) {
+      const x = Math.max(0, sumPK((n) => num(d["p" + n]) - num(d["ent" + n]) - num(d["dev" + n])));
+      pend += x; pendInc += Math.min(num(d.inc), x);
+    }
+    // tasa final esperada: lo entregado + lo que se espera de los pendientes, sobre todo lo enviado. Es la que manda en el break-even.
+    const tasaFinal = res + pend > 0 ? (ent + (pend - pendInc) * tasa + pendInc * tasaInc) / (res + pend) : tasa;
     return {
-      tasa: usarReal ? real : num(cfg.tasa_entrega_estimada), fuenteTasa: usarReal ? "real" : "estimada", resueltos: res,
+      tasa, tasaInc, tasaBE: tasaFinal, fuenteTasa: usarReal ? "real" : "estimada", fuenteInc: incRes >= 20 ? "real" : "estimada",
+      resueltos: res, pendInc, tasaResueltos: res > 0 ? ent / res : null,
       mix,
       envioMedio: conEnvio > 0 ? envio / conEnvio : null
     };
   }
 
   function breakEven(u, h) {
-    const t = h.tasa;
+    const t = h.tasaBE ?? h.tasa;
     const neto = (p) => p.pvp - p.cprod - (h.envioMedio ?? p.log) - p.ivan;
     const ticket = sumPK((n) => h.mix[n] * u["p" + n].pvp);
     const netoEnt = sumPK((n) => h.mix[n] * neto(u["p" + n]));
@@ -805,6 +821,19 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     }
     return uAntesCache;
   }
+  // tasa de las incidencias (la fija historico()) e incidencias abiertas por fecha de pedido y pack
+  let tasaIncG = 0.35, incPorDiaDe = null, incPorDiaCache = {};
+  function incPorDia() {
+    if (incPorDiaDe === state.incid) return incPorDiaCache;
+    const m = {};
+    for (const i of Object.values(state.incid || {})) {
+      if (!i || !i.abierta || !i.fecha_pedido) continue;
+      const n = Math.min(3, Math.max(1, Math.round(num(i.pack)) || 1));
+      (m[i.fecha_pedido] ||= { 1: 0, 2: 0, 3: 0 })[n]++;
+    }
+    incPorDiaDe = state.incid; incPorDiaCache = m;
+    return m;
+  }
   function calcDia(fecha, uHoy, tasa) {
     const u = unitDia(fecha, uHoy);
     const d = state.dias[fecha];
@@ -826,9 +855,16 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const real = tieneEnvio(d);
     const envEnt = real ? d.envio_ent : sumPK((n) => e[n] * pk(n).log);
     const envPend = real ? d.envio_pend + sumPK((n) => nv[n] * pk(n).log) : sumPK((n) => x[n] * pk(n).log);
-    for (const n of PK) z[n] = e[n] + x[n] * tasa;
-    const Z = dev + I * (1 - tasa);
-    const T = sumPK((n) => z[n] * pk(n).pvp), U = sumPK((n) => z[n] * pk(n).cprod), V = envEnt + envPend * tasa;
+    // pendientes en incidencia: se entregan a su propia tasa, mucho más baja que la del resto
+    const ip = incPorDia()[fecha] || {}, xi = {};
+    for (const n of PK) xi[n] = Math.min(x[n], ip[n] || 0);
+    let resto = Math.min(num(d?.inc), I) - sumPK((n) => xi[n]);
+    for (const n of PK) { if (resto <= 0) break; const k = Math.min(resto, x[n] - xi[n]); xi[n] += k; resto -= k; }
+    const Ii = sumPK((n) => xi[n]);
+    for (const n of PK) z[n] = e[n] + (x[n] - xi[n]) * tasa + xi[n] * tasaIncG;
+    const Z = dev + (I - Ii) * (1 - tasa) + Ii * (1 - tasaIncG);
+    const fracEnt = I > 0 ? ((I - Ii) * tasa + Ii * tasaIncG) / I : tasa;
+    const T = sumPK((n) => z[n] * pk(n).pvp), U = sumPK((n) => z[n] * pk(n).cprod), V = envEnt + envPend * fracEnt;
     const W = Z * u.costeDev, X = sumPK((n) => z[n] * pk(n).ivan) - Z * u.ivaDev, Y = ads * (1 + u.recargo);
     const C = H * u.comision; // el almacén cobra por pedido confirmado, se entregue o no
     const liq = sumPK((n) => e[n] * (pk(n).pvp - pk(n).cprod)) - envEnt;
@@ -906,7 +942,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     $("heroNum").textContent = listo ? E(a.neto) : "—";
     $("heroNum").className = "big num " + (a.neto > 0.005 ? "pos" : a.neto < -0.005 ? "neg" : "");
     $("heroSplit").innerHTML = listo
-      ? `<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Cobrado real: <b class="num">${E(a.cobrado)}</b></span><span>Tasa de entrega usada: <b>${P(h.tasa)}</b> (${h.fuenteTasa})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
+      ? `<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Cobrado real: <b class="num">${E(a.cobrado)}</b></span><span>Entrega esperada: <b>${P(h.tasaBE)}</b> (${P(h.tasa)} sin incidencia · ${P(h.tasaInc)} incidencias, ${h.fuenteInc})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
       : `<span>Cargando tus números…</span>`;
 
     // semáforo
@@ -936,7 +972,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       ["ROAS", a.roas == null ? "—" : dec2.format(a.roas) + "x", `break-even ${be.roasBE == null ? "—" : dec2.format(be.roasBE) + "x"}`],
       ["Liquidación almacén", E(a.liq), "PVP − coste de lo entregado"],
       ["Ticket medio", E(a.ticket), `${P(a.pack2)} Pack 2 · ${P(a.pack3)} Pack 3`],
-      ["Tasa de entrega", P(a.tasaEnt), `${N(a.ent)} de ${N(a.ent + a.dev)} resueltos`],
+      ["Tasa de entrega", P(h.tasaBE), `esperada al final · ${P(a.tasaEnt)} de lo ya resuelto (${N(a.ent)} de ${N(a.ent + a.dev)})`],
       ["Margen neto", P(a.margen), `otros gastos ${E(a.otros)}`]
     ];
     $("kpis").innerHTML = kp.map(([l, v, s, bad]) => `<div class="kpi"><span class="l">${l}</span><span class="v num${bad ? " bad" : ""}">${v}</span><span class="s">${esc(s)}</span></div>`).join("");

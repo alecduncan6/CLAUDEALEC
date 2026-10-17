@@ -126,7 +126,7 @@ Lo normal es que lo suba él mismo en la pestaña Incidencias del dashboard. Si 
 ## Cuando Alec solo dice "hoy X pack 1, Y pack 2, Z pack 3"
 
 `get dias/<fecha>` y `set` con `p1`/`p2`/`p3` nuevos y el gasto de Meta, conservando el resto. Responde con pedidos,
-gasto, CPA vs CPA break-even (~11,2 € con los datos actuales), beneficio proyectado y semáforo
+gasto, CPA vs CPA break-even (~8,4 € con los datos del 17/10, el que marque el dashboard), beneficio proyectado y semáforo
 (ESCALAR ≤ 75% del break-even, VIGILAR ≤ 100%, CORTAR > 100%). Recuérdale las incidencias pendientes.
 
 ## Regenerar el Excel con los datos al día
@@ -174,7 +174,12 @@ gasto, CPA vs CPA break-even (~11,2 € con los datos actuales), beneficio proye
 - Pedidos #1154–#1157 (3 y 4 de octubre, CeraLux, sincronizados con Dropi) quedan fuera porque `fecha_inicio` es el 05/10.
   Pendiente que Alec confirme si son reales (entonces `fecha_inicio` = 2026-10-03 y exportar desde el 03/10) o pruebas.
   Meta gastó 0 € el 3 y 4 de octubre: no vienen de los anuncios de esta cuenta.
-- Proyección: pendientes (incluidas incidencias) × tasa de entrega (80% estimada hasta 30 pedidos resueltos; luego la real).
+- Proyección (dashboard, desde el 17/10): los pendientes normales se entregan a la tasa de los resueltos SIN incidencia
+  (resueltos − incidencias cerradas del tablero; 80% estimada hasta 30 resueltos) y las incidencias abiertas (`dias.inc`,
+  por pack según el tablero `incidencias`) a `tasa_incidencias` (35% estimada; la real cuando haya ≥20 incidencias cerradas).
+  El break-even usa la tasa final esperada = (entregados + pendientes × su tasa) ÷ todo lo enviado (66,7% el 17/10 →
+  CPA máx. ~8,4 €, no 13 €). Motivo: la tasa de lo ya resuelto (85%) está inflada porque las incidencias tardan en resolverse.
+  El Excel de contabilidad aún usa una sola tasa para todos los pendientes: alinearlo en la próxima regeneración.
 
 Supuestos pendientes de confirmar con Alec: si Meta le cobra IVA (ROI), si factura con IVA, si la comisión de 0,95 € lleva IVA,
 si Dropi le devuelve el coste del producto cuando un devuelto vuelve al almacén. Excel de creativos: `cpa_be`/`ben_pedido` de `biblioteca.json` = break-even del dashboard.
