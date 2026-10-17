@@ -108,7 +108,8 @@ transportista a que el cliente lo recoja.
     FINISH RIP 1-4 (vídeos de la competencia adaptados) + IMAGEN 1-3.
     `c10` = campaña `CeraLux ES — TESTING 3 — C10 PUERTA` (120255232148100271, conjunto 120255232148340271, mismos ajustes
     que TESTING 2, 20 €/día CBO), 18/10 → 20/10, corte 18 €: vídeo propio "La raya de la puerta" con hook y sin hook
-    (`BROAD_C10_PUERTA_<HOOK>_V1` y `BROAD_C10_PUERTA_SINHOOK_V1`). Alec sube los dos anuncios en Ads Manager.
+    (`BROAD_C10_SENOR_HOOK_V1` 120255232153490271, vídeo 44,1 s; `BROAD_C10_SENOR_SINHOOK_V1` 120255232171640271, 42,7 s;
+    publicados el 18/10 00:56). Ojo: el de hook salió sin titular y los dos con botón "Ver detalles" (no "Comprar").
 - **Excel de contabilidad:** `contabilidad/CeraLux_Contabilidad.xlsx`, generado por `contabilidad/generar_excel.py`
   desde `contabilidad/datos.json`. Todo con fórmulas (Dashboard, Diario, Gastos, Config, Guía).
 - **Excel de creativos (aparte de la app):** `creativos/CeraLux_Creativos.xlsx`, generado por
