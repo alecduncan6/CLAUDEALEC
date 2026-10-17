@@ -106,6 +106,9 @@ transportista a que el cliente lo recoja.
     (apagar a `corte` € sin ventas; ganador = ≥2 ventas con CPA ≤ BE → a la principal). Al terminar, `cerrada: true`.
     Hoy: `rip1` = campaña `CeraLux ES — TESTING 2 — RIP COMPETENCIA` (120255201430200271), 16/10 → 19/10, 30 €/día,
     FINISH RIP 1-4 (vídeos de la competencia adaptados) + IMAGEN 1-3.
+    `c10` = campaña `CeraLux ES — TESTING 3 — C10 PUERTA` (120255232148100271, conjunto 120255232148340271, mismos ajustes
+    que TESTING 2, 20 €/día CBO), 18/10 → 20/10, corte 18 €: vídeo propio "La raya de la puerta" con hook y sin hook
+    (`BROAD_C10_PUERTA_<HOOK>_V1` y `BROAD_C10_PUERTA_SINHOOK_V1`). Alec sube los dos anuncios en Ads Manager.
 - **Excel de contabilidad:** `contabilidad/CeraLux_Contabilidad.xlsx`, generado por `contabilidad/generar_excel.py`
   desde `contabilidad/datos.json`. Todo con fórmulas (Dashboard, Diario, Gastos, Config, Guía).
 - **Excel de creativos (aparte de la app):** `creativos/CeraLux_Creativos.xlsx`, generado por
