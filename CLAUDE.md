@@ -54,7 +54,7 @@ transportista a que el cliente lo recoja.
       (`entra` de `calcDia`: (PVP − producto) × entregas esperadas − envío + Go Verify de los que Dropi aún no ha confirmado),
       corregido con la cartera: − `yaAbonadas` (entregas que la cartera ya abonó y los `dias` aún no tienen) + `yaConfirmados`
       (pedidos solo-Shopify cuyo envío Dropi ya cobró) = "al cerrar los pedidos de hoy, antes de IVA"; − IVA de entregados y
-      esperados = después de IVA. El 17/10: −507 € hoy, +725 € antes de IVA / +286 € después al cerrar (modelo: 667 / 235).
+      esperados = después de IVA. El 17/10: −507 € hoy, 701 € antes de IVA / 269 € después al cerrar (modelo: 667 / 235).
     - `stats/transportistas`: `{en, fuente, por: {<transportista>: {n, ent, dev, inc, pend, envio}}}`. Lo escribe el importador
       del almacén (solo dueño; columna sin título o TRANSPORT). Tabla "Entrega por transportista" en Resumen. 15/10: Correos
       Express 72,7% entrega y 1 incidencia de 15; MRW 14H 37,5% (20/40); CTT 40% (9/24, rehúsan); MRW 24/48 50% (4/10).
