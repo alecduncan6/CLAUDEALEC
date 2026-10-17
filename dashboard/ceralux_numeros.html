@@ -346,7 +346,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     <div class="caja">
       <div>
         <div class="big num" id="cajaNum">—</div>
-        <div class="small muted" id="cajaSub">Copia los dos números de arriba de tu panel de Dropi y verás cuánto llevas ganado o perdido de verdad.</div>
+        <div class="small muted" id="cajaSub">Sube el Excel de transacciones de tu cartera de Dropi (o copia los dos números de arriba de su panel) y verás cuánto llevas ganado o perdido de verdad.</div>
       </div>
       <dl class="rows" id="cajaRows"></dl>
     </div>
@@ -356,7 +356,9 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
         <label for="kPrest">"Préstamos" en Dropi (€)<input id="kPrest" type="number" step="0.01" min="0" inputmode="decimal" placeholder="600,00" required></label>
       </div>
       <div class="actions">
-        <button class="btn" type="submit">Guardar saldo de Dropi</button>
+        <button class="btn" type="button" id="bCartera">Subir transacciones de Dropi</button>
+        <input id="fCartera" type="file" accept=".xlsx,.xls,.csv" hidden>
+        <button class="btn ghost" type="submit">Guardar saldo a mano</button>
         <span class="msg" id="kMsg" role="status"></span>
       </div>
     </form>
@@ -380,6 +382,17 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       <div class="bar"><div id="objBar" style="width:0%"></div></div>
       <dl class="rows" id="objRows"></dl>
     </div>
+  </section>
+
+  <section id="transpWrap" hidden>
+    <h2>Entrega por transportista</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Transportista</th><th>Pedidos</th><th>Entregados</th><th>Devueltos</th><th>En incidencia</th><th>En camino</th><th>% entrega</th><th>Envío medio</th></tr></thead>
+        <tbody id="transp"></tbody>
+      </table>
+    </div>
+    <p class="small muted" id="transpTxt" style="margin:10px 0 0"></p>
   </section>
 
   <section class="panel chart">
@@ -653,10 +666,10 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   const SERVER = "Meta ADS";
   const TOOL = "ads_get_ad_entities";
   const DEFAULTS = {
-    marca: "CeraLux", p1_nombre: "Pack 1 ud", p1_pvp: 29.99, p1_uds: 1, p1_coste_ud: 1.99, p1_logistica: 8.06,
-    p2_nombre: "Pack 2 uds", p2_pvp: 39.99, p2_uds: 2, p2_coste_ud: 1.99, p2_logistica: 8.06,
-    p3_nombre: "Pack 3 uds", p3_pvp: 49.99, p3_uds: 3, p3_coste_ud: 1.99, p3_logistica: 8.06,
-    iva_ventas: 0.21, iva_producto: 0.21, aplicar_iva: true, coste_devolucion: 8.06, comision_pedido: 0.95, recargo_ads: 0,
+    marca: "CeraLux", p1_nombre: "Pack 1 ud", p1_pvp: 29.99, p1_uds: 1, p1_coste_ud: 1.99, p1_logistica: 7.55,
+    p2_nombre: "Pack 2 uds", p2_pvp: 39.99, p2_uds: 2, p2_coste_ud: 1.99, p2_logistica: 7.55,
+    p3_nombre: "Pack 3 uds", p3_pvp: 49.99, p3_uds: 3, p3_coste_ud: 1.99, p3_logistica: 7.55,
+    iva_ventas: 0.21, iva_producto: 0.21, aplicar_iva: true, coste_devolucion: 7.55, comision_pedido: 0.95, recargo_ads: 0,
     tasa_entrega_estimada: 0.8, tasa_incidencias: 0.35, min_resueltos: 30, pct_pack2_estimado: 0.3, pct_pack3_estimado: 0.05, objetivo_mensual: 10000, logistica_con_iva: false,
     fecha_inicio: "", meta_ad_account_id: "", meta_filtro_campana: ""
   };
@@ -666,10 +679,10 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     ["p3_coste_ud", "Coste producto / ud Pack 3 (€)", "eur"],
     ["p3_desde", "Pack 3 actual vigente desde", "date"], ["p3_antes_pvp", "PVP Pack 3 antes de esa fecha (€)", "eur"],
     ["p3_antes_coste_ud", "Coste / ud Pack 3 antes (€)", "eur"],
-    ["p1_logistica", "Envío estándar Pack 1 (€, sin IVA)", "eur"], ["p2_logistica", "Envío estándar Pack 2 (€, sin IVA)", "eur"],
-    ["p3_logistica", "Envío estándar Pack 3 (€, sin IVA)", "eur"],
+    ["p1_logistica", "Envío medio Pack 1 (€, cuando el Excel aún no trae el real)", "eur"], ["p2_logistica", "Envío medio Pack 2 (€)", "eur"],
+    ["p3_logistica", "Envío medio Pack 3 (€)", "eur"],
     ["p1_uds", "Unidades Pack 1", "int"], ["p2_uds", "Unidades Pack 2", "int"], ["p3_uds", "Unidades Pack 3", "int"],
-    ["coste_devolucion", "Coste por pedido devuelto (€)", "eur"], ["comision_pedido", "Comisión almacén por pedido confirmado (€)", "eur"],
+    ["coste_devolucion", "Coste por pedido devuelto (€, el envío que ya pagaste)", "eur"], ["comision_pedido", "Go Verify por pedido confirmado (€)", "eur"],
     ["tasa_entrega_estimada", "Tasa de entrega estimada (%)", "pct"], ["tasa_incidencias", "Incidencias que acaban entregadas (%)", "pct"],
     ["min_resueltos", "Pedidos resueltos para usar tu tasa real", "int"], ["pct_pack2_estimado", "% Pack 2 estimado", "pct"],
     ["pct_pack3_estimado", "% Pack 3 estimado", "pct"],
@@ -686,6 +699,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   const pct = new Intl.NumberFormat("es-ES", { style: "percent", maximumFractionDigits: 1 });
   const int = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0 });
   const dec2 = new Intl.NumberFormat("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const dec1 = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1 });
   const E = (v) => (v == null || !isFinite(v)) ? "—" : eur.format(v);
   const E0 = (v) => (v == null || !isFinite(v)) ? "—" : eur0.format(v);
   const P = (v) => (v == null || !isFinite(v)) ? "—" : pct.format(v);
@@ -709,7 +723,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     shop: null, shopStatus: "idle", shopMsg: "", shopAt: null,
     periodo: lsGet("ceralux.periodo") || "mes",
     rol: "owner", user: null, uid: null, alias: lsGet("ceralux.alias") || "",
-    incid: {}, incidLoaded: false, acciones: [], ultimaImport: null, caja: null,
+    incid: {}, incidLoaded: false, acciones: [], ultimaImport: null, caja: null, transp: null,
     periodoCre: lsGet("ceralux.periodoCre") || "todo", campCre: lsGet("ceralux.campCre") || "",
     cre: { status: "idle", msg: "", ads: [], todos: [], at: null },
     prueba: { status: "idle", todos: [], p: null, at: null },
@@ -756,7 +770,9 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const realN = resN > 0 ? entN / resN : null;
     const usarReal = realN != null && resN >= num(cfg.min_resueltos);
     const tasa = usarReal ? realN : num(cfg.tasa_entrega_estimada);
-    const tasaInc = incRes >= 20 ? incEnt / incRes : (cfg.tasa_incidencias != null ? num(cfg.tasa_incidencias) : 0.35);
+    // incidencias: se parte de la estimación (35%) con el peso de 10 incidencias y cada una que el equipo cierra la va corrigiendo
+    const priorInc = cfg.tasa_incidencias != null ? num(cfg.tasa_incidencias) : 0.35, kInc = 10;
+    const tasaInc = (incEnt + priorInc * kInc) / (incRes + kInc);
     tasaIncG = tasaInc;
     let pend = 0, pendInc = 0;
     for (const d of Object.values(state.dias)) {
@@ -766,7 +782,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     // tasa final esperada: lo entregado + lo que se espera de los pendientes, sobre todo lo enviado. Es la que manda en el break-even.
     const tasaFinal = res + pend > 0 ? (ent + (pend - pendInc) * tasa + pendInc * tasaInc) / (res + pend) : tasa;
     return {
-      tasa, tasaInc, tasaBE: tasaFinal, fuenteTasa: usarReal ? "real" : "estimada", fuenteInc: incRes >= 20 ? "real" : "estimada",
+      tasa, tasaInc, tasaBE: tasaFinal, fuenteTasa: usarReal ? "real" : "estimada", fuenteInc: incRes ? `${incEnt} de ${incRes} cerradas` : "estimada", incRes, incEnt,
       resueltos: res, pendInc, tasaResueltos: res > 0 ? ent / res : null,
       mix,
       envioMedio: conEnvio > 0 ? envio / conEnvio : null
@@ -871,7 +887,13 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const ivaEnt = sumPK((n) => e[n] * pk(n).ivan), pendPVP = sumPK((n) => x[n] * pk(n).pvp);
     const O = liq - ivaEnt - dev * (u.costeDev - u.ivaDev) - Y - C;
     const faltan = !apuntado && !nuevos;
-    return { fecha, p1: p[1], p2: p[2], p3: p[3], ent, dev, nuevos, ivaEnt, pendPVP, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
+    // Cartera de Dropi: el envío y Go Verify se cobran al confirmar; al entregar abonan el PVP y cobran el producto.
+    // Lo que entrará de los pendientes = entregas esperadas × (PVP − producto); a los que aún no están en Dropi
+    // (solo en Shopify) todavía les falta pagar el envío y Go Verify.
+    const entPend = sumPK((n) => z[n] - e[n]);
+    const entra = sumPK((n) => (z[n] - e[n]) * (pk(n).pvp - pk(n).cprod)) - sumPK((n) => nv[n] * (pk(n).log + u.comision));
+    const ivaPend = sumPK((n) => (z[n] - e[n]) * pk(n).ivan);
+    return { fecha, entPend, entra, ivaPend, p1: p[1], p2: p[2], p3: p[3], ent, dev, nuevos, ivaEnt, pendPVP, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
       carritos: num(d?.carritos), recuperados: num(d?.recuperados), faltan, nota: d?.nota || "" };
   }
 
@@ -900,7 +922,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const otros = state.gastos.filter((g) => g.fecha >= desde && g.fecha <= hasta).reduce((a, g) => a + num(g.importe), 0);
     const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
     const r = { dias, nDias, otros };
-    for (const k of ["p1", "p2", "p3", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq", "ivaEnt", "pendPVP", "carritos", "recuperados"]) r[k] = s(k);
+    for (const k of ["p1", "p2", "p3", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq", "ivaEnt", "pendPVP", "carritos", "recuperados", "entPend", "entra", "ivaPend", "nuevos"]) r[k] = s(k);
     r.neto = r.P - otros; r.cobrado = r.O - otros;
     r.cpa = r.H > 0 ? r.ads / r.H : null; r.roas = r.ads > 0 ? r.J / r.ads : null;
     r.ticket = r.H > 0 ? r.J / r.H : null; r.pack2 = r.H > 0 ? r.p2 / r.H : null; r.pack3 = r.H > 0 ? r.p3 / r.H : null;
@@ -939,10 +961,11 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     renderAvisos(u, h);
 
     const listo = state.diasLoaded || state.dbStatus === "unavailable";
+    $("heroLabel").textContent = a.X > 0.005 ? "Beneficio neto proyectado · después de IVA" : "Beneficio neto proyectado";
     $("heroNum").textContent = listo ? E(a.neto) : "—";
     $("heroNum").className = "big num " + (a.neto > 0.005 ? "pos" : a.neto < -0.005 ? "neg" : "");
     $("heroSplit").innerHTML = listo
-      ? `<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Cobrado real: <b class="num">${E(a.cobrado)}</b></span><span>Entrega esperada: <b>${P(h.tasaBE)}</b> (${P(h.tasa)} sin incidencia · ${P(h.tasaInc)} incidencias, ${h.fuenteInc})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
+      ? `${a.X > 0.005 ? `<span>Antes de IVA (lo que te llega al banco): <b class="num">${E(a.neto + a.X)}</b></span>` : ""}<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Entrega esperada: <b>${P(h.tasaBE)}</b> (${P(h.tasa)} sin incidencia · ${P(h.tasaInc)} incidencias, ${h.fuenteInc})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
       : `<span>Cargando tus números…</span>`;
 
     // semáforo
@@ -1002,6 +1025,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       <dt>Inversión diaria en Ads a ese ritmo</dt><dd>${margenPed > 0 ? E0(Math.ceil((obj + a.otros / a.nDias * 30) / 30 / margenPed) * a.cpa) : "—"}</dd>`;
 
     renderCaja(u, h);
+    renderTransp();
     renderChart(u, h.tasa);
     renderTabla(u, h.tasa);
     renderCuadre(u, h.tasa);
@@ -1117,28 +1141,63 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   // No depende del periodo elegido ni de supuestos, salvo el IVA a reservar de lo ya entregado.
   function renderCaja(u, h) {
     const k = state.caja, [d0, d1] = rango("todo"), t = agregar(d0, d1, u, h.tasa);
-    const ads = t.ads * (1 + u.recargo), proyectado = t.neto;
-    const pend = `${N(t.I)} pedidos · ${E0(t.pendPVP)}`;
+    const ads = t.ads * (1 + u.recargo);
+    const pend = `${N(t.I)} pedidos · ${E0(t.pendPVP)} de venta`;
     if (!k) {
       $("cajaNum").textContent = "—"; $("cajaNum").className = "big num";
       $("cajaRows").innerHTML = `<dt>Gastado en Meta Ads</dt><dd>${E(ads)}</dd><dt>Otros gastos</dt><dd>${E(t.otros)}</dd>
-        <dt>Aún en juego (pendientes)</dt><dd>${pend}</dd><dt>Resultado final estimado (modelo)</dt><dd>${E(proyectado)}</dd>`;
+        <dt>Aún en juego (pendientes)</dt><dd>${pend}</dd><dt>Resultado final estimado (modelo)</dt><dd>${E(t.neto)}</dd>`;
       return;
     }
-    const propio = num(k.disponible) - num(k.prestamo), pos = propio - ads - t.otros, tuyo = pos - t.ivaEnt;
-    $("cajaNum").textContent = E(tuyo);
-    $("cajaNum").className = "big num " + (tuyo > 0.005 ? "pos" : tuyo < -0.005 ? "neg" : "");
+    // Mecánica real de la cartera de Dropi: el envío y Go Verify se cobran al confirmar el pedido; al entregarlo abonan el
+    // PVP entero y cobran el producto. Un devuelto no tiene más cargos. Por eso el saldo de hoy ya tiene pagado el envío de
+    // todos los pendientes, y lo que falta por entrar es entregas esperadas × (PVP − producto).
+    const propio = num(k.disponible) - num(k.prestamo), pos = propio - ads - t.otros;
+    // Si la cartera ya ha abonado entregas que el Excel del almacén aún no marca como entregadas, esas no pueden
+    // volver a contar como "lo que entrará": se descuentan a su valor medio real.
+    const tx = k.tx, yaAbonadas = tx ? Math.max(0, num(tx.n_ent) - t.ent) : 0;
+    const valorEnt = tx && tx.n_ent ? (num(tx.ingresos) + num(tx.producto)) / tx.n_ent : 0;
+    // y al revés: pedidos que solo vemos en Shopify pero que Dropi ya ha confirmado (y cobrado su envío y Go Verify)
+    const yaConfirmados = tx ? Math.min(t.nuevos, Math.max(0, num(tx.n_envios) - (t.H - t.nuevos))) : 0;
+    const entPend = Math.max(0, t.entPend - yaAbonadas);
+    const entra = Math.max(0, t.entra - yaAbonadas * valorEnt + yaConfirmados * ((num(tx?.envio_medio) || u.p1.log) + u.comision));
+    const finalAntes = pos + entra, ivaTot = t.ivaEnt + t.ivaPend, finalDesp = finalAntes - ivaTot;
+    $("cajaNum").textContent = E(pos);
+    $("cajaNum").className = "big num " + (pos > 0.005 ? "pos" : pos < -0.005 ? "neg" : "");
     const horas = (Date.now() - new Date(k.en).getTime()) / 3600000;
-    $("cajaSub").innerHTML = `Saldo de Dropi: ${esc(fechaHora(k.en))}${horas > 24 ? ` · <b style="color:var(--warn)">tiene más de un día: actualízalo</b>` : ""}. Si se entregan los pendientes como espera el modelo, terminarías en <b class="num">${E(proyectado)}</b>.`;
+    $("cajaSub").innerHTML = `Lo que tienes en Dropi menos todo lo gastado, hoy. Saldo de Dropi: ${esc(fechaHora(k.en))}${k.fuente ? ` (${esc(k.fuente)})` : ""}${horas > 24 ? ` · <b style="color:var(--warn)">tiene más de un día: sube las transacciones de hoy</b>` : ""}.
+      Cuando se cierren los pedidos que tienes en marcha terminarías en <b class="num">${E(finalAntes)}</b> antes de IVA${ivaTot > 0.005 ? ` y <b class="num">${E(finalDesp)}</b> después` : ""}.`;
     $("cajaRows").innerHTML = `
+      ${tx ? `<dt class="small">Cartera: abonado por ${N(tx.n_ent)} entregas</dt><dd class="small">${E(tx.ingresos)}</dd>
+      <dt class="small">− envíos cobrados al confirmar (${N(tx.n_envios)} · media ${E(tx.envio_medio)})</dt><dd class="small">${E(tx.envios)}</dd>
+      <dt class="small">− producto de lo entregado</dt><dd class="small">${E(tx.producto)}</dd>
+      <dt class="small">− Go Verify</dt><dd class="small">${E(tx.goverify)}</dd>${Math.abs(tx.otros) > 0.005 ? `<dt class="small">± otros movimientos</dt><dd class="small">${E(tx.otros)}</dd>` : ""}` : ""}
       <dt>Propio en Dropi <span class="small">(${E(num(k.disponible))} − ${E(num(k.prestamo))} de préstamo)</span></dt><dd>${E(propio)}</dd>
       <dt>− Gastado en Meta Ads</dt><dd>${E(-ads)}</dd>
       <dt>− Otros gastos</dt><dd>${E(t.otros ? -t.otros : 0)}</dd>
       <dt class="tot">Posición real hoy</dt><dd class="tot">${E(pos)}</dd>
-      <dt>− IVA a reservar de lo entregado</dt><dd>${E(-t.ivaEnt)}</dd>
-      <dt class="tot">Tuyo de verdad</dt><dd class="tot">${E(tuyo)}</dd>
-      <dt>Aún en juego (pendientes)</dt><dd>${pend}</dd>`;
+      <dt>+ Lo que entrará de los pendientes <span class="small">(${pend}: ~${dec1.format(entPend)} entregas × PVP − producto; su envío ya está pagado)</span></dt><dd>${E(entra)}</dd>
+      ${yaAbonadas >= 1 ? `<dt class="small" style="color:var(--warn)">La cartera ya ha abonado ${N(yaAbonadas)} entregas que el Excel del almacén aún no marca: sube el Excel de hoy para que todo cuadre</dt><dd class="small"></dd>` : ""}
+      <dt class="tot">Al cerrar los pedidos de hoy · antes de IVA</dt><dd class="tot">${E(finalAntes)}</dd>
+      ${ivaTot > 0.005 ? `<dt>− IVA a pagar en el trimestre <span class="small">(${E(t.ivaEnt)} de lo entregado + ${E(t.ivaPend)} de lo que se entregará)</span></dt><dd>${E(-ivaTot)}</dd>
+      <dt class="tot">Al cerrar · después de IVA</dt><dd class="tot">${E(finalDesp)}</dd>` : ""}`;
     if (document.activeElement?.closest?.("#fCaja") == null) { $("kDisp").value = num(k.disponible); $("kPrest").value = num(k.prestamo); }
+  }
+
+  // Entrega por transportista (del último Excel del almacén). % entrega como Dropi: entregados ÷ (entregados + devueltos + incidencias).
+  function renderTransp() {
+    const tr = state.transp, wrap = $("transpWrap");
+    if (state.rol !== "owner" || !tr?.por) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    const filas = Object.entries(tr.por).filter(([, t]) => t.n > 0).sort((a, b) => b[1].n - a[1].n);
+    const tasa = (t) => t.ent + t.dev + t.inc > 0 ? t.ent / (t.ent + t.dev + t.inc) : null;
+    const tot = filas.reduce((a, [, t]) => { for (const k of ["n", "ent", "dev", "inc", "pend"]) a[k] += t[k]; return a; }, { n: 0, ent: 0, dev: 0, inc: 0, pend: 0 });
+    const tg = tasa(tot);
+    $("transp").innerHTML = filas.map(([n, t]) => {
+      const x = tasa(t), bad = x != null && tg != null && t.ent + t.dev + t.inc >= 8 && x < tg - 0.1, good = x != null && tg != null && t.ent + t.dev + t.inc >= 8 && x > tg + 0.1;
+      return `<tr><td style="white-space:normal;min-width:160px">${esc(n)}</td><td>${N(t.n)}</td><td>${N(t.ent)}</td><td>${N(t.dev)}</td><td>${N(t.inc)}${t.n ? ` <span class="small muted">(${P(t.inc / t.n)})</span>` : ""}</td><td>${N(t.pend)}</td><td class="${bad ? "neg" : good ? "pos" : ""}">${P(x)}</td><td>${E(t.envio)}</td></tr>`;
+    }).join("") + `<tr><td><b>Total</b></td><td><b>${N(tot.n)}</b></td><td>${N(tot.ent)}</td><td>${N(tot.dev)}</td><td>${N(tot.inc)}</td><td>${N(tot.pend)}</td><td><b>${P(tg)}</b></td><td></td></tr>`;
+    $("transpTxt").textContent = `Del ${tr.fuente || "último Excel del almacén"} (${fechaHora(tr.en)}). % entrega como lo calcula Dropi: entregados ÷ (entregados + devueltos + en incidencia). En verde o rojo, las que se separan más de 10 puntos de la media con al menos 8 pedidos resueltos o en incidencia.`;
   }
 
   function renderGastos(desde, hasta) {
@@ -1394,6 +1453,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       state.dias = m; state.diasLoaded = true; render();
       if (state.vista === "cre") pintaCre();
     }, fallo);
+    db.doc("stats/transportistas").onSnapshot((s) => { state.transp = s.exists ? s.data() : null; renderTransp(); }, () => {});
     db.collection("caja").onSnapshot((s) => {
       const docs = s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((d) => d.en).sort((a, b) => String(b.en).localeCompare(String(a.en)));
       state.caja = docs[0] || null; render();
@@ -2319,6 +2379,10 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     if (falta.length) return estadoImport(`Este archivo no parece el export de pedidos del almacén: falta la columna ${falta[0]}.`, "err");
 
     const excl = new Set((state.cfg.excluir_pedidos || []).map(String));
+    // la transportista va en una columna sin título al final del export: se busca por su contenido
+    const RX_TR = /mrw|ctt|correos|seur|gls|nacex|envialia|dhl|tipsa|zeleris|ups|m[eé]todo de env/i;
+    const colTr = Object.keys(rows[0]).find((k) => (k.startsWith("__EMPTY") || k.includes("TRANSPORT")) && rows.some((r) => RX_TR.test(str(r[k]))));
+    const transp = {};
     const dias = {}, vistos = {};
     let pedidos = 0, tests = 0;
     for (const r of rows) {
@@ -2342,6 +2406,15 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       const envio = num(r["COSTE DE ENVIO SIN IVA"] ?? r["COSTO DE ENVIO SIN IVA"]) || num(state.cfg["p" + pack + "_logistica"]);
       d["p" + pack]++; pedidos++;
       if (esCarrito) d.recuperados++;
+      if (colTr) {
+        const tn = str(r[colTr]).replace(/\s*\(con caja\)|\s*con caja/i, "").trim() || "Sin asignar";
+        const t = (transp[tn] ||= { n: 0, ent: 0, dev: 0, inc: 0, pend: 0, envio: 0, nEnv: 0 });
+        t.n++;
+        const est = esEstado(["entregado"], estado) ? "ent" : esEstado(DEVUELTO, estado) ? "dev" : esEstado(["incidencia"], estado) ? "inc" : "pend";
+        t[est]++;
+        const ev = num(r["COSTE DE ENVIO SIN IVA"] ?? r["COSTO DE ENVIO SIN IVA"]);
+        if (ev > 0) { t.envio += ev; t.nEnv++; }
+      }
       if (esEstado(["entregado"], estado)) { d["ent" + pack]++; d.envio_ent += envio; }
       else if (esEstado(DEVUELTO, estado)) d["dev" + pack]++; // el coste de un paquete rehusado está pendiente de confirmar con Dropi
       else { if (esEstado(["incidencia"], estado)) d.inc++; d.envio_pend += envio; }
@@ -2378,12 +2451,58 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
           }
         }
       }
+      if (state.rol === "owner" && state.cfgExiste && Object.keys(transp).length) {
+        for (const t of Object.values(transp)) { t.envio = t.nEnv ? r2(t.envio / t.nEnv) : null; delete t.nEnv; }
+        await db.doc("stats/transportistas").set({ en: ahora, fuente: "export almacén " + ddmm(hoyS), por: transp });
+      }
       await db.doc("importaciones/ultima").set({ en: ahora, por: state.uid, autor: state.alias, pedidos, nuevas, cerradas });
     } catch {
       return estadoImport("Se cortó a mitad de la actualización. Vuelve a subir el mismo Excel: no se duplica nada.", "err");
     }
     estadoImport(`Listo: ${N(pedidos)} pedidos leídos${diasOk ? `, ${N(diasOk)} días de números actualizados` : ""}. Incidencias: ${N(nuevas)} nuevas, ${N(cerradas)} cerradas${tests ? ` (${N(tests)} de test ignorado)` : ""}.`, "ok");
   }
+  // Excel de transacciones de la cartera de Dropi (DropiPro → Cartera → Transacciones → exportar). La suma de los movimientos
+  // que "actualizan wallet" es el saldo propio; el préstamo no aparece ahí y se mantiene el último apuntado.
+  async function importarCartera(file) {
+    if (!state.db) return msg("kMsg", "Sin base de datos en esta vista.", false);
+    $("kMsg").textContent = "Leyendo las transacciones…"; $("kMsg").className = "msg";
+    try { await cargarXLSX(); } catch { return msg("kMsg", "No se pudo cargar el lector de Excel.", false); }
+    let filas;
+    try {
+      const wb = window.XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+      filas = window.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: null, raw: true });
+    } catch { return msg("kMsg", "No se pudo leer el archivo.", false); }
+    const rows = filas.map((f) => { const o = {}; for (const [k, v] of Object.entries(f)) o[clave(k)] = v; return o; });
+    if (!rows.length || !("IMPORTE" in rows[0]) || !("DESCRIPCION" in rows[0])) return msg("kMsg", "No parece el Excel de transacciones de la cartera de Dropi (faltan IMPORTE y DESCRIPCION).", false);
+    const tx = { ingresos: 0, n_ent: 0, envios: 0, n_envios: 0, producto: 0, goverify: 0, otros: 0, desde: null, hasta: null };
+    let propio = 0;
+    for (const r of rows) {
+      const act = str(r["ACTUALIZO WALLET"]).toUpperCase(), est = str(r["ESTADO"]).toLowerCase();
+      if ((act && act !== "SI") || (est && !est.startsWith("confirm"))) continue;
+      const imp = num(r["IMPORTE"]), d = str(r["DESCRIPCION"]).toLowerCase(), f = fechaDe(r["FECHA"]);
+      propio += imp;
+      if (f) { if (!tx.desde || f < tx.desde) tx.desde = f; if (!tx.hasta || f > tx.hasta) tx.hasta = f; }
+      if (d.includes("logística") || d.includes("logistica")) { tx.envios += imp; tx.n_envios++; }
+      else if (d.includes("pedido entregado") && imp > 0) { tx.ingresos += imp; tx.n_ent++; }
+      else if (d.includes("coste de productos") || d.includes("costo de productos")) tx.producto += imp;
+      else if (d.includes("go verify")) tx.goverify += imp;
+      else tx.otros += imp;
+    }
+    for (const k of ["ingresos", "envios", "producto", "goverify", "otros"]) tx[k] = r2(tx[k]);
+    tx.envio_medio = tx.n_envios ? r2(-tx.envios / tx.n_envios) : null;
+    const prestamo = $("kPrest").value !== "" ? num($("kPrest").value) : num(state.caja?.prestamo ?? 600);
+    try {
+      await state.db.doc("caja/" + iso(new Date())).set({ disponible: r2(propio + prestamo), prestamo, en: new Date().toISOString(), fuente: "transacciones de Dropi", tx });
+      msg("kMsg", `Listo: saldo propio ${E(propio)} (${N(rows.length)} movimientos, envío medio ${E(tx.envio_medio)}).`, true);
+    } catch { msg("kMsg", "No se pudo guardar el saldo.", false); }
+  }
+  $("bCartera").addEventListener("click", () => $("fCartera").click());
+  $("fCartera").addEventListener("change", async () => {
+    const f = $("fCartera").files?.[0]; if (!f) return;
+    $("bCartera").disabled = true;
+    try { await importarCartera(f); } finally { $("bCartera").disabled = false; $("fCartera").value = ""; }
+  });
+
   $("bImport").addEventListener("click", () => $("fImport").click());
   $("fImport").addEventListener("change", async () => {
     const f = $("fImport").files?.[0]; if (!f) return;
@@ -2489,7 +2608,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   $("fCaja").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const disponible = num($("kDisp").value), prestamo = num($("kPrest").value);
-    try { await state.db.doc("caja/" + iso(new Date())).set({ disponible, prestamo, en: new Date().toISOString() }); msg("kMsg", "Saldo guardado.", true); }
+    try { await state.db.doc("caja/" + iso(new Date())).set({ disponible, prestamo, en: new Date().toISOString(), fuente: "a mano" }); msg("kMsg", "Saldo guardado.", true); }
     catch { msg("kMsg", "No se pudo guardar.", false); }
   });
 

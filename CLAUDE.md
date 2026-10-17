@@ -35,7 +35,7 @@ transportista a que el cliente lo recoja.
         `recuperados`: filas con "¿Es carrito?" = 1 que ya tienen estado de pedido (el equipo los ha recuperado por teléfono):
         cuentan en `p1`/`p2` como pedidos normales y no tienen pedido en Shopify (su "ID pedido Shopify" es del carrito).
       - `envio_ent`/`envio_pend`: suma del "Coste de envío (sin IVA)" real de entregados / pendientes.
-        Sin ellos se usa la tarifa estándar de config (8,06 €). Los pedidos que aún no han salido vienen con envío 0 en el
+        Sin ellos se usa la tarifa estándar de config (7,55 €, el envío medio que cobra Dropi). Los pedidos que aún no han salido vienen con envío 0 en el
         export: los importadores (página y `importar_almacen.py --envio-std`) les ponen la tarifa estándar.
       - `shopify_ids`: IDs de Shopify (legacyResourceId) de TODAS las filas del Excel del almacén ese día
         (incluidos tests y cancelados). `shopify_test`: los de pedidos de test. Sirven para no contar dos veces.
@@ -46,9 +46,18 @@ transportista a que el cliente lo recoja.
     - `acciones/<auto>`: gestiones del equipo `{pedido, tipo, nota, en, por (id usuario), autor (alias)}`;
       tipo ∈ whatsapp | no_contesta | acordada | almacen | rechaza.
     - `importaciones/ultima`: `{en, por, autor, pedidos, nuevas, cerradas}`.
-    - `caja/<YYYY-MM-DD>`: saldo del panel de Dropi `{disponible, prestamo, en}` (el último manda). Bloque "Tu dinero real hoy":
-      (disponible − préstamo) − Meta Ads desde el inicio − otros gastos = posición real; − IVA de lo entregado = "tuyo de verdad".
-      No usa supuestos del modelo salvo el IVA. Solo dueño.
+    - `caja/<YYYY-MM-DD>`: saldo de Dropi `{disponible, prestamo, en, fuente, tx?}` (el último manda). Se rellena con el botón
+      "Subir transacciones de Dropi" (export de la cartera: suma los movimientos con ACTUALIZO WALLET = SI y estado Confirmado y
+      guarda `tx = {ingresos, n_ent, envios, n_envios, envio_medio, producto, goverify, otros, desde, hasta}`;
+      disponible = saldo propio + préstamo) o con "Guardar saldo a mano". Bloque "Tu dinero real hoy" (solo dueño):
+      posición real = (disponible − préstamo) − Meta Ads desde el inicio − otros gastos; + lo que entrará de los pendientes
+      (`entra` de `calcDia`: (PVP − producto) × entregas esperadas − envío + Go Verify de los que Dropi aún no ha confirmado),
+      corregido con la cartera: − `yaAbonadas` (entregas que la cartera ya abonó y los `dias` aún no tienen) + `yaConfirmados`
+      (pedidos solo-Shopify cuyo envío Dropi ya cobró) = "al cerrar los pedidos de hoy, antes de IVA"; − IVA de entregados y
+      esperados = después de IVA. El 17/10: −507 € hoy, +725 € antes de IVA / +286 € después al cerrar (modelo: 667 / 235).
+    - `stats/transportistas`: `{en, fuente, por: {<transportista>: {n, ent, dev, inc, pend, envio}}}`. Lo escribe el importador
+      del almacén (solo dueño; columna sin título o TRANSPORT). Tabla "Entrega por transportista" en Resumen. 15/10: Correos
+      Express 72,7% entrega y 1 incidencia de 15; MRW 14H 37,5% (20/40); CTT 40% (9/24, rehúsan); MRW 24/48 50% (4/10).
   - Reglas de acceso: todo es solo del dueño (read/write `owner`) salvo `incidencias`, `acciones` e
     `importaciones` (read/write `interact`). El equipo se añade como Colaborador o Editor desde Compartir:
     ve solo la pestaña Incidencias, nunca los números. Un Lector no ve nada de clientes.
@@ -126,12 +135,12 @@ Lo normal es que lo suba él mismo en la pestaña Incidencias del dashboard. Si 
 ## Cuando Alec solo dice "hoy X pack 1, Y pack 2, Z pack 3"
 
 `get dias/<fecha>` y `set` con `p1`/`p2`/`p3` nuevos y el gasto de Meta, conservando el resto. Responde con pedidos,
-gasto, CPA vs CPA break-even (~8,4 € con los datos del 17/10, el que marque el dashboard), beneficio proyectado y semáforo
+gasto, CPA vs CPA break-even (~9,45 € con los datos del 17/10, el que marque el dashboard), beneficio proyectado y semáforo
 (ESCALAR ≤ 75% del break-even, VIGILAR ≤ 100%, CORTAR > 100%). Recuérdale las incidencias pendientes.
 
 ## Regenerar el Excel con los datos al día
 
-1. `ArtifactData list` de `dias` y `gastos` y `get config/main`, todos con `out_dir=<scratchpad>/export`.
+1. `ArtifactData list` de `dias`, `gastos` e `incidencias` y `get config/main`, todos con `out_dir=<scratchpad>/export`.
 2. `python contabilidad/desde_dashboard.py <scratchpad>/export`
 3. `python contabilidad/generar_excel.py` y recalcular con el `recalc.py` del skill xlsx (0 errores).
 4. Commit + push.
@@ -160,14 +169,14 @@ gasto, CPA vs CPA break-even (~8,4 € con los datos del 17/10, el que marque el
   (página: `unitDia`; Excel: columna G de Config y `IF($A<P3_DESDE,…)` en el Diario) para que la liquidación siga cuadrando con Dropi.
   En EasySell el aspirador es el producto de Shopify "Aspirador de coche (REGALO)" a 0 €: revisar en el siguiente export
   cómo lo pinta Dropi en UDS/PRODUCTOS (si cuenta 4 uds, el importador lo sigue clasificando como Pack 3).
-- Coste del pedido (almacén) = uds × 1,99 × 1,21 + envío real sin IVA (6,85-8,06 €) → 10,47 € / 12,88 € / 20,35 € (Pack 3 + aspirador; 15,28 € el de antes) con 8,06 €.
-  Envío estándar del Pack 3 = 8,06 € (supuesto hasta ver el real en el export).
+- Coste del pedido (almacén) = uds × 1,99 × 1,21 + envío real sin IVA (6,75-8,06 €) → 10,47 € / 12,88 € / 20,35 € (Pack 3 + aspirador; 15,28 € el de antes) con 8,06 €.
+  `p*_logistica` = 7,55 € (envío medio real de la cartera, 112 envíos al 17/10) para los días sin envío real.
 - Excel de contabilidad, Diario: B-D pedidos P1-P3, E-G entregados, H-J devueltos, K incidencias, L-M envío real, N Ads, O notas,
   P-Y cálculos (W liquidación, X cobrado, Y proyectado), AA-AO auxiliares. Config: packs en C/D/E, notas en F.
 - Liquidación almacén = PVP − coste del pedido de lo entregado (lo que paga el almacén).
 - IVA: se repercute el 21% del PVP y solo se deduce el IVA del producto. El envío viene "sin IVA" y el almacén
   no le suma IVA → no hay IVA de envío que deducir (`logistica_con_iva = false`).
-- Devuelto = −8,06 € (confirmado con Dropi el 08/10: el envío inicial ya incluye la vuelta; se pierde el envío y el producto vuelve).
+- Devuelto = −`coste_devolucion` = −7,55 € (el envío ya cobrado al confirmar; la vuelta no se cobra aparte y el producto vuelve).
 - Cartera de Dropi (export de transacciones del 17/10, cuadra al céntimo con el saldo propio 339,21 €): al CONFIRMAR un pedido
   Dropi cobra ya el envío real ("Coste de logística en pedido confirmado", 6,75-8,06 €) y Go Verify 0,95 €; al ENTREGARLO
   abona el PVP entero ("Reembolso por pedido entregado") y cobra el producto con IVA (2,41 / 4,82 / 7,22 €). Un devuelto no
@@ -182,10 +191,14 @@ gasto, CPA vs CPA break-even (~8,4 € con los datos del 17/10, el que marque el
   Meta gastó 0 € el 3 y 4 de octubre: no vienen de los anuncios de esta cuenta.
 - Proyección (dashboard, desde el 17/10): los pendientes normales se entregan a la tasa de los resueltos SIN incidencia
   (resueltos − incidencias cerradas del tablero; 80% estimada hasta 30 resueltos) y las incidencias abiertas (`dias.inc`,
-  por pack según el tablero `incidencias`) a `tasa_incidencias` (35% estimada; la real cuando haya ≥20 incidencias cerradas).
-  El break-even usa la tasa final esperada = (entregados + pendientes × su tasa) ÷ todo lo enviado (66,7% el 17/10 →
-  CPA máx. ~8,4 €, no 13 €). Motivo: la tasa de lo ya resuelto (85%) está inflada porque las incidencias tardan en resolverse.
-  El Excel de contabilidad aún usa una sola tasa para todos los pendientes: alinearlo en la próxima regeneración.
+  por pack según el tablero `incidencias`) a la tasa de incidencias = (entregadas + `tasa_incidencias` × 10) ÷ (cerradas + 10):
+  la estimación (35%) pesa como 10 incidencias y se va corrigiendo con cada una que se cierra (40,6% el 17/10, 3 de 6).
+  El break-even usa la tasa final esperada = (entregados + pendientes × su tasa) ÷ todo lo enviado (69,7% el 17/10 →
+  CPA máx. ~9,45 €). Motivo: la tasa de lo ya resuelto (85%) está inflada porque las incidencias tardan en resolverse.
+  El héroe del Resumen enseña el neto después de IVA y, debajo, el "antes de IVA" (lo que llega al banco).
+  Excel de contabilidad igual: Config filas 49-58 (C52/C53 = incidencias cerradas/entregadas, las rellena `desde_dashboard.py`
+  si el export trae `incidencias/`; TASA_INC, TASA_BE) y en el Diario AP = incidencias pendientes, AQ = tasa de sus pendientes.
+  Al exportar para regenerar, baja también `incidencias` (lista) al mismo `out_dir`: datos personales, solo al scratchpad.
 
 Supuestos pendientes de confirmar con Alec: si Meta le cobra IVA (ROI), si factura con IVA, si la comisión de 0,95 € lleva IVA,
 si Dropi le devuelve el coste del producto cuando un devuelto vuelve al almacén. Excel de creativos: `cpa_be`/`ben_pedido` de `biblioteca.json` = break-even del dashboard.

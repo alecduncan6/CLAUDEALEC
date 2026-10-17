@@ -5,6 +5,7 @@
 
 <carpeta_export> es el out_dir de ArtifactData (list/get con out_dir), con:
     config/main.json, dias/<fecha>.json, gastos/<id>.json
+    y, si está, incidencias/<pedido>.json (solo se guardan los recuentos de cerradas, nada de clientes)
 """
 import json
 import sys
@@ -24,6 +25,12 @@ config = leer(origen / "config" / "main.json") if (origen / "config" / "main.jso
 dias = sorted((leer(p) for p in (origen / "dias").glob("*.json")), key=lambda d: d["fecha"])
 gastos = [{"id": p.stem, **leer(p)} for p in sorted((origen / "gastos").glob("*.json"))]
 
-destino.write_text(json.dumps({"config": config, "dias": dias, "gastos": gastos}, ensure_ascii=False, indent=2) + "\n",
+incidencias = previo.get("incidencias", {})
+if (origen / "incidencias").is_dir():
+    cerr = [i for i in (leer(p) for p in (origen / "incidencias").glob("*.json"))
+            if not i.get("abierta") and i.get("resultado") in ("entregado", "devuelto")]
+    incidencias = {"cerradas": len(cerr), "entregadas": sum(i["resultado"] == "entregado" for i in cerr)}
+
+destino.write_text(json.dumps({"config": config, "dias": dias, "gastos": gastos, "incidencias": incidencias}, ensure_ascii=False, indent=2) + "\n",
                    encoding="utf-8")
-print(f"{destino}: {len(dias)} días, {len(gastos)} gastos")
+print(f"{destino}: {len(dias)} días, {len(gastos)} gastos, incidencias {incidencias}")

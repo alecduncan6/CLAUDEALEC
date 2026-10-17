@@ -149,7 +149,7 @@ filas_pack = [
     (6, "Unidades en el pack", "uds", ENTERO, "Dato de Alec."),
     (7, "Coste producto por unidad (sin IVA)", "coste_ud", EUR, "Export del almacén: 1,99 € por spray (sin IVA). Pack 3 desde el 15/10: (3 × 1,99 + aspirador 4,19) / 3."),
     (8, "Coste de envío estándar (sin IVA)", "logistica", EUR,
-     "Tarifa máxima del almacén (8,06 €). Si el día tiene envío real del export, se usa el real (6,85-8,06 €)."),
+     "Envío medio que te cobra Dropi al confirmar (7,55 € según la cartera). Si el día tiene envío real del export, se usa el real (6,75-8,06 €)."),
 ]
 for f, etiqueta, clave, fmt, nota in filas_pack:
     celda(ws, f"B{f}", etiqueta)
@@ -196,13 +196,13 @@ params = [
     (21, "¿El envío lleva IVA deducible?", "SÍ" if cfg.get("logistica_con_iva") else "NO", None,
      "NO: el export dice 'Coste de envío (SIN IVA)' y el coste total no le suma IVA, así que no hay IVA que deducir."),
     (22, "Coste por pedido devuelto", cfg["coste_devolucion"], EUR,
-     "Confirmado con Dropi: el envío de ida ya incluye la vuelta, así que pierdes el envío (8,06 €) y el producto vuelve."),
+     "El envío que ya pagaste al confirmar (7,55 € de media): la vuelta no se cobra aparte y el producto vuelve."),
     (23, "Recargo sobre el gasto en Ads", cfg["recargo_ads"], PCT,
      "0% si Meta factura sin IVA (alta en ROI) o lo deduces. 21% si te cobran IVA y no lo recuperas."),
-    (24, "Tasa de entrega estimada", cfg["tasa_entrega_estimada"], PCT,
-     "Para proyectar pendientes e incidencias mientras no tengas datos propios."),
+    (24, "Tasa de entrega estimada (pedidos sin incidencia)", cfg["tasa_entrega_estimada"], PCT,
+     "Para proyectar los pendientes normales mientras no tengas datos propios."),
     (25, "Pedidos resueltos para usar tu tasa real", cfg["min_resueltos"], ENTERO,
-     "Con estos entregados + devueltos, el libro pasa a usar tu tasa de entrega real."),
+     "Con estos entregados + devueltos SIN incidencia, el libro pasa a usar tu tasa real."),
     (26, "% de Pack 2 (C) y de Pack 3 (D) estimado, sin datos", cfg["pct_pack2_estimado"], PCT,
      "Solo se usa hasta que haya pedidos."),
     (27, "Objetivo de beneficio neto mensual", cfg["objetivo_mensual"], EUR0, "La meta: 10.000 €/mes."),
@@ -237,8 +237,8 @@ calc = [
     (36, "Coste neto por devolución", "=C22-C35", EUR, ""),
     (37, "Pedidos resueltos (entregados + devueltos)", f"={entregados}+{devueltos}", ENTERO, "Histórico."),
     (38, "Tasa de entrega real", f'=IF(C37>0,{entregados}/C37,"")', PCT, "Entregados ÷ (entregados + devueltos)."),
-    (39, "Tasa de entrega USADA en proyecciones", '=IF(AND(C37>=C25,C38<>""),C38,C24)', PCT,
-     "Real si hay suficientes pedidos resueltos; si no, la estimada."),
+    (39, "Tasa de entrega USADA (pendientes sin incidencia)", '=IF(AND(C37-C52>=C25,C55<>""),C55,C24)', PCT,
+     "La real sin incidencias si hay suficientes resueltos; si no, la estimada. Las incidencias van con la suya (C54)."),
     (40, "% de Pack 2 (C) y de Pack 3 (D) real", f'=IF(SUM({rng("P")})>0,SUM({rng("C")})/SUM({rng("P")}),"")', PCT,
      "Upsell real."),
     (41, "% de Pack 2 (C) y de Pack 3 (D) usado", '=IF(C40="",C26,C40)', PCT, ""),
@@ -250,8 +250,8 @@ calc = [
      '=(1-C41-D41)*(C5-C9-IF(C42="",C8,C42)-C14)+C41*(D5-D9-IF(C42="",D8,C42)-D14)'
      '+D41*(E5-E9-IF(C42="",E8,C42)-E14)', EUR,
      "Mezcla de packs, con tu envío medio real."),
-    (45, "Beneficio esperado por pedido confirmado (antes de Ads)", "=C39*C44-(1-C39)*C36-COMISION", EUR,
-     "Tasa × beneficio por entrega − (1 − tasa) × coste de devolución − comisión del almacén."),
+    (45, "Beneficio esperado por pedido confirmado (antes de Ads)", "=TASA_BE*C44-(1-TASA_BE)*C36-COMISION", EUR,
+     "Tasa final esperada (C58) × beneficio por entrega − (1 − tasa) × coste de devolución − comisión del almacén."),
     (46, "CPA break-even (máximo que puedes pagar por pedido)", "=C45/(1+RECARGO_ADS)", EUR,
      "Por encima de este CPA pierdes dinero."),
     (47, "ROAS break-even", '=IF(C46>0,C43/C46,"")', ROAS, "Facturación bruta ÷ Ads mínima para no perder."),
@@ -263,6 +263,38 @@ for f, etiqueta, formula, fmt, nota in calc:
 celda(ws, "D40", f'=IF(SUM({rng("P")})>0,SUM({rng("D")})/SUM({rng("P")}),"")', fmt=PCT, borde=BORDE)
 celda(ws, "D41", '=IF(D40="",D26,D40)', fmt=PCT, borde=BORDE)
 
+# Incidencias: la tasa de lo resuelto engaña (lo que se entrega sale pronto de pendientes y las incidencias se quedan),
+# así que los pendientes normales van a la tasa sin incidencia y las incidencias a la suya. Igual que el dashboard.
+inc = datos.get("incidencias", {})
+cabecera(ws, 49, 2, ["Incidencias (tablero del equipo)", "Valor", "", "", "Qué significa"])
+ws["B49"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
+for f, etiqueta, valor, fmt, nota in [
+    (50, "Tasa de entrega estimada de las incidencias", cfg.get("tasa_incidencias", 0.35), PCT,
+     "Punto de partida (35%). Se va corrigiendo con las incidencias que el equipo cierra."),
+    (51, "Peso de la estimación (en incidencias)", cfg.get("peso_incidencias", 10), ENTERO,
+     "La estimación cuenta como 10 incidencias: con pocas cerradas manda ella, con muchas manda lo real."),
+    (52, "Incidencias cerradas (entregadas + devueltas)", inc.get("cerradas", 0), ENTERO,
+     "Del tablero de Incidencias del dashboard (lo rellena Claude al regenerar)."),
+    (53, "… de ellas entregadas", inc.get("entregadas", 0), ENTERO, ""),
+]:
+    celda(ws, f"B{f}", etiqueta)
+    entrada(ws, f"C{f}", valor, fmt)
+    celda(ws, f"F{f}", nota, color=GRIS, size=9, wrap=True)
+for f, etiqueta, formula, fmt, nota in [
+    (54, "Tasa de entrega USADA para incidencias", "=(C53+C50*C51)/(C52+C51)", PCT,
+     "(entregadas + estimada × peso) ÷ (cerradas + peso)."),
+    (55, "Tasa de entrega real sin incidencias", f'=IF(C37-C52>0,({entregados}-C53)/(C37-C52),"")', PCT,
+     "(Entregados − incidencias entregadas) ÷ (resueltos − incidencias cerradas)."),
+    (56, "Pendientes ahora", f"=SUM({rng('Q')})", ENTERO, ""),
+    (57, "… de ellos en incidencia", f"=SUM({rng('AP')})", ENTERO, ""),
+    (58, "Tasa final esperada (la del break-even)",
+     f"=IF(C37+C56>0,({entregados}+(C56-C57)*C39+C57*C54)/(C37+C56),C39)", PCT,
+     "(Entregados + pendientes × su tasa) ÷ todo lo enviado. Es la que manda en el CPA break-even."),
+]:
+    celda(ws, f"B{f}", etiqueta, bold=(f == 58))
+    celda(ws, f"C{f}", formula, fmt=fmt, bold=(f == 58), borde=BORDE)
+    celda(ws, f"F{f}", nota, color=GRIS, size=9)
+
 for n, ref in {
     "P1_PVP": "$C$5", "P2_PVP": "$D$5", "P1_CPROD": "$C$9", "P2_CPROD": "$D$9",
     "P1_LOG": "$C$8", "P2_LOG": "$D$8", "P1_IVAN": "$C$14", "P2_IVAN": "$D$14",
@@ -270,7 +302,7 @@ for n, ref in {
     "P3A_PVP": "$G$5", "P3A_CPROD": "$G$9", "P3A_IVAN": "$G$14", "P3_DESDE": "$C$16",
     "IVA_VENTAS": "$C$18", "IVA_PROD": "$C$19", "COSTE_DEV": "$C$22", "RECARGO_ADS": "$C$23",
     "OBJETIVO_MES": "$C$27", "FECHA_INICIO": "$C$28", "APLICA_IVA": "$C$33", "LOG_IVA": "$C$34",
-    "IVA_DEV": "$C$35", "COMISION": "$C$31", "TASA_USADA": "$C$39", "BEN_PEDIDO": "$C$45", "CPA_BE": "$C$46", "ROAS_BE": "$C$47",
+    "IVA_DEV": "$C$35", "COMISION": "$C$31", "TASA_USADA": "$C$39", "TASA_INC": "$C$54", "TASA_BE": "$C$58", "BEN_PEDIDO": "$C$45", "CPA_BE": "$C$46", "ROAS_BE": "$C$47",
 }.items():
     nombre(wb, n, f"Config!{ref}")
 
@@ -321,18 +353,21 @@ cols = [
     ("AA", "Pendientes Pack 1", 9, ENTERO, "=MAX(0,B{r}-E{r}-H{r})"),
     ("AB", "Pendientes Pack 2", 9, ENTERO, "=MAX(0,C{r}-F{r}-I{r})"),
     ("AC", "Pendientes Pack 3", 9, ENTERO, "=MAX(0,D{r}-G{r}-J{r})"),
-    ("AD", "Entregados proy. P1", 9, '0.0;-0.0;"-"', "=E{r}+AA{r}*TASA_USADA"),
-    ("AE", "Entregados proy. P2", 9, '0.0;-0.0;"-"', "=F{r}+AB{r}*TASA_USADA"),
-    ("AF", "Entregados proy. P3", 9, '0.0;-0.0;"-"', "=G{r}+AC{r}*TASA_USADA"),
-    ("AG", "Devueltos proy.", 9, '0.0;-0.0;"-"', "=H{r}+I{r}+J{r}+(AA{r}+AB{r}+AC{r})*(1-TASA_USADA)"),
+    ("AD", "Entregados proy. P1", 9, '0.0;-0.0;"-"', "=E{r}+AA{r}*AQ{r}"),
+    ("AE", "Entregados proy. P2", 9, '0.0;-0.0;"-"', "=F{r}+AB{r}*AQ{r}"),
+    ("AF", "Entregados proy. P3", 9, '0.0;-0.0;"-"', "=G{r}+AC{r}*AQ{r}"),
+    ("AG", "Devueltos proy.", 9, '0.0;-0.0;"-"', "=H{r}+I{r}+J{r}+(AA{r}+AB{r}+AC{r})*(1-AQ{r})"),
     ("AH", "Ventas proy. (IVA incl.)", 11, EUR, "=AD{r}*P1_PVP+AE{r}*P2_PVP+AF{r}*IF($A{r}<P3_DESDE,P3A_PVP,P3_PVP)"),
     ("AI", "Coste producto proy.", 10, EUR, "=AD{r}*P1_CPROD+AE{r}*P2_CPROD+AF{r}*IF($A{r}<P3_DESDE,P3A_CPROD,P3_CPROD)"),
-    ("AJ", "Envíos proy.", 10, EUR, "=" + D_ENVIO_ENT + "+" + D_ENVIO_PEND + "*TASA_USADA"),
+    ("AJ", "Envíos proy.", 10, EUR, "=" + D_ENVIO_ENT + "+" + D_ENVIO_PEND + "*AQ{r}"),
     ("AK", "Devoluciones proy.", 10, EUR, "=AG{r}*COSTE_DEV"),
     ("AL", "IVA neto proy.", 10, EUR, "=AD{r}*P1_IVAN+AE{r}*P2_IVAN+AF{r}*IF($A{r}<P3_DESDE,P3A_IVAN,P3_IVAN)-AG{r}*IVA_DEV"),
     ("AM", "Ads total (con recargo)", 10, EUR, "=N{r}*(1+RECARGO_ADS)"),
     ("AN", "Pedidos con envío real", 9, ENTERO, "=IF(ISNUMBER(L{r}),E{r}+F{r}+G{r}+AA{r}+AB{r}+AC{r},0)"),
     ("AO", "Comisión almacén", 9, EUR, "=P{r}*COMISION"),
+    ("AP", "Pendientes en incidencia", 9, ENTERO, "=MIN(N(K{r}),Q{r})"),
+    ("AQ", "Tasa de entrega de sus pendientes", 9, PCT,
+     "=IF(Q{r}>0,((Q{r}-AP{r})*TASA_USADA+AP{r}*TASA_INC)/Q{r},TASA_USADA)"),
 ]
 FMT = {l: f for l, _, _, f, _ in cols}
 ENTRADAS = {"B": "p1", "C": "p2", "D": "p3", "E": "ent1", "F": "ent2", "G": "ent3", "H": "dev1", "I": "dev2",
@@ -353,7 +388,7 @@ celda(ws, "AA3", "Cálculos auxiliares (no tocar) →", color=GRIS, size=9, ital
 
 celda(ws, "A4", "TOTAL", bold=True, color=TINTA)
 for letra, _, _, fmt, formula in cols:
-    if letra in ("A", "O", "Z") or fmt is None:
+    if letra in ("A", "O", "Z", "AQ") or fmt is None:
         continue
     celda(ws, f"{letra}4", f"=SUM({letra}{F0}:{letra}{FN})", bold=True, fmt=fmt, color=TINTA)
 celda(ws, "S4", '=IF(P4>0,R4/P4,"")', bold=True, fmt=EUR, color=TINTA)
@@ -395,7 +430,7 @@ ws["W5"].comment = Comment("Lo que te liquida el almacén por lo entregado: PVP 
 ws["X5"].comment = Comment("Dinero ya ganado: liquidación − IVA − devoluciones − Ads − comisión del almacén. "
                            "Los días recientes salen negativos porque aún hay pedidos pendientes.", "CeraLux")
 ws["Y5"].comment = Comment("Lo que dejará el día cuando se resuelvan los pendientes, "
-                           "usando la tasa de entrega de Config.", "CeraLux")
+                           "con la tasa de Config: los normales a la de sin incidencia y las incidencias a la suya.", "CeraLux")
 
 # =====================================================================
 # GASTOS
@@ -455,9 +490,9 @@ entrada(ws, "F3", "=TODAY()", FECHA, "Por defecto: hoy.")
 ws.merge_cells("F3:G3")
 celda(ws, "H3", "Días", bold=True, color=TINTA, align="right")
 celda(ws, "I3", f"=MAX(1,{HASTA}-{DESDE}+1)", fmt=ENTERO, bold=True)
-celda(ws, "J3", "Tasa entrega usada", bold=True, color=TINTA, align="right")
+celda(ws, "J3", "Tasa entrega esperada", bold=True, color=TINTA, align="right")
 ws.merge_cells("J3:K3")
-celda(ws, "L3", "=TASA_USADA", fmt=PCT, bold=True, color=VERDE_LINK)
+celda(ws, "L3", "=TASA_BE", fmt=PCT, bold=True, color=VERDE_LINK)
 
 # --- tarjetas KPI (6 por fila, 2 columnas cada una) ---
 # Referencias: B7 neto proy., D7 liquidación, F7 cobrado, H7 pedidos, J7 facturación, L7 ads,
@@ -698,14 +733,15 @@ lineas = [
           "cuadra con su panel."),
     ("t", "Beneficio cobrado (real): liquidación − IVA − devoluciones − Ads. Es caja. Los días recientes "
           "salen en negativo porque los pedidos aún están pendientes."),
-    ("t", "Beneficio proyectado: lo mismo, suponiendo que los pendientes se entregan a tu tasa de entrega. "
+    ("t", "Beneficio proyectado: lo mismo, suponiendo que los pendientes normales se entregan a tu tasa sin "
+          "incidencia y los que están en incidencia a la de incidencias (Config, filas 49-58). "
           "Es el número para decidir si escalar o cortar."),
     ("h", "Semáforo de campaña (CPA = gasto en Ads ÷ pedidos confirmados)"),
     ("t", "ESCALAR: CPA ≤ 75% del CPA break-even. Hay margen de sobra: sube presupuesto un 20-30% cada 48 h."),
     ("t", "VIGILAR: CPA entre el 75% y el 100% del break-even. Ganas poco: prueba creatividades nuevas antes de escalar."),
     ("t", "CORTAR: CPA por encima del break-even. Cada pedido te cuesta dinero: apaga o cambia el ángulo."),
     ("h", "Supuestos que debes confirmar (Config)"),
-    ("t", "• Coste de un pedido devuelto = 8,06 € (confirmado con Dropi: el envío de ida ya incluye la vuelta)."),
+    ("t", "• Coste de un pedido devuelto = el envío que ya pagaste (7,55 € de media según la cartera de Dropi)."),
     ("t", "• El envío no lleva IVA deducible (el export lo da 'sin IVA' y no le suma IVA al coste total)."),
     ("t", "• Meta te factura sin IVA (alta en ROI). Si no, pon 21% en 'Recargo sobre el gasto en Ads'."),
     ("t", "• El IVA se descuenta del beneficio (SÍ). Si aún no facturas con IVA, ponlo en NO para ver el bruto, "
