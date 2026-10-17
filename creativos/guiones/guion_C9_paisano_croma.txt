@@ -1,0 +1,93 @@
+GUION C9 · PAISANO EN CROMA (talking head + b-roll de fondo) · CeraLux
+Un hombre normal de 45-55 años, delante de croma, habla a cámara. Detrás (o arriba) van los planos del producto.
+Números en letra para que suene natural. Que NO lo lea: que se aprenda las ideas y lo diga a su manera.
+
+NOMBRES (mismo cuerpo, cambia solo el hook)
+  BROAD_C9_CROMA_TALLER_V1
+  BROAD_C9_CROMA_UNA_V1
+  BROAD_C9_CROMA_PARKING_V1
+
+
+==================== HOOKS (0-4 s) · grabar los tres ====================
+TALLER   "En el taller me pedían doscientos euros por esta raya. Y me la he quitado yo por menos de treinta."
+         Texto: TALLER: 200 € · ESTO: MENOS DE 30 €
+         Fondo: macro de la raya blanca en la puerta.
+
+UNA      "Antes de llevar el coche a pulir, haz una cosa: pasa la uña por la raya."
+         Texto: ¿SE TE ENGANCHA LA UÑA?
+         Fondo: dedo pasando por el arañazo.
+
+PARKING  "Me la hicieron en el parking del súper. Ni una nota, ni nada."
+         Texto: NI UNA NOTA 🙃
+         Fondo: plano del coche aparcado entre otros, zoom a la raya.
+
+
+==================== CUERPO (igual en los tres) ====================
+DOLOR (4-11 s)
+"Y no es un golpe, ¿eh? Es una raya de nada. Pero cada vez que te acercas al coche, ahí está, mirándote."
+  Texto: UNA RAYA DE NADA…   Fondo: el actor (o una mano) señalando la raya.
+
+AGITAR (11-20 s)
+"Vas al taller y te dicen: 'Esto hay que pulirlo, doscientos euros, y déjamelo un par de días'.
+¿Dos días sin coche por una raya? Y lo de la pasta de dientes y los rotuladores esos… ya, yo también lo probé. Y la raya, ahí."
+  Texto: 200 € + 2 DÍAS SIN COCHE   Fondo: taller / pulidora; luego pasta de dientes que no hace nada.
+
+GIRO (20-24 s)
+"Hasta que mi cuñado, que es muy de su coche, me pasó esto."   (enseña el bote a cámara)
+  Texto: —   Fondo: el bote en la mano.
+
+DEMOSTRACIÓN (24-33 s) · el b-roll a pantalla completa
+"Dos pulsaciones en el paño, lo pasas por encima un par de veces… y mira. Mira, mira."
+  Texto: 2 PULSACIONES · 2 PASADAS   Fondo: la raya desapareciendo, plano continuo sin cortes.
+
+MECANISMO (33-39 s)
+"No es pintura ni nada raro. Rellena la raya por dentro, en vez de lijarla como una pulidora. Por eso no te come el barniz."
+  Texto: RELLENA · NO LIJA   Fondo: macro antes / después.
+
+PRUEBA DE LA UÑA (39-46 s)
+"Eso sí, te lo digo claro: pasa la uña. Si no se engancha, esto te la quita. Si se engancha, eso ya es de taller. No te voy a engañar."
+  Texto: ¿NO SE ENGANCHA? ES PARA TI   Fondo: uña pasando por la raya.
+
+OFERTA (46-55 s)
+"Yo cogí el pack de tres botes, porque te regalan este aspirador de coche. (lo enseña)
+Para las migas de los críos y los pelos del perro, de lujo. Todo, cincuenta y nueve noventa y nueve."
+  Texto: 3 BOTES + ASPIRADOR DE REGALO · 59,99 €   Fondo: el aspirador real tragando migas de la alfombrilla.
+
+PAGO Y CTA (55-62 s)
+"Y no pagas nada por internet: se lo pagas al repartidor cuando te llega a casa. Dale al botón de abajo… y estate pendiente del teléfono, que te llaman para confirmar."
+  Texto: PAGAS AL RECIBIR · PÍDELO ABAJO   Fondo: bote + aspirador sobre el asiento.
+
+
+==================== VERSIÓN CORTA (~35 s) ====================
+Hook → "Y no es un golpe, es una raya de nada, pero la ves cada día." → DEMOSTRACIÓN → PRUEBA DE LA UÑA →
+"Yo cogí el pack de tres, que te regalan el aspirador. Cincuenta y nueve noventa y nueve, y lo pagas cuando te llega."
+Nombre: BROAD_C9_CROMA_TALLER_V1_CORTO
+
+
+==================== RODAJE ====================
+- Casting: alguien real de 45-55 años, con su ropa de diario (polo o jersey), sin maquillaje. Si tiene coche con una raya
+  de verdad, se graba SU coche: así todo lo que dice es cierto.
+- Croma: verde liso y sin arrugas, iluminado aparte y un pelín más oscuro que la cara. Luz principal suave a 45°, contraluz
+  para separar el pelo del verde. Micro de solapa (el audio limpio es lo que da confianza).
+- Encuadre: 9:16, de cintura para arriba en la mitad de abajo; arriba el b-roll. Que señale de vez en cuando hacia atrás.
+- Interpretación: nada de teleprompter. Grabar cada bloque 2-3 veces y quedarse con la más natural, con sus "eh" y
+  "mira". Cortes secos cada 2-3 segundos.
+- Atrezo: el bote en la mano y EL ASPIRADOR REAL (el mismo modelo y color que llega al cliente).
+- Subtítulos grandes, 2-3 palabras cada vez, porque mucha gente lo ve sin sonido.
+
+
+==================== TEXTO DEL ANUNCIO ====================
+Titular: 3 botes + aspirador de REGALO · 59,99 €
+Texto principal:
+"¿Una raya en el coche y en el taller te piden 200 €? Prueba esto antes.
+Pasa la uña: si no se engancha, CeraLux la rellena y deja de verse. Si se engancha, es de taller (te lo decimos claro).
+🎁 Pack de 3 botes + aspirador de coche de regalo: 59,99 €.
+¿Solo quieres probarlo? Dos botes te salen por menos de 40 €.
+🚚 Pagas en efectivo cuando te llega a casa."
+
+
+==================== ANTES DE SUBIRLO ====================
+[ ] El aspirador del vídeo es el real (mismo color)
+[ ] Ningún "valorado en", ni "oferta hasta…", ni fechas
+[ ] Precios iguales que en la tienda: 59,99 € el pack de 3 y "menos de 40 €" el de 2
+[ ] Exportar con los nombres de arriba y subirlos a la biblioteca de vídeos de HeatioShop

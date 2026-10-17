@@ -1,7 +1,7 @@
 {
  "config": {
-  "cpa_be": 11.23,
-  "ben_pedido": 11.23,
+  "cpa_be": 8.35,
+  "ben_pedido": 8.35,
   "recargo_ads": 0,
   "fecha_inicio": "2026-10-05",
   "umbral_escalar": 0.75,
@@ -93,6 +93,20 @@
    "cta": "Pulsa el enlace de abajo y pídelo ahora.",
    "precio": "menos de 40 € (2 botes)",
    "notas": "Mismo texto que C5 dicho por una persona (ideal 45-55 años) en vez de voz en off. Sirve para comparar formato: BROAD_C6_MANILLA_TIENES_V1 frente a BROAD_C5_MANILLA_TIENES_V1."
+  },
+  {
+   "id": "C9",
+   "nombre": "Paisano en croma · cuñado + uña + aspirador",
+   "angulo": "BROAD — testimonio de autoridad cercana + oferta pack 3",
+   "formato": "Talking head en croma (hombre 45-55) con b-roll del producto detrás",
+   "apertura": "Y no es un golpe, ¿eh? Es una raya de nada. Pero cada vez que te acercas al coche, ahí está. Vas al taller: doscientos euros y dos días sin coche. Y lo de la pasta de dientes y los rotuladores… ya, yo también lo probé.",
+   "solucion": "Hasta que mi cuñado me pasó esto. Dos pulsaciones en el paño, lo pasas por encima un par de veces… y mira.",
+   "mecanismo": "No es pintura ni nada raro. Rellena la raya por dentro, en vez de lijarla como una pulidora. Por eso no te come el barniz.",
+   "prueba": "Pasa la uña. Si no se engancha, esto te la quita. Si se engancha, eso ya es de taller. No te voy a engañar.",
+   "oferta": "Yo cogí el pack de tres botes, porque te regalan este aspirador de coche. Todo, cincuenta y nueve noventa y nueve. Y se lo pagas al repartidor cuando te llega.",
+   "cta": "Dale al botón de abajo y estate pendiente del teléfono, que te llaman para confirmar.",
+   "precio": "59,99 € (3 botes + aspirador)",
+   "notas": "Guion en creativos/guiones/guion_C9_paisano_croma.txt. Hooks TALLER, UNA y PARKING. Primer anuncio que vende el Pack 3 + aspirador."
   }
  ],
  "anuncios": [
@@ -268,6 +282,9 @@
  "hooks": {
   "PRECIO": "Pulir el coche en España te puede costar 400 €. Esto, menos de 30.",
   "MIRA": "Mira lo que pasa cuando echas este spray en los rayones de tu coche.",
-  "TIENES": "¿Tienes un arañazo como este? No lo lleves a pulir todavía."
+  "TIENES": "¿Tienes un arañazo como este? No lo lleves a pulir todavía.",
+  "TALLER": "En el taller me pedían doscientos euros por esta raya. Y me la he quitado yo por menos de treinta.",
+  "UNA": "Antes de llevar el coche a pulir, haz una cosa: pasa la uña por la raya.",
+  "PARKING": "Me la hicieron en el parking del súper. Ni una nota, ni nada."
  }
 }
