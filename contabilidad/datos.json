@@ -521,6 +521,8 @@
   "gastos": [],
   "incidencias": {
     "cerradas": 6,
-    "entregadas": 3
+    "entregadas": 3,
+    "q": 0.5461,
+    "fecha_export": "2026-10-17"
   }
 }

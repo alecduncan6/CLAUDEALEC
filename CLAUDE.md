@@ -146,7 +146,7 @@ Lo normal es que lo suba él mismo en la pestaña Incidencias del dashboard. Si 
 ## Cuando Alec solo dice "hoy X pack 1, Y pack 2, Z pack 3"
 
 `get dias/<fecha>` y `set` con `p1`/`p2`/`p3` nuevos y el gasto de Meta, conservando el resto. Responde con pedidos,
-gasto, CPA vs CPA break-even (~9,45 € con los datos del 17/10, el que marque el dashboard), beneficio proyectado y semáforo
+gasto, CPA vs CPA break-even (~11,8 € sin IVA con los datos del 17/10, el que marque el dashboard), beneficio proyectado y semáforo
 (ESCALAR ≤ 75% del break-even, VIGILAR ≤ 100%, CORTAR > 100%). Recuérdale las incidencias pendientes.
 
 ## Regenerar el Excel con los datos al día
@@ -204,12 +204,21 @@ gasto, CPA vs CPA break-even (~9,45 € con los datos del 17/10, el que marque e
   (resueltos − incidencias cerradas del tablero; 80% estimada hasta 30 resueltos) y las incidencias abiertas (`dias.inc`,
   por pack según el tablero `incidencias`) a la tasa de incidencias = (entregadas + `tasa_incidencias` × 10) ÷ (cerradas + 10):
   la estimación (35%) pesa como 10 incidencias y se va corrigiendo con cada una que se cierra (40,6% el 17/10, 3 de 6).
-  El break-even usa la tasa final esperada = (entregados + pendientes × su tasa) ÷ todo lo enviado (69,7% el 17/10 →
-  CPA máx. ~9,45 €). Motivo: la tasa de lo ya resuelto (85%) está inflada porque las incidencias tardan en resolverse.
-  IVA (17/10, decisión de Alec): `aplicar_iva = false` → todos los beneficios (héroe, KPIs, diario, Creatividades) salen SIN
-  restar IVA, "lo que llega al banco"; el héroe recuerda aparte cuánto IVA llevan esas ventas. Pero el CPA máximo para decidir
-  (semáforo, veredictos, prueba en curso; Excel Config C46) se calcula SIEMPRE con IVA (`limite(h)`), por prudencia: 9,45 € con
-  IVA frente a 13,23 € sin él. Si el gestor confirma que no hay IVA que pagar, poner `iva_ventas` a 0.
+  El break-even usa la tasa final esperada = (entregados + pendientes × su tasa) ÷ todo lo enviado (65,1% el 17/10 →
+  CPA máx. ~11,8 € sin IVA). Motivo: la tasa de lo ya resuelto (85%) está inflada porque las incidencias tardan en resolverse.
+  **IVA: fuera de TODO el panel** (decisión firme de Alec el 17/10: lo que llega al saldo de Dropi es lo que retira, y punto).
+  `aplicar_iva = false` en config y en el Excel (Config C20 = NO): beneficios, CPA máximo, semáforo, veredictos y Excel sin IVA.
+  No volver a sacar el IVA en el panel ni restarlo salvo que él lo pida.
+  **Pedidos recientes** (desde el 17/10): un pendiente sin incidencia todavía puede caer en incidencia. q = % de pedidos que
+  acaban en incidencia = incidencias del tablero ÷ (pedidos × parte ya visible), solo días con ≥70% visible; `INC_CDF` =
+  [0,14, 0,30, 0,70, 0,92, 0,98] a 0-4 días laborables (medido con 50 incidencias; a 5, todas). Tasa del pendiente =
+  tasa sin incidencia + (tasa incidencias − tasa sin incidencia) × q(1−F)/(1−qF) (`tasaNormal`). El 17/10: q = 54,6%, pedido
+  nuevo 63,3%, tasa final 65,1%, CPA máx. 11,79 €, beneficio proyectado desde el inicio ~490 € (antes 667 €: se daban
+  los pedidos recientes al 90,5%, como si ya hubieran pasado sin incidencia). Excel: Config filas 60-65 (C61 = q, lo calcula
+  `desde_dashboard.py`; C62 fecha del último export; C63:G63 INC_CDF; C64:L64 festivos) y Diario AR-AT.
+  **Escenarios** (Resumen, debajo de los KPIs, sigue el periodo elegido): beneficio del periodo si la entrega FINAL fuese
+  55/60/65/75/80/85% (85% = competencia) + la previsión actual. Lo resuelto no cambia; los pendientes se entregan a la tasa
+  que haga falta (`margPend`/`margF` de `calcDia`); CPA máx. de cada fila = break-even con esa tasa.
   Excel de contabilidad igual: Config filas 49-58 (C52/C53 = incidencias cerradas/entregadas, las rellena `desde_dashboard.py`
   si el export trae `incidencias/`; TASA_INC, TASA_BE) y en el Diario AP = incidencias pendientes, AQ = tasa de sus pendientes.
   Al exportar para regenerar, baja también `incidencias` (lista) al mismo `out_dir`: datos personales, solo al scratchpad.

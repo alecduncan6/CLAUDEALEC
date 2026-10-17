@@ -16,6 +16,7 @@ from openpyxl.chart import BarChart, LineChart, Reference
 from openpyxl.comments import Comment
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
 
@@ -253,8 +254,7 @@ calc = [
     (45, "Beneficio esperado por pedido confirmado (antes de Ads)", "=TASA_BE*C44-(1-TASA_BE)*C36-COMISION", EUR,
      "Tasa final esperada (C58) × beneficio por entrega − (1 − tasa) × coste de devolución − comisión del almacén."),
     (46, "CPA break-even (máximo que puedes pagar por pedido)",
-     "=(C45-IF(APLICA_IVA=1,0,TASA_BE*((1-C41-D41)*(C12-C13)+C41*(D12-D13)+D41*(E12-E13))))/(1+RECARGO_ADS)", EUR,
-     "Por encima de este CPA pierdes dinero. Siempre con IVA, aunque el beneficio se vea sin restarlo (por prudencia)."),
+     "=C45/(1+RECARGO_ADS)", EUR, "Por encima de este CPA pierdes dinero."),
     (47, "ROAS break-even", '=IF(C46>0,C43/C46,"")', ROAS, "Facturación bruta ÷ Ads mínima para no perder."),
 ]
 for f, etiqueta, formula, fmt, nota in calc:
@@ -289,12 +289,35 @@ for f, etiqueta, formula, fmt, nota in [
     (56, "Pendientes ahora", f"=SUM({rng('Q')})", ENTERO, ""),
     (57, "… de ellos en incidencia", f"=SUM({rng('AP')})", ENTERO, ""),
     (58, "Tasa final esperada (la del break-even)",
-     f"=IF(C37+C56>0,({entregados}+(C56-C57)*C39+C57*C54)/(C37+C56),C39)", PCT,
+     f"=IF(C37+C56>0,({entregados}+SUMPRODUCT({rng('Q')},{rng('AQ')}))/(C37+C56),C39)", PCT,
      "(Entregados + pendientes × su tasa) ÷ todo lo enviado. Es la que manda en el CPA break-even."),
 ]:
     celda(ws, f"B{f}", etiqueta, bold=(f == 58))
     celda(ws, f"C{f}", formula, fmt=fmt, bold=(f == 58), borde=BORDE)
     celda(ws, f"F{f}", nota, color=GRIS, size=9)
+
+# Pedidos recientes: los que aún no tienen incidencia todavía pueden tenerla. Se mezcla la tasa sin incidencia con la de
+# incidencias según cuánto de q queda por aparecer a esa edad (en días laborables). Igual que el dashboard.
+cabecera(ws, 60, 2, ["Pedidos recientes", "Valor", "", "", "Qué significa"])
+ws["B60"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
+celda(ws, "B61", "% de pedidos que acaban en incidencia")
+entrada(ws, "C61", inc.get("q") if inc.get("q") is not None else cfg.get("pct_incidencias", 0.45), PCT)
+celda(ws, "F61", "Incidencias del tablero ÷ pedidos (corrigiendo los días recientes). Lo rellena Claude al regenerar.",
+      color=GRIS, size=9, wrap=True)
+celda(ws, "B62", "Fecha del último Excel del almacén")
+entrada(ws, "C62", dt.date.fromisoformat(inc["fecha_export"]) if inc.get("fecha_export") else dt.date.today(), FECHA)
+celda(ws, "F62", "La edad de cada pedido se cuenta hasta aquí.", color=GRIS, size=9)
+celda(ws, "B63", "Incidencias ya visibles a 0 / 1 / 2 / 3 / 4 días laborables")
+for col, v in zip("CDEFG", [0.14, 0.30, 0.70, 0.92, 0.98]):
+    entrada(ws, f"{col}63", v, PCT)
+celda(ws, "B64", "Festivos nacionales (sin entregas ni abonos)")
+FEST = ["2026-10-12", "2026-12-08", "2026-12-25", "2027-01-01", "2027-01-06", "2027-03-26", "2027-10-12", "2027-11-01",
+        "2027-12-06", "2027-12-08"]
+for i, f_ in enumerate(FEST):
+    entrada(ws, f"{get_column_letter(3 + i)}64", dt.date.fromisoformat(f_), FECHA)
+celda(ws, "B65", "Tasa de entrega de un pedido nuevo", bold=True)
+celda(ws, "C65", "=(1-C61)*C39+C61*C54", fmt=PCT, bold=True, borde=BORDE)
+celda(ws, "F65", "(1 − % incidencia) × tasa sin incidencia + % incidencia × tasa de incidencias.", color=GRIS, size=9)
 
 for n, ref in {
     "P1_PVP": "$C$5", "P2_PVP": "$D$5", "P1_CPROD": "$C$9", "P2_CPROD": "$D$9",
@@ -303,9 +326,11 @@ for n, ref in {
     "P3A_PVP": "$G$5", "P3A_CPROD": "$G$9", "P3A_IVAN": "$G$14", "P3_DESDE": "$C$16",
     "IVA_VENTAS": "$C$18", "IVA_PROD": "$C$19", "COSTE_DEV": "$C$22", "RECARGO_ADS": "$C$23",
     "OBJETIVO_MES": "$C$27", "FECHA_INICIO": "$C$28", "APLICA_IVA": "$C$33", "LOG_IVA": "$C$34",
-    "IVA_DEV": "$C$35", "COMISION": "$C$31", "TASA_USADA": "$C$39", "TASA_INC": "$C$54", "TASA_BE": "$C$58", "BEN_PEDIDO": "$C$45", "CPA_BE": "$C$46", "ROAS_BE": "$C$47",
+    "IVA_DEV": "$C$35", "COMISION": "$C$31", "TASA_USADA": "$C$39", "TASA_INC": "$C$54", "TASA_BE": "$C$58", "Q_INC": "$C$61", "FECHA_EXPORT": "$C$62", "BEN_PEDIDO": "$C$45", "CPA_BE": "$C$46", "ROAS_BE": "$C$47",
 }.items():
     nombre(wb, n, f"Config!{ref}")
+nombre(wb, "CDF_INC", "Config!$C$63:$G$63")
+nombre(wb, "FESTIVOS", "Config!$C$64:$L$64")
 
 # =====================================================================
 # DIARIO
@@ -367,8 +392,12 @@ cols = [
     ("AN", "Pedidos con envío real", 9, ENTERO, "=IF(ISNUMBER(L{r}),E{r}+F{r}+G{r}+AA{r}+AB{r}+AC{r},0)"),
     ("AO", "Comisión almacén", 9, EUR, "=P{r}*COMISION"),
     ("AP", "Pendientes en incidencia", 9, ENTERO, "=MIN(N(K{r}),Q{r})"),
-    ("AQ", "Tasa de entrega de sus pendientes", 9, PCT,
-     "=IF(Q{r}>0,((Q{r}-AP{r})*TASA_USADA+AP{r}*TASA_INC)/Q{r},TASA_USADA)"),
+    ("AQ", "Tasa de entrega de sus pendientes", 9, PCT, "=IF(Q{r}>0,((Q{r}-AP{r})*AT{r}+AP{r}*TASA_INC)/Q{r},AT{r})"),
+    ("AR", "Días laborables desde el pedido", 9, ENTERO,
+     "=IF($A{r}<FECHA_EXPORT,NETWORKDAYS($A{r}+1,FECHA_EXPORT,FESTIVOS),0)"),
+    ("AS", "Incidencias ya visibles", 9, PCT, "=IF(AR{r}>=5,1,INDEX(CDF_INC,1,AR{r}+1))"),
+    ("AT", "Tasa de sus pendientes sin incidencia", 9, PCT,
+     "=TASA_USADA+(TASA_INC-TASA_USADA)*Q_INC*(1-AS{r})/(1-Q_INC*AS{r})"),
 ]
 FMT = {l: f for l, _, _, f, _ in cols}
 ENTRADAS = {"B": "p1", "C": "p2", "D": "p3", "E": "ent1", "F": "ent2", "G": "ent3", "H": "dev1", "I": "dev2",
@@ -389,7 +418,7 @@ celda(ws, "AA3", "Cálculos auxiliares (no tocar) →", color=GRIS, size=9, ital
 
 celda(ws, "A4", "TOTAL", bold=True, color=TINTA)
 for letra, _, _, fmt, formula in cols:
-    if letra in ("A", "O", "Z", "AQ") or fmt is None:
+    if letra in ("A", "O", "Z", "AQ", "AR", "AS", "AT") or fmt is None:
         continue
     celda(ws, f"{letra}4", f"=SUM({letra}{F0}:{letra}{FN})", bold=True, fmt=fmt, color=TINTA)
 celda(ws, "S4", '=IF(P4>0,R4/P4,"")', bold=True, fmt=EUR, color=TINTA)
