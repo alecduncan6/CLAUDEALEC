@@ -168,7 +168,13 @@ gasto, CPA vs CPA break-even (~8,4 € con los datos del 17/10, el que marque el
 - IVA: se repercute el 21% del PVP y solo se deduce el IVA del producto. El envío viene "sin IVA" y el almacén
   no le suma IVA → no hay IVA de envío que deducir (`logistica_con_iva = false`).
 - Devuelto = −8,06 € (confirmado con Dropi el 08/10: el envío inicial ya incluye la vuelta; se pierde el envío y el producto vuelve).
-- Comisión del almacén (Dropi): `comision_pedido` = 0,95 € por pedido confirmado, se entregue o se devuelva
+- Cartera de Dropi (export de transacciones del 17/10, cuadra al céntimo con el saldo propio 339,21 €): al CONFIRMAR un pedido
+  Dropi cobra ya el envío real ("Coste de logística en pedido confirmado", 6,75-8,06 €) y Go Verify 0,95 €; al ENTREGARLO
+  abona el PVP entero ("Reembolso por pedido entregado") y cobra el producto con IVA (2,41 / 4,82 / 7,22 €). Un devuelto no
+  tiene más cargos: pierdes el envío ya cobrado. No hay retraso en los abonos: el saldo es bajo porque el envío de los
+  pendientes ya está pagado. Carritos recuperados: Go Verify cobra 0,95 € + 0,10 € de gestión. El préstamo de 600 € no sale
+  en las transacciones.
+- Comisión por pedido (`comision_pedido`) = 0,95 € de Go Verify por pedido confirmado, se entregue o se devuelva
   (no va en el "coste total pedido" del export, así que no entra en la liquidación; se resta aparte en cobrado y proyectado).
 - Dropi adelanta un préstamo de 600 €: el "Disponible" de su panel lo incluye, no es dinero propio.
 - Pedidos #1154–#1157 (3 y 4 de octubre, CeraLux, sincronizados con Dropi) quedan fuera porque `fecha_inicio` es el 05/10.
