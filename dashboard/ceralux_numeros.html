@@ -131,6 +131,9 @@ th, td { padding: 9px 10px; text-align: right; white-space: nowrap; border-botto
 th { font-size: 12px; font-weight: 600; color: var(--muted); background: var(--soft); position: sticky; top: 0; }
 th:first-child, td:first-child { text-align: left; }
 tr:last-child td { border-bottom: 0; }
+table.saldo th, table.saldo td { padding: 9px 7px; }
+table.saldo td:first-child, table.saldo th:first-child { white-space: normal; }
+@media (max-width: 480px) { table.saldo { font-size: 13px; } table.saldo th, table.saldo td { padding: 8px 5px; } }
 td.pos { color: var(--good); font-weight: 600; } td.neg { color: var(--bad); font-weight: 600; }
 .tag { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; background: var(--warn-soft); color: var(--warn); }
 .linkbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 9px; font-size: 13px; cursor: pointer; }
@@ -342,14 +345,26 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   </section>
 
   <section class="panel" id="caja">
-    <h2>Tu dinero real hoy (desde el inicio)</h2>
-    <div class="caja">
-      <div>
-        <div class="big num" id="cajaNum">—</div>
-        <div class="small muted" id="cajaSub">Sube el Excel de transacciones de tu cartera de Dropi (o copia los dos números de arriba de su panel) y verás cuánto llevas ganado o perdido de verdad.</div>
-      </div>
-      <dl class="rows" id="cajaRows"></dl>
+    <h2>Tu saldo en Dropi</h2>
+    <div class="kpis" id="saldoKpis"></div>
+    <p class="small muted" id="saldoSub" style="margin:10px 0">Sube el Excel de transacciones de tu cartera de Dropi (o copia los dos números de arriba de su panel) y verás tu saldo, lo que falta por llegar y cuándo.</p>
+    <div class="tablewrap" id="saldoWrap" hidden>
+      <table class="saldo">
+        <thead><tr><th>Cuándo (estimado)</th><th>Entra</th><th>Saldo</th><th id="saldoThRet">Retirable</th></tr></thead>
+        <tbody id="saldoTabla"></tbody>
+      </table>
     </div>
+    <p class="small muted" id="saldoNota" style="margin:10px 0 0"></p>
+    <details class="hist" id="cajaDet" style="margin:16px 0">
+      <summary class="small">Beneficio real desde el inicio (con Meta Ads e IVA)</summary>
+      <div class="caja" style="margin-top:12px">
+        <div>
+          <div class="big num" id="cajaNum">—</div>
+          <div class="small muted" id="cajaSub"></div>
+        </div>
+        <dl class="rows" id="cajaRows"></dl>
+      </div>
+    </details>
     <form id="fCaja" autocomplete="off">
       <div class="fields">
         <label for="kDisp">"Disponible" en Dropi (€)<input id="kDisp" type="number" step="0.01" inputmode="decimal" placeholder="619,46" required></label>
@@ -891,9 +906,11 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     // Lo que entrará de los pendientes = entregas esperadas × (PVP − producto); a los que aún no están en Dropi
     // (solo en Shopify) todavía les falta pagar el envío y Go Verify.
     const entPend = sumPK((n) => z[n] - e[n]);
-    const entra = sumPK((n) => (z[n] - e[n]) * (pk(n).pvp - pk(n).cprod)) - sumPK((n) => nv[n] * (pk(n).log + u.comision));
+    const entraN = sumPK((n) => (x[n] - xi[n]) * tasa * (pk(n).pvp - pk(n).cprod)), entraI = sumPK((n) => xi[n] * tasaIncG * (pk(n).pvp - pk(n).cprod));
+    const cargo = sumPK((n) => nv[n] * (pk(n).log + u.comision));
+    const entra = entraN + entraI - cargo;
     const ivaPend = sumPK((n) => (z[n] - e[n]) * pk(n).ivan);
-    return { fecha, entPend, entra, ivaPend, p1: p[1], p2: p[2], p3: p[3], ent, dev, nuevos, ivaEnt, pendPVP, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
+    return { fecha, entPend, entra, entraN, entraI, cargo, ivaPend, p1: p[1], p2: p[2], p3: p[3], ent, dev, nuevos, ivaEnt, pendPVP, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
       carritos: num(d?.carritos), recuperados: num(d?.recuperados), faltan, nota: d?.nota || "" };
   }
 
@@ -1144,6 +1161,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const ads = t.ads * (1 + u.recargo);
     const pend = `${N(t.I)} pedidos · ${E0(t.pendPVP)} de venta`;
     if (!k) {
+      $("saldoKpis").innerHTML = ""; $("saldoWrap").hidden = true; $("saldoNota").textContent = "";
       $("cajaNum").textContent = "—"; $("cajaNum").className = "big num";
       $("cajaRows").innerHTML = `<dt>Gastado en Meta Ads</dt><dd>${E(ads)}</dd><dt>Otros gastos</dt><dd>${E(t.otros)}</dd>
         <dt>Aún en juego (pendientes)</dt><dd>${pend}</dd><dt>Resultado final estimado (modelo)</dt><dd>${E(t.neto)}</dd>`;
@@ -1182,6 +1200,68 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       ${ivaTot > 0.005 ? `<dt>− IVA a pagar en el trimestre <span class="small">(${E(t.ivaEnt)} de lo entregado + ${E(t.ivaPend)} de lo que se entregará)</span></dt><dd>${E(-ivaTot)}</dd>
       <dt class="tot">Al cerrar · después de IVA</dt><dd class="tot">${E(finalDesp)}</dd>` : ""}`;
     if (document.activeElement?.closest?.("#fCaja") == null) { $("kDisp").value = num(k.disponible); $("kPrest").value = num(k.prestamo); }
+    renderSaldo(k, t, h, { yaAbonadas, valorEnt, devConf: yaConfirmados * ((num(tx?.envio_medio) || u.p1.log) + u.comision), horas });
+  }
+
+  // Plazo de pedido → abono en la cartera en días laborables (Dropi no abona en domingo ni festivo y casi nunca en sábado),
+  // entregas sin incidencia. Medido el 17/10 con 37 entregas cruzando la cartera con el Excel del almacén;
+  // al subir la cartera se vuelve a medir solo (tx.plazos).
+  const PLAZO_DEF = { 1: 1, 2: 13, 3: 20, 4: 3 };
+  const FESTIVOS = new Set(["2026-10-12", "2026-12-08", "2026-12-25", "2027-01-01", "2027-01-06", "2027-03-26", "2027-10-12", "2027-11-01", "2027-12-06", "2027-12-08"]);
+  const habil = (s) => { const w = parseISO(s).getDay(); return w !== 0 && w !== 6 && !FESTIVOS.has(s); };
+  function lagHab(desde, hasta) { let n = 0, d = desde; while (d < hasta) { d = iso(addDays(parseISO(d), 1)); if (habil(d)) n++; } return n; }
+  function sumaHab(desde, n) { let d = desde, k = 0; while (k < n) { d = iso(addDays(parseISO(d), 1)); if (habil(d)) k++; } return d; }
+  function renderSaldo(k, t, h, c) {
+    const disp = num(k.disponible), colchon = num(k.prestamo) || 600;
+    const pl = k.tx?.plazos && Object.values(k.tx.plazos).reduce((a, n) => a + num(n), 0) >= 10 ? k.tx.plazos : PLAZO_DEF;
+    const lags = Object.entries(pl).map(([l, n]) => [Number(l), num(n)]).filter(([l, n]) => n > 0 && l >= 0).sort((a, b) => a[0] - b[0]);
+    const nPl = lags.reduce((a, [, n]) => a + n, 0);
+    let acu = 0; const mediana = lags.find(([, n]) => (acu += n) >= nPl / 2)?.[0];
+    const hoy = iso(new Date()), ayer = iso(addDays(new Date(), -1)), cubo = {}, filas = [];
+    let tarde = 0, inc = 0, cargo = 0;
+    for (const d of t.dias) {
+      inc += d.entraI; cargo += d.cargo;
+      if (d.entraN <= 0.005) continue;
+      const edad = d.fecha <= ayer ? lagHab(d.fecha, ayer) : 0; // días laborables ya pasados antes de hoy
+      const ok = lags.filter(([l]) => l > edad), tot = ok.reduce((a, [, n]) => a + n, 0);
+      if (!tot) { tarde += d.entraN; continue; } // ya va más tarde de lo normal: puede llegar cualquier día
+      for (const [l, n] of ok) { const f = sumaHab(d.fecha, l); cubo[f] = (cubo[f] || 0) + d.entraN * n / tot; }
+    }
+    // entregas que la cartera ya ha abonado y el Excel del almacén aún da por pendientes: ya están en el saldo
+    let quitar = c.yaAbonadas * c.valorEnt;
+    const restar = (v) => { const q = Math.min(v, quitar); quitar -= q; return v - q; };
+    tarde = restar(tarde);
+    for (const f of Object.keys(cubo).sort()) cubo[f] = restar(cubo[f]);
+    inc = restar(inc);
+    const cargoNeto = Math.max(0, cargo - c.devConf);
+    let saldo = disp;
+    // son estimaciones: sin céntimos, para que se lea de un vistazo (y quepa en el móvil)
+    const fila = (txt, v) => { saldo += v; filas.push(`<tr><td>${txt}</td><td class="num ${v > 0.5 ? "pos" : v < -0.5 ? "neg" : ""}">${v > 0.5 ? "+" : ""}${E0(v)}</td><td class="num">${E0(saldo)}</td><td class="num ${saldo - colchon < -0.5 ? "neg" : ""}"><b>${E0(saldo - colchon)}</b></td></tr>`); };
+    filas.push(`<tr><td>Ahora <span class="small muted">(${esc(fechaHora(k.en))})</span></td><td class="num">—</td><td class="num">${E0(disp)}</td><td class="num"><b>${E0(disp - colchon)}</b></td></tr>`);
+    if (cargoNeto > 0.005) fila(`Pedidos nuevos <span class="small muted">(envío + Go Verify al confirmarlos)</span>`, -cargoNeto);
+    if (tarde > 0.005) fila(`Con retraso <span class="small muted">(cualquier día)</span>`, tarde);
+    for (const f of Object.keys(cubo).sort()) {
+      if (cubo[f] < 0.5) continue;
+      const dd = Math.round((parseISO(f) - parseISO(hoy)) / 86400000);
+      fila(`${esc(corta(f))}${dd === 0 ? " · hoy" : dd === 1 ? " · mañana" : ""}`, cubo[f]);
+    }
+    if (inc > 0.005) fila(`Incidencias <span class="small muted">(sin fecha)</span>`, inc);
+    const fin = saldo;
+    filas.push(`<tr><td><b>Al final</b></td><td class="num pos"><b>+${E0(fin - disp)}</b></td><td class="num"><b>${E0(fin)}</b></td><td class="num ${fin - colchon < 0 ? "neg" : "pos"}"><b>${E0(fin - colchon)}</b></td></tr>`);
+    $("saldoTabla").innerHTML = filas.join("");
+    $("saldoWrap").hidden = false;
+    const sinInc = Object.values(cubo).reduce((a, v) => a + v, 0) + tarde - cargoNeto;
+    $("saldoKpis").innerHTML = [
+      ["Saldo en Dropi hoy", E(disp), `Retirable ya: ${E(disp - colchon)} (dejando ${E0(colchon)})`],
+      ["Por llegar", "+" + E0(fin - disp), `${N(t.I)} pedidos en marcha · ${E0(inc)} de incidencias`],
+      ["Saldo final esperado", E0(fin), `${E0(disp + sinInc)} sin contar incidencias`],
+      ["Podrás retirar", E0(fin - colchon), `Al cerrar todo, dejando ${E0(colchon)} en Dropi`]
+    ].map(([l, v, s2], i) => `<div class="kpi"><span class="l">${l}</span><span class="v num${i === 3 && fin - colchon < 0 ? " bad" : ""}">${v}</span><span class="s">${esc(s2)}</span></div>`).join("");
+    $("saldoSub").innerHTML = `Solo lo que pasa por la cartera de Dropi: sin IVA y sin Meta Ads (Meta se paga con tarjeta, no sale de aquí).${c.horas > 24 ? ` <b style="color:var(--warn)">El saldo es de ${esc(fechaHora(k.en))}: sube las transacciones de hoy.</b>` : ""}`;
+    $("saldoNota").innerHTML = `Retirable = saldo − los ${E0(colchon)} que se quedan siempre en Dropi. Cada entrega suma PVP − producto (el envío ya se cobró al confirmar el pedido; un devuelto no resta más).
+      Entregas esperadas: ${P(h.tasa)} de los pendientes normales y ${P(tasaIncG)} de las incidencias (esas no tienen fecha: dependen de que Goverify las saque). Fechas según tu plazo real de pedido a abono
+      en días laborables (${N(nPl)} entregas${pl === PLAZO_DEF ? ", medido el 17/10" : ""}; Dropi no abona en fin de semana ni festivo): la mitad llega en ${N(mediana)} días laborables o menos, como mucho ${N(lags.at(-1)?.[0])}. Cada día reparte lo que probablemente llegue ese día.
+      ${c.yaAbonadas >= 1 ? ` Ya descontadas ${N(c.yaAbonadas)} entregas que la cartera abonó y el Excel del almacén aún no marca.` : ""}`;
   }
 
   // Entrega por transportista (del último Excel del almacén). % entrega como Dropi: entregados ÷ (entregados + devueltos + incidencias).
@@ -1454,6 +1534,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       if (state.vista === "cre") pintaCre();
     }, fallo);
     db.doc("stats/transportistas").onSnapshot((s) => { state.transp = s.exists ? s.data() : null; renderTransp(); }, () => {});
+    db.doc("stats/pedidos").onSnapshot((s) => { state.pedFechas = s.exists ? s.data().fechas || {} : null; }, () => {});
     db.collection("caja").onSnapshot((s) => {
       const docs = s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((d) => d.en).sort((a, b) => String(b.en).localeCompare(String(a.en)));
       state.caja = docs[0] || null; render();
@@ -2455,6 +2536,12 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
         for (const t of Object.values(transp)) { t.envio = t.nEnv ? r2(t.envio / t.nEnv) : null; delete t.nEnv; }
         await db.doc("stats/transportistas").set({ en: ahora, fuente: "export almacén " + ddmm(hoyS), por: transp });
       }
+      if (state.rol === "owner" && state.cfgExiste) {
+        // ID de pedido de Dropi → fecha de pedido (sin datos de clientes): la cartera lo usa para medir cuánto tarda en llegar el dinero
+        const fechas = { ...(state.pedFechas || {}) };
+        for (const [id, v] of Object.entries(vistos)) fechas[id] = v.fecha;
+        await db.doc("stats/pedidos").set({ en: ahora, fechas });
+      }
       await db.doc("importaciones/ultima").set({ en: ahora, por: state.uid, autor: state.alias, pedidos, nuevas, cerradas });
     } catch {
       return estadoImport("Se cortó a mitad de la actualización. Vuelve a subir el mismo Excel: no se duplica nada.", "err");
@@ -2475,6 +2562,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const rows = filas.map((f) => { const o = {}; for (const [k, v] of Object.entries(f)) o[clave(k)] = v; return o; });
     if (!rows.length || !("IMPORTE" in rows[0]) || !("DESCRIPCION" in rows[0])) return msg("kMsg", "No parece el Excel de transacciones de la cartera de Dropi (faltan IMPORTE y DESCRIPCION).", false);
     const tx = { ingresos: 0, n_ent: 0, envios: 0, n_envios: 0, producto: 0, goverify: 0, otros: 0, desde: null, hasta: null };
+    const plazos = {};
     let propio = 0;
     for (const r of rows) {
       const act = str(r["ACTUALIZO WALLET"]).toUpperCase(), est = str(r["ESTADO"]).toLowerCase();
@@ -2483,13 +2571,18 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       propio += imp;
       if (f) { if (!tx.desde || f < tx.desde) tx.desde = f; if (!tx.hasta || f > tx.hasta) tx.hasta = f; }
       if (d.includes("logística") || d.includes("logistica")) { tx.envios += imp; tx.n_envios++; }
-      else if (d.includes("pedido entregado") && imp > 0) { tx.ingresos += imp; tx.n_ent++; }
+      else if (d.includes("pedido entregado") && imp > 0) {
+        tx.ingresos += imp; tx.n_ent++;
+        const id = /#\s*(\d+)/.exec(str(r["DESCRIPCION"]))?.[1], fp = id && state.pedFechas?.[id];
+        if (fp && f && !state.incid?.[id]) { const l = lagHab(fp, f); if (l <= 20) plazos[l] = (plazos[l] || 0) + 1; }
+      }
       else if (d.includes("coste de productos") || d.includes("costo de productos")) tx.producto += imp;
       else if (d.includes("go verify")) tx.goverify += imp;
       else tx.otros += imp;
     }
     for (const k of ["ingresos", "envios", "producto", "goverify", "otros"]) tx[k] = r2(tx[k]);
     tx.envio_medio = tx.n_envios ? r2(-tx.envios / tx.n_envios) : null;
+    if (Object.values(plazos).reduce((a, n) => a + n, 0) >= 10) tx.plazos = plazos;
     const prestamo = $("kPrest").value !== "" ? num($("kPrest").value) : num(state.caja?.prestamo ?? 600);
     try {
       await state.db.doc("caja/" + iso(new Date())).set({ disponible: r2(propio + prestamo), prestamo, en: new Date().toISOString(), fuente: "transacciones de Dropi", tx });

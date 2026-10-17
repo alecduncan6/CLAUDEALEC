@@ -55,6 +55,17 @@ transportista a que el cliente lo recoja.
       corregido con la cartera: − `yaAbonadas` (entregas que la cartera ya abonó y los `dias` aún no tienen) + `yaConfirmados`
       (pedidos solo-Shopify cuyo envío Dropi ya cobró) = "al cerrar los pedidos de hoy, antes de IVA"; − IVA de entregados y
       esperados = después de IVA. El 17/10: −507 € hoy, 701 € antes de IVA / 269 € después al cerrar (modelo: 667 / 235).
+      Arriba del todo, bloque **"Tu saldo en Dropi"** (lo que Alec mira para retirar; sin IVA ni Meta, que se paga con tarjeta):
+      saldo hoy (`disponible`), por llegar, saldo final esperado y retirable = saldo − 600 € (el préstamo, que se queda siempre en
+      Dropi), con tabla por fecha estimada (`renderSaldo`): pedidos nuevos (− envío + Go Verify, `calcDia.cargo`), con retraso,
+      un día por fila y las incidencias aparte sin fecha (`entraI`). Lo de cada día de pedido (`entraN`) se reparte con el plazo
+      pedido → abono en **días laborables** (sin fines de semana ni `FESTIVOS` nacionales): `tx.plazos` si la cartera trae ≥10,
+      si no `PLAZO_DEF` = {1:1, 2:13, 3:20, 4:3} (37 entregas sin incidencia, medido el 17/10: casi todo llega en 2-3 días
+      laborables). Solo cuentan los plazos que aún pueden pasar (> días laborables transcurridos). El bloque anterior (posición con
+      Meta e IVA) sigue debajo, plegado.
+    - `stats/pedidos`: `{en, fechas: {<ID pedido Dropi>: <fecha de pedido>}}` (sin datos de clientes). Lo amplía el importador del
+      almacén (solo dueño) y lo usa "Subir transacciones de Dropi" para medir `tx.plazos` con los "Reembolso por pedido
+      entregado #ID" (sin las del tablero de incidencias). Sembrado con el export del 15/10.
     - `stats/transportistas`: `{en, fuente, por: {<transportista>: {n, ent, dev, inc, pend, envio}}}`. Lo escribe el importador
       del almacén (solo dueño; columna sin título o TRANSPORT). Tabla "Entrega por transportista" en Resumen. 15/10: Correos
       Express 72,7% entrega y 1 incidencia de 15; MRW 14H 37,5% (20/40); CTT 40% (9/24, rehúsan); MRW 24/48 50% (4/10).
