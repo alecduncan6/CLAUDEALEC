@@ -252,8 +252,9 @@ calc = [
      "Mezcla de packs, con tu envío medio real."),
     (45, "Beneficio esperado por pedido confirmado (antes de Ads)", "=TASA_BE*C44-(1-TASA_BE)*C36-COMISION", EUR,
      "Tasa final esperada (C58) × beneficio por entrega − (1 − tasa) × coste de devolución − comisión del almacén."),
-    (46, "CPA break-even (máximo que puedes pagar por pedido)", "=C45/(1+RECARGO_ADS)", EUR,
-     "Por encima de este CPA pierdes dinero."),
+    (46, "CPA break-even (máximo que puedes pagar por pedido)",
+     "=(C45-IF(APLICA_IVA=1,0,TASA_BE*((1-C41-D41)*(C12-C13)+C41*(D12-D13)+D41*(E12-E13))))/(1+RECARGO_ADS)", EUR,
+     "Por encima de este CPA pierdes dinero. Siempre con IVA, aunque el beneficio se vea sin restarlo (por prudencia)."),
     (47, "ROAS break-even", '=IF(C46>0,C43/C46,"")', ROAS, "Facturación bruta ÷ Ads mínima para no perder."),
 ]
 for f, etiqueta, formula, fmt, nota in calc:

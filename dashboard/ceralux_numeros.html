@@ -756,8 +756,9 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const pk = (n) => {
       const pvp = num(cfg[`p${n}_pvp`]), uds = num(cfg[`p${n}_uds`]), cu = num(cfg[`p${n}_coste_ud`]), log = num(cfg[`p${n}_logistica`]);
       const cprod = uds * cu * (1 + ip);
-      const ivan = aplica ? pvp * iv / (1 + iv) - (uds * cu * ip + logIva * log * iv / (1 + iv)) : 0;
-      return { pvp, cprod, log, ivan, nombre: cfg[`p${n}_nombre`] };
+      // ivr: el IVA neto de una entrega aunque no se descuente del beneficio (para enseñarlo aparte como aviso)
+      const ivr = pvp * iv / (1 + iv) - (uds * cu * ip + logIva * log * iv / (1 + iv)), ivan = aplica ? ivr : 0;
+      return { pvp, cprod, log, ivan, ivr, nombre: cfg[`p${n}_nombre`] };
     };
     const costeDev = num(cfg.coste_devolucion);
     return { p1: pk(1), p2: pk(2), p3: pk(3), costeDev, ivaDev: aplica && logIva ? costeDev * iv / (1 + iv) : 0, recargo: num(cfg.recargo_ads),
@@ -813,6 +814,10 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const cpaBE = benPedido / (1 + u.recargo);
     return { ticket, benPedido, cpaBE, roasBE: cpaBE > 0 ? ticket / cpaBE : null, neto1: neto(u.p1), neto2: neto(u.p2), neto3: neto(u.p3) };
   }
+
+  // CPA máximo para DECIDIR (semáforo, veredictos, pruebas): siempre con IVA, aunque el beneficio se enseñe sin restarlo,
+  // para no escalar con un CPA que perdería dinero si al final hay que pagarlo
+  function limite(h) { return breakEven(unit({ ...state.cfg, aplicar_iva: true }), h); }
 
   function adsDe(fecha) {
     const m = state.meta;
@@ -909,8 +914,8 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const entraN = sumPK((n) => (x[n] - xi[n]) * tasa * (pk(n).pvp - pk(n).cprod)), entraI = sumPK((n) => xi[n] * tasaIncG * (pk(n).pvp - pk(n).cprod));
     const cargo = sumPK((n) => nv[n] * (pk(n).log + u.comision));
     const entra = entraN + entraI - cargo;
-    const ivaPend = sumPK((n) => (z[n] - e[n]) * pk(n).ivan);
-    return { fecha, entPend, entra, entraN, entraI, cargo, ivaPend, p1: p[1], p2: p[2], p3: p[3], ent, dev, nuevos, ivaEnt, pendPVP, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
+    const ivaPend = sumPK((n) => (z[n] - e[n]) * pk(n).ivan), ivaInfo = sumPK((n) => z[n] * pk(n).ivr);
+    return { fecha, entPend, entra, entraN, entraI, cargo, ivaPend, ivaInfo, p1: p[1], p2: p[2], p3: p[3], ent, dev, nuevos, ivaEnt, pendPVP, inc: Math.min(num(d?.inc), I), H, I, J, ads, T, U, V, W, X, Y, C, P: T - U - V - W - X - Y - C, O, liq,
       carritos: num(d?.carritos), recuperados: num(d?.recuperados), faltan, nota: d?.nota || "" };
   }
 
@@ -939,7 +944,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const otros = state.gastos.filter((g) => g.fecha >= desde && g.fecha <= hasta).reduce((a, g) => a + num(g.importe), 0);
     const nDias = Math.max(1, Math.round((parseISO(hasta) - parseISO(desde)) / 86400000) + 1);
     const r = { dias, nDias, otros };
-    for (const k of ["p1", "p2", "p3", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq", "ivaEnt", "pendPVP", "carritos", "recuperados", "entPend", "entra", "ivaPend", "nuevos"]) r[k] = s(k);
+    for (const k of ["p1", "p2", "p3", "ent", "dev", "inc", "H", "I", "J", "ads", "T", "U", "V", "W", "X", "Y", "C", "P", "O", "liq", "ivaEnt", "pendPVP", "carritos", "recuperados", "entPend", "entra", "ivaPend", "ivaInfo", "nuevos"]) r[k] = s(k);
     r.neto = r.P - otros; r.cobrado = r.O - otros;
     r.cpa = r.H > 0 ? r.ads / r.H : null; r.roas = r.ads > 0 ? r.J / r.ads : null;
     r.ticket = r.H > 0 ? r.J / r.H : null; r.pack2 = r.H > 0 ? r.p2 / r.H : null; r.pack3 = r.H > 0 ? r.p3 / r.H : null;
@@ -969,7 +974,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
 
   /* ---------- render ---------- */
   function render() {
-    const u = unit(state.cfg), h = historico(), be = breakEven(u, h);
+    const u = unit(state.cfg), h = historico(), be = breakEven(u, h), lim = limite(h);
     const [desde, hasta] = rango(state.periodo);
     const a = agregar(desde, hasta, u, h.tasa);
     for (const b of $("seg").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.p === state.periodo));
@@ -978,29 +983,31 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     renderAvisos(u, h);
 
     const listo = state.diasLoaded || state.dbStatus === "unavailable";
-    $("heroLabel").textContent = a.X > 0.005 ? "Beneficio neto proyectado · después de IVA" : "Beneficio neto proyectado";
+    const sinIva = !state.cfg.aplicar_iva;
+    $("heroLabel").textContent = a.X > 0.005 ? "Beneficio neto proyectado · después de IVA" : sinIva ? "Beneficio neto proyectado · lo que llega al banco" : "Beneficio neto proyectado";
     $("heroNum").textContent = listo ? E(a.neto) : "—";
     $("heroNum").className = "big num " + (a.neto > 0.005 ? "pos" : a.neto < -0.005 ? "neg" : "");
     $("heroSplit").innerHTML = listo
-      ? `${a.X > 0.005 ? `<span>Antes de IVA (lo que te llega al banco): <b class="num">${E(a.neto + a.X)}</b></span>` : ""}<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Entrega esperada: <b>${P(h.tasaBE)}</b> (${P(h.tasa)} sin incidencia · ${P(h.tasaInc)} incidencias, ${h.fuenteInc})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
+      ? `${a.X > 0.005 ? `<span>Antes de IVA (lo que te llega al banco): <b class="num">${E(a.neto + a.X)}</b></span>` : ""}${sinIva && a.ivaInfo > 0.5 ? `<span>Sin restar IVA (el de estas ventas serían <b class="num">${E(a.ivaInfo)}</b>)</span>` : ""}<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Entrega esperada: <b>${P(h.tasaBE)}</b> (${P(h.tasa)} sin incidencia · ${P(h.tasaInc)} incidencias, ${h.fuenteInc})</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
       : `<span>Cargando tus números…</span>`;
 
     // semáforo
     let k = "SIN DATOS", txt = "Registra pedidos para ver tu CPA real.";
     if (a.H === 0 && a.ads > 0) { k = "FALTAN PEDIDOS"; txt = `Hay ${E(a.ads)} de Ads sin pedidos apuntados en este periodo.`; }
-    else if (a.cpa != null && be.cpaBE > 0) {
-      const r = a.cpa / be.cpaBE;
+    else if (a.cpa != null && lim.cpaBE > 0) {
+      const r = a.cpa / lim.cpaBE;
       if (r <= 0.75) { k = "ESCALAR"; txt = "CPA con margen de sobra. Sube presupuesto un 20-30% cada 48 h."; }
       else if (r <= 1) { k = "VIGILAR"; txt = "Ganas poco por pedido. Prueba creatividades antes de escalar."; }
       else { k = "CORTAR"; txt = "Cada pedido te cuesta dinero. Cambia ángulo o apaga."; }
     }
     $("chip").textContent = k; $("chip").dataset.k = k; $("chipTxt").textContent = txt;
     $("cpaNow").textContent = "CPA " + E(a.cpa);
-    $("cpaBe").textContent = "Break-even " + E(be.cpaBE);
+    $("cpaBe").textContent = "Break-even " + E(lim.cpaBE);
+    if (sinIva && lim.cpaBE > 0) $("chipTxt").textContent = txt + ` Máximo calculado con IVA, por prudencia (sin IVA serían ${E(be.cpaBE)}).`;
     const cur = $("meterCur");
-    if (a.cpa != null && be.cpaBE > 0) {
+    if (a.cpa != null && lim.cpaBE > 0) {
       cur.hidden = false;
-      cur.style.left = Math.min(100, Math.max(0, (a.cpa / be.cpaBE) * 75)) + "%";
+      cur.style.left = Math.min(100, Math.max(0, (a.cpa / lim.cpaBE) * 75)) + "%";
       cur.style.background = k === "CORTAR" ? "var(--bad)" : k === "VIGILAR" ? "var(--warn)" : "var(--good)";
     } else cur.hidden = true;
 
@@ -1008,8 +1015,8 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const kp = [
       ["Pedidos", N(a.H), `Pack 1: ${N(a.p1)} · Pack 2: ${N(a.p2)} · Pack 3: ${N(a.p3)} · ${E0(a.J)} facturados`],
       ["Gasto Ads", E(a.ads), state.metaStatus === "ok" ? "en directo de Meta" : "guardado"],
-      ["CPA", E(a.cpa), `máx. rentable ${E(be.cpaBE)}`, a.cpa != null && a.cpa > be.cpaBE],
-      ["ROAS", a.roas == null ? "—" : dec2.format(a.roas) + "x", `break-even ${be.roasBE == null ? "—" : dec2.format(be.roasBE) + "x"}`],
+      ["CPA", E(a.cpa), `máx. rentable ${E(lim.cpaBE)}${sinIva ? " (con IVA)" : ""}`, a.cpa != null && a.cpa > lim.cpaBE],
+      ["ROAS", a.roas == null ? "—" : dec2.format(a.roas) + "x", `break-even ${lim.roasBE == null ? "—" : dec2.format(lim.roasBE) + "x"}`],
       ["Liquidación almacén", E(a.liq), "PVP − coste de lo entregado"],
       ["Ticket medio", E(a.ticket), `${P(a.pack2)} Pack 2 · ${P(a.pack3)} Pack 3`],
       ["Tasa de entrega", P(h.tasaBE), `esperada al final · ${P(a.tasaEnt)} de lo ya resuelto (${N(a.ent)} de ${N(a.ent + a.dev)})`],
@@ -1150,7 +1157,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
 
   function renderUnit(u, h, be) {
     const env = h.envioMedio;
-    const c = (p, neto) => `<div><div class="small muted">${esc(p.nombre)} · ${E(p.pvp)}</div><div class="num">${E(neto)}</div><div class="small muted">${E(p.pvp - p.cprod - (env ?? p.log))} del almacén − ${E(p.ivan)} de IVA</div></div>`;
+    const c = (p, neto) => `<div><div class="small muted">${esc(p.nombre)} · ${E(p.pvp)}</div><div class="num">${E(neto)}</div><div class="small muted">${E(p.pvp - p.cprod - (env ?? p.log))} del almacén${p.ivan > 0.005 ? ` − ${E(p.ivan)} de IVA` : " (sin restar IVA)"}</div></div>`;
     $("unit").innerHTML = c(u.p1, be.neto1) + c(u.p2, be.neto2) + c(u.p3, be.neto3) + `<div class="small muted" style="grid-column:1/-1">${env != null ? `Con tu envío medio real de ${E(env)} (sin IVA). ` : ""}Un devuelto te cuesta ${E(u.costeDev - u.ivaDev)}. El almacén cobra ${E(u.comision)} por cada pedido confirmado, se entregue o no. Frente al Pack 1, el Pack 2 deja ${E(be.neto2 - be.neto1)} más (por ${E(u.p2.pvp - u.p1.pvp)} más de precio) y el Pack 3, ${E(be.neto3 - be.neto1)} más (por ${E(u.p3.pvp - u.p1.pvp)}).</div>`;
   }
 
@@ -1683,7 +1690,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     if (pr.status === "loading" || pr.status === "idle") { box.innerHTML = cab(`<div class="empty">Leyendo la prueba en Meta…</div>`); return; }
     if (pr.status === "bad") { box.innerHTML = cab(`<div class="empty">${esc(pr.msg || "No se pudo leer Meta.")}</div>`); return; }
 
-    const u = unit(state.cfg), h = historico(), BE = breakEven(u, h).cpaBE, benPedido = breakEven(u, h).benPedido;
+    const u = unit(state.cfg), h = historico(), BE = limite(h).cpaBE, benPedido = breakEven(u, h).benPedido;
     const corte = num(p.corte) || 1.5 * BE;
     const enPrueba = (a) => a.campId === String(p.campaign_id);
     const todos = pr.todos, test = todos.filter(enPrueba), ctrl = todos.filter((a) => !enPrueba(a));
@@ -1817,7 +1824,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     if (state.cre.status === "loading" || state.cre.status === "idle") { decis.innerHTML = `<div class="empty">Leyendo tus anuncios de Meta…</div>`; return; }
     if (state.cre.status === "bad") { decis.innerHTML = `<div class="empty">${esc(state.cre.msg)}</div>`; $("cAds").innerHTML = ""; $("cAngulos").innerHTML = ""; cKpis.innerHTML = ""; $("cPendWrap").hidden = true; return; }
 
-    const u = unit(state.cfg), h = historico(), be = breakEven(u, h), BE = be.cpaBE;
+    const u = unit(state.cfg), h = historico(), be = breakEven(u, h), BE = limite(h).cpaBE;
     const [desde, hasta] = rango(state.periodoCre);
     const reales = agregar(desde, hasta, u, h.tasa).H;
     // La corrección con pedidos reales y las medias se calculan con TODAS las campañas: los pedidos de Shopify no

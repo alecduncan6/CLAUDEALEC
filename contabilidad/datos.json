@@ -1,6 +1,6 @@
 {
   "config": {
-    "aplicar_iva": true,
+    "aplicar_iva": false,
     "comision_pedido": 0.95,
     "coste_devolucion": 7.55,
     "excluir_pedidos": [

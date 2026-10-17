@@ -206,7 +206,10 @@ gasto, CPA vs CPA break-even (~9,45 € con los datos del 17/10, el que marque e
   la estimación (35%) pesa como 10 incidencias y se va corrigiendo con cada una que se cierra (40,6% el 17/10, 3 de 6).
   El break-even usa la tasa final esperada = (entregados + pendientes × su tasa) ÷ todo lo enviado (69,7% el 17/10 →
   CPA máx. ~9,45 €). Motivo: la tasa de lo ya resuelto (85%) está inflada porque las incidencias tardan en resolverse.
-  El héroe del Resumen enseña el neto después de IVA y, debajo, el "antes de IVA" (lo que llega al banco).
+  IVA (17/10, decisión de Alec): `aplicar_iva = false` → todos los beneficios (héroe, KPIs, diario, Creatividades) salen SIN
+  restar IVA, "lo que llega al banco"; el héroe recuerda aparte cuánto IVA llevan esas ventas. Pero el CPA máximo para decidir
+  (semáforo, veredictos, prueba en curso; Excel Config C46) se calcula SIEMPRE con IVA (`limite(h)`), por prudencia: 9,45 € con
+  IVA frente a 13,23 € sin él. Si el gestor confirma que no hay IVA que pagar, poner `iva_ventas` a 0.
   Excel de contabilidad igual: Config filas 49-58 (C52/C53 = incidencias cerradas/entregadas, las rellena `desde_dashboard.py`
   si el export trae `incidencias/`; TASA_INC, TASA_BE) y en el Diario AP = incidencias pendientes, AQ = tasa de sus pendientes.
   Al exportar para regenerar, baja también `incidencias` (lista) al mismo `out_dir`: datos personales, solo al scratchpad.
