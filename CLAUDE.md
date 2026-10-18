@@ -110,6 +110,10 @@ transportista a que el cliente lo recoja.
     que TESTING 2, 20 €/día CBO), 18/10 → 20/10, corte 18 €: vídeo propio "La raya de la puerta" con hook y sin hook
     (`BROAD_C10_SENOR_HOOK_V1` 120255232153490271, vídeo 44,1 s; `BROAD_C10_SENOR_SINHOOK_V1` 120255232171640271, 42,7 s;
     publicados el 18/10 00:56). Ojo: el de hook salió sin titular y los dos con botón "Ver detalles" (no "Comprar").
+    **19/10 (auditoría):** pausada la campaña principal `CeraLux ES — Test 3 ángulos` (120254979743130271): H1 BOLARDO quemado
+    (6,77 €/compra la 1ª semana → 17,40 € del 16 al 18). Ganadores: FINISH RIP 1 (6,28 €), C4 BOLARDO TIENES (5,90 € en 7 días),
+    C10 SIN HOOK (7,93 € el 1er día). Alec deja gastar al resto de RIP; decisión de `rip1` y `c10` el martes 21. Presupuestos
+    acordados (los cambia Alec): TESTING 2 30→36 €, TESTING 20→24 €, TESTING 3 20 €. Píxel ≈ pedidos reales (36 vs 35, 16-18/10).
 - **Excel de contabilidad:** `contabilidad/CeraLux_Contabilidad.xlsx`, generado por `contabilidad/generar_excel.py`
   desde `contabilidad/datos.json`. Todo con fórmulas (Dashboard, Diario, Gastos, Config, Guía).
 - **Excel de creativos (aparte de la app):** `creativos/CeraLux_Creativos.xlsx`, generado por
