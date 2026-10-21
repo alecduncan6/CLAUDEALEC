@@ -815,8 +815,11 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const q = qDen >= 20 ? Math.min(0.95, qNum / qDen) : cfg.pct_incidencias != null ? num(cfg.pct_incidencias) : 0.45;
     qIncG = q;
     let pend = 0, pendInc = 0, espPend = 0;
+    const ipd = incPorDia();
     for (const d of Object.values(state.dias)) {
-      const x = Math.max(0, sumPK((n) => num(d["p" + n]) - num(d["ent" + n]) - num(d["dev" + n]))), xi = Math.min(num(d.inc), x);
+      // mismas incidencias que calcDia: las abiertas del tablero (una que volvió a "en ruta" sigue abierta) o las del Excel si son más
+      const tab = sumPK((n) => ipd[d.fecha]?.[n] || 0);
+      const x = Math.max(0, sumPK((n) => num(d["p" + n]) - num(d["ent" + n]) - num(d["dev" + n]))), xi = Math.min(Math.max(num(d.inc), tab), x);
       pend += x; pendInc += xi; espPend += (x - xi) * tasaNormal(d.fecha, d, tasa) + xi * tasaInc;
     }
     // tasa final esperada: lo entregado + lo que se espera de los pendientes, sobre todo lo enviado. Es la que manda en el break-even.
@@ -841,7 +844,8 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
 
   function adsDe(fecha) {
     const m = state.meta;
-    if (m && fecha >= m.since && fecha <= m.until) return m.byDate[fecha] || 0;
+    // Un día que Meta devolvió roto y no se pudo rehacer se queda con el gasto guardado
+    if (m && fecha >= m.since && fecha <= m.until && !m.malos?.includes(fecha)) return m.byDate[fecha] || 0;
     return num(state.dias[fecha]?.ads);
   }
 
@@ -1029,7 +1033,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     $("heroNum").textContent = listo ? E(a.neto) : "—";
     $("heroNum").className = "big num " + (a.neto > 0.005 ? "pos" : a.neto < -0.005 ? "neg" : "");
     $("heroSplit").innerHTML = listo
-      ? `${a.X > 0.005 ? `<span>Antes de IVA (lo que te llega al banco): <b class="num">${E(a.neto + a.X)}</b></span>` : ""}<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Entrega esperada: <b>${P(h.tasaBE)}</b> (${P(h.tasa)} sin incidencia · ${P(h.tasaInc)} incidencias, ${h.fuenteInc} · un pedido nuevo ${P(h.tasaNueva)}: el ${P(h.q)} acaba en incidencia)</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
+      ? `${a.X > 0.005 ? `<span>Antes de IVA (lo que te llega al banco): <b class="num">${E(a.neto + a.X)}</b></span>` : ""}<span>Liquidado por el almacén: <b class="num">${E(a.liq)}</b></span><span>Entrega esperada de todos tus pedidos: <b>${P(h.tasaBE)}</b> (${P(h.tasa)} sin incidencia · ${P(h.tasaInc)} incidencias, ${h.fuenteInc} · un pedido nuevo ${P(h.tasaNueva)}: el ${P(h.q)} acaba en incidencia)</span><span>${desde === hasta ? corta(desde) : corta(desde) + " → " + corta(hasta)}</span>`
       : `<span>Cargando tus números…</span>`;
 
     // semáforo
@@ -1059,7 +1063,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       ["ROAS", a.roas == null ? "—" : dec2.format(a.roas) + "x", `break-even ${be.roasBE == null ? "—" : dec2.format(be.roasBE) + "x"}`],
       ["Liquidación almacén", E(a.liq), "PVP − coste de lo entregado"],
       ["Ticket medio", E(a.ticket), `${P(a.pack2)} Pack 2 · ${P(a.pack3)} Pack 3`],
-      ["Tasa de entrega", P(h.tasaBE), `esperada al final · ${P(a.tasaEnt)} de lo ya resuelto (${N(a.ent)} de ${N(a.ent + a.dev)})`],
+      ["Tasa de entrega", P(a.ent + a.dev + a.I > 0 ? (a.ent + a.entPend) / (a.ent + a.dev + a.I) : h.tasaBE), `esperada al final de estos pedidos · ${P(a.tasaEnt)} de lo ya resuelto (${N(a.ent)} de ${N(a.ent + a.dev)})`],
       ["Margen neto", P(a.margen), `otros gastos ${E(a.otros)}`]
     ];
     $("kpis").innerHTML = kp.map(([l, v, s, bad]) => `<div class="kpi"><span class="l">${l}</span><span class="v num${bad ? " bad" : ""}">${v}</span><span class="s">${esc(s)}</span></div>`).join("");
@@ -1329,7 +1333,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     ].map(([l, v, s2], i) => `<div class="kpi"><span class="l">${l}</span><span class="v num${i === 3 && fin - colchon < 0 ? " bad" : ""}">${v}</span><span class="s">${esc(s2)}</span></div>`).join("");
     $("saldoSub").innerHTML = `Solo lo que pasa por la cartera de Dropi, sin Meta Ads (Meta se paga con tarjeta, no sale de aquí).${c.horas > 24 ? ` <b style="color:var(--warn)">El saldo es de ${esc(fechaHora(k.en))}: sube las transacciones de hoy.</b>` : ""}`;
     $("saldoNota").innerHTML = `Retirable = saldo − los ${E0(colchon)} que se quedan siempre en Dropi. Cada entrega suma PVP − producto (el envío ya se cobró al confirmar el pedido; un devuelto no resta más).
-      Entregas esperadas: ${P(h.tasa)} de los pendientes normales y ${P(tasaIncG)} de las incidencias (esas no tienen fecha: dependen de que Goverify las saque). Fechas según tu plazo real de pedido a abono
+      Entregas esperadas: ${P(h.tasa)} de los pendientes normales que ya pasaron sin incidencia (~${P(h.tasaNueva)} los de los últimos días, que aún pueden caer en una) y ${P(tasaIncG)} de las incidencias (esas no tienen fecha: dependen de que Goverify las saque). Fechas según tu plazo real de pedido a abono
       en días laborables (${N(nPl)} entregas${pl === PLAZO_DEF ? ", medido el 17/10" : ""}; Dropi no abona en fin de semana ni festivo): la mitad llega en ${N(mediana)} días laborables o menos, como mucho ${N(lags.at(-1)?.[0])}. Cada día reparte lo que probablemente llegue ese día.
       ${c.yaAbonadas >= 1 ? ` Ya descontadas ${N(c.yaAbonadas)} entregas que la cartera abonó y el Excel del almacén aún no marca.` : ""}`;
   }
@@ -1367,13 +1371,15 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     return id;
   })();
 
-  function metaInput(cfg, since, until, cursor) {
+  // diario = false: el total del rango sin desglose por día (sirve para rehacer un día y para cuadrar)
+  function metaInput(cfg, since, until, cursor, diario = true) {
     const inp = {
       ad_account_id: String(cfg.meta_ad_account_id), level: cfg.meta_filtro_campana ? "campaign" : "ad_account",
-      fields: ["amount_spent", "omni_purchase"], time_range: JSON.stringify({ since, until }), time_increment: "1", limit: 1000,
+      fields: ["amount_spent", "impressions", "omni_purchase"], time_range: JSON.stringify({ since, until }), limit: 1000,
       include_additional_context: false, client_conversation_id: convId,
       advertiser_request: "ver live mis numeros: gasto de ads del facebook por día"
     };
+    if (diario) inp.time_increment = "1";
     if (cfg.meta_filtro_campana) inp.filtering = [{ field: "campaign.name", operator: "CONTAIN", value: [String(cfg.meta_filtro_campana)] }];
     if (cursor) inp.cursor = cursor;
     return inp;
@@ -1385,14 +1391,48 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     let rows = p?.ad_entities;
     if (typeof rows === "string") { try { rows = JSON.parse(rows); } catch { return null; } }
     if (!Array.isArray(rows)) return null;
-    const byDate = {}, compras = {};
+    const byDate = {}, compras = {}, rotos = new Set();
+    let total = 0;
     for (const r of rows) {
-      const f = r?.date_start; if (!f) continue;
       const v = parseFloat(r?.amount_spent?.value ?? r?.amount_spent ?? 0);
+      const c = parseFloat(r?.omni_purchase) || 0;
+      total += isFinite(v) ? v : 0;
+      const f = r?.date_start; if (!f) continue;
       byDate[f] = (byDate[f] || 0) + (isFinite(v) ? v : 0);
-      compras[f] = (compras[f] || 0) + (parseFloat(r?.omni_purchase) || 0);
+      compras[f] = (compras[f] || 0) + c;
+      // Fallo de Meta (21/10): en el desglose por día, la fila de una campaña con compras sale con gasto e impresiones a 0
+      if (c > 0 && !(v > 0) && !(parseFloat(r?.impressions) > 0)) rotos.add(f);
     }
-    return { byDate, compras, next: p?.pagination?.next_cursor || null };
+    return { byDate, compras, rotos, total, next: p?.pagination?.next_cursor || null };
+  }
+
+  // Rehace con el total de ese día (sin desglose, que sí viene bien) los días que Meta devolvió rotos,
+  // y cuadra la suma de los días con el total del rango. Los días cerrados se guardan para no repetir lecturas.
+  const metaFijo = {};
+  async function repararMeta(cfg, since, until, m) {
+    const ayer = iso(addDays(new Date(), -1));
+    const leerTotal = async (a, b) => {
+      const res = await mcpNs.callTool(SERVER, TOOL, metaInput(cfg, a, b, null, false));
+      const t = parseMeta(res.payload);
+      if (!t || t.next) throw new Error("respuesta incompleta");
+      return t.total;
+    };
+    const malos = [];
+    const fechas = [...m.rotos].sort();
+    for (let i = 0; i < fechas.length; i += 4) {
+      await Promise.all(fechas.slice(i, i + 4).map(async (f) => {
+        if (f < ayer && metaFijo[f] != null) { m.byDate[f] = metaFijo[f]; return; }
+        try { m.byDate[f] = await leerTotal(f, f); if (f < ayer) metaFijo[f] = m.byDate[f]; }
+        catch { malos.push(f); }
+      }));
+    }
+    let descuadre = null;
+    try {
+      const total = await leerTotal(since, until);
+      const suma = Object.entries(m.byDate).reduce((s, [f, v]) => s + (malos.includes(f) ? num(state.dias[f]?.ads) : v), 0);
+      if (Math.abs(total - suma) > 1) descuadre = { total, suma };
+    } catch { /* sin total no se puede cuadrar; los días ya rehechos valen */ }
+    return { malos: malos.sort(), descuadre, rehechos: fechas.length - malos.length };
   }
 
   const DENIEGA_META = ["needs_reauth", "server_not_connected", "selection_required", "server_not_found", "not_in_manifest", "blocked_by_policy", "approval_required", "consent_required"];
@@ -1425,8 +1465,8 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     render();
   }
 
-  async function seguirPaginas(cfg, since, until, base, cursor, baseCompras) {
-    let byDate = { ...base }, compras = { ...baseCompras }, n = 0;
+  async function seguirPaginas(cfg, since, until, base, cursor, baseCompras, baseRotos) {
+    let byDate = { ...base }, compras = { ...baseCompras }, rotos = new Set(baseRotos), n = 0;
     while (cursor && n < 5 && mcpNs) {
       n++;
       try {
@@ -1434,10 +1474,11 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
         const m = parseMeta(res.payload); if (!m) break;
         for (const [f, v] of Object.entries(m.byDate)) byDate[f] = (byDate[f] || 0) + v;
         for (const [f, v] of Object.entries(m.compras)) compras[f] = (compras[f] || 0) + v;
+        for (const f of m.rotos) rotos.add(f);
         cursor = m.next;
       } catch { break; }
     }
-    return { byDate, compras };
+    return { byDate, compras, rotos };
   }
 
   async function startMeta() {
@@ -1455,10 +1496,18 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       if (ev.type === "error") { metaError(ev.error); return; }
       const m = parseMeta(ev.result?.payload);
       if (!m) { state.metaStatus = "bad"; state.metaMsg = "Respuesta de Meta no reconocida · uso el gasto guardado"; render(); return; }
-      const todo = m.next ? await seguirPaginas(cfg, since, until, m.byDate, m.next, m.compras) : m;
-      state.meta = { byDate: todo.byDate, compras: todo.compras, since, until };
+      const todo = m.next ? await seguirPaginas(cfg, since, until, m.byDate, m.next, m.compras, m.rotos) : m;
+      const rep = await repararMeta(cfg, since, until, todo);
+      state.meta = { byDate: todo.byDate, compras: todo.compras, malos: rep.malos, since, until };
       state.metaAt = ev.result?.cache?.storedAt || Date.now();
       state.metaStatus = "ok"; state.metaMsg = "";
+      if (rep.malos.length) {
+        state.metaStatus = "warn";
+        state.metaMsg = `Meta devolvió mal el gasto de ${rep.malos.map(corta).join(", ")} · uso el guardado para ${rep.malos.length === 1 ? "ese día" : "esos días"}`;
+      } else if (rep.descuadre) {
+        state.metaStatus = "warn";
+        state.metaMsg = `El gasto por día de Meta (${E(rep.descuadre.suma)}) no cuadra con su total (${E(rep.descuadre.total)}) · revisa antes de decidir`;
+      }
       render();
       syncAdsHint();
     }, { refetchInterval: 5 * 60 * 1000, cache: { staleTime: 60 * 1000 } });

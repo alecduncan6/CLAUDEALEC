@@ -134,6 +134,11 @@ transportista a que el cliente lo recoja.
 - Gasto diario: `ads_get_ad_entities` con `level: "campaign"`, `fields: ["amount_spent"]`,
   `filtering: [{"field":"campaign.name","operator":"CONTAIN","value":["CeraLux"]}]`,
   `time_range: {"since":..,"until":..}`, `time_increment: "1"`. Sumar `amount_spent.value` por `date_start`.
+- **Fallo de Meta (visto el 21/10):** con `time_increment: "1"` la fila de cada campaña/anuncio con compras ese día sale con
+  gasto e impresiones a 0 (en cualquier nivel). Sin desglose por día y por horas viene bien. El panel lo detecta (compras > 0 con
+  gasto e impresiones 0), rehace esos días con el total del día sin `time_increment` y cuadra la suma con el total del rango
+  (aviso amarillo si no cuadra; si un día no se puede rehacer usa el `ads` guardado). A mano: pide el total de cada día
+  (`since` = `until`, sin `time_increment`). Antes del arreglo el panel daba ~67 € de gasto desde el inicio en vez de 1240 €.
 
 ## Cuando Alec pasa el Excel del almacén
 
