@@ -64,6 +64,15 @@ if (origen / "incidencias").is_dir():
             continue
         num += max(por_dia.get(d["fecha"], 0), d.get("inc") or 0)
         den += sum(d.get(f"p{n}") or 0 for n in (1, 2, 3)) * f
+    # Igual que el panel: una incidencia abierta en el tablero sigue siéndolo aunque el almacén la haya vuelto a poner "en ruta"
+    abiertas = {}
+    for i in todas:
+        if i.get("abierta") and i.get("fecha_pedido"):
+            abiertas[i["fecha_pedido"]] = abiertas.get(i["fecha_pedido"], 0) + 1
+    for d in dias:
+        pend = sum((d.get(f"p{n}") or 0) - (d.get(f"ent{n}") or 0) - (d.get(f"dev{n}") or 0) for n in (1, 2, 3))
+        if abiertas.get(d["fecha"], 0) > (d.get("inc") or 0):
+            d["inc"] = min(max(0, pend), abiertas[d["fecha"]])
     incidencias = {"cerradas": len(cerr), "entregadas": sum(i["resultado"] == "entregado" for i in cerr),
                    "q": round(num / den, 4) if den >= 20 else None,
                    "fecha_export": max((d.get("actualizado") or "")[:10] for d in dias) or None}

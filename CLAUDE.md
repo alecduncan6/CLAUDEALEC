@@ -235,6 +235,8 @@ gasto, CPA vs CPA break-even (~11,8 € sin IVA con los datos del 17/10, el que 
   Excel de contabilidad igual: Config filas 49-58 (C52/C53 = incidencias cerradas/entregadas, las rellena `desde_dashboard.py`
   si el export trae `incidencias/`; TASA_INC, TASA_BE) y en el Diario AP = incidencias pendientes, AQ = tasa de sus pendientes.
   Al exportar para regenerar, baja también `incidencias` (lista) al mismo `out_dir`: datos personales, solo al scratchpad.
+  Incidencias pendientes de un día = las abiertas del tablero o `dias.inc` si son más (una que el almacén vuelve a poner
+  "en ruta" sigue abierta): igual en la página (`historico` y `calcDia`) y en el Excel (`desde_dashboard.py` ajusta la K).
 
 Supuestos pendientes de confirmar con Alec: si Meta le cobra IVA (ROI), si factura con IVA, si la comisión de 0,95 € lleva IVA,
 si Dropi le devuelve el coste del producto cuando un devuelto vuelve al almacén. Excel de creativos: `cpa_be`/`ben_pedido` de `biblioteca.json` = break-even del dashboard.
