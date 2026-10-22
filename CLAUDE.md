@@ -13,6 +13,8 @@ Envío real por transportista (sin IVA): Correos Express 6,85 · CTT 7,20 · MRW
 título al final del export). Motivo "Pendiente de recoger en Franquicia destino" = el paquete espera en la oficina de la
 transportista a que el cliente lo recoja.
 
+Historia completa de la asesoría (campañas, decisiones, reglas, pendientes al 22/10): `docs/TRASPASO.md`.
+
 ## Cómo trabajar con Alec
 
 - Está a tiempo completo con la tienda: los planes son de jornada completa y van a escalar (creativos, oferta, mercados).
