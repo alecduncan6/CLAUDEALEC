@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>CeraLux Números</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -85,6 +86,7 @@ button, input, select { font: inherit; color: inherit; }
 .meter .be::after { content: "break-even"; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--muted); white-space: nowrap; }
 .meter .cur { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--ink); border: 3px solid var(--surface); }
 .meter-legend { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.tres { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; }
 
 /* kpis */
 .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
@@ -343,6 +345,8 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       </div>
       <div class="meter" id="meter"><div class="be"></div><div class="cur" id="meterCur" hidden></div></div>
       <div class="meter-legend"><span id="cpaNow">CPA —</span><span id="cpaBe">Break-even —</span></div>
+      <p class="small muted" id="beInfo" style="margin:8px 0 0"></p>
+      <div class="tres" id="tres"></div>
     </div>
   </section>
 
@@ -734,10 +738,16 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   const N = (v) => (v == null || !isFinite(v)) ? "—" : int.format(v);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const num = (v) => { const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(",", ".")); return isFinite(n) ? n : 0; };
-  const iso = (d) => d.toLocaleDateString("sv-SE");
-  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-  const parseISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
-  const corta = (s) => { const d = parseISO(s); return d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "2-digit" }); };
+  // Todas las fechas en hora de España (como Meta, Shopify y Dropi), esté donde esté quien mira el panel.
+  // Las fechas de calendario se guardan a las 12:00 UTC: en Madrid caen siempre en ese mismo día.
+  const TZ = "Europe/Madrid";
+  const iso = (d) => d.toLocaleDateString("sv-SE", { timeZone: TZ });
+  const addDays = (d, n) => { const x = new Date(d); x.setUTCDate(x.getUTCDate() + n); return x; };
+  const parseISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d, 12)); };
+  const corta = (s) => { const d = parseISO(s); return d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: TZ }); };
+  const horaEs = (d) => Number(d.toLocaleString("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: TZ }));
+  const diaSemEs = (d) => parseISO(iso(d)).getUTCDay();
+  const medianocheEs = (s) => { const d = parseISO(s); return new Date(d.getTime() - horaEs(d) * 36e5); }; // 00:00 de ese día en España
   const ddmm = (s) => s.slice(8, 10) + "/" + s.slice(5, 7);
 
   const store = (() => { try { return window.localStorage; } catch { return null; } })();
@@ -790,6 +800,18 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const cfg = state.cfg, res = ent + dev, tot = sumPK((n) => ped[n]);
     const s2 = num(cfg.pct_pack2_estimado), s3 = num(cfg.pct_pack3_estimado);
     const mix = tot > 0 ? { 1: ped[1] / tot, 2: ped[2] / tot, 3: ped[3] / tot } : { 1: Math.max(0, 1 - s2 - s3), 2: s2, 3: s3 };
+    // El CPA máximo usa la mezcla de packs de la oferta actual: desde el último cambio de oferta (mezcla_desde o p3_desde;
+    // sin ninguno, 14 días), con al menos 40 pedidos (si no llega, amplía hacia atrás). Con todo el histórico salía bajo,
+    // porque los primeros días eran casi todo Pack 1.
+    const MIN_MEZCLA = 40, corteMezcla = str(cfg.mezcla_desde || cfg.p3_desde) || iso(addDays(new Date(), -13));
+    const pm = { 1: 0, 2: 0, 3: 0 };
+    let nm = 0, desdeMezcla = null;
+    for (const d of Object.values(state.dias).filter((x) => x?.fecha).sort((a, b) => b.fecha.localeCompare(a.fecha))) {
+      if (d.fecha < corteMezcla && nm >= MIN_MEZCLA) break;
+      for (const n of PK) pm[n] += num(d["p" + n]);
+      nm = sumPK((n) => pm[n]); desdeMezcla = d.fecha;
+    }
+    const mixBE = nm > 0 ? { 1: pm[1] / nm, 2: pm[2] / nm, 3: pm[3] / nm } : mix;
     // La tasa de los resueltos engaña: los pedidos que se entregan salen pronto de "pendientes" y las incidencias se quedan.
     // Por eso se separan: pendientes normales a la tasa de los resueltos SIN incidencia, incidencias a la suya.
     const cerr = Object.values(state.incid || {}).filter((i) => i && !i.abierta && (i.resultado === "entregado" || i.resultado === "devuelto"));
@@ -827,7 +849,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     return {
       tasa, tasaInc, q, tasaNueva: (1 - q) * tasa + q * tasaInc, tasaBE: tasaFinal, fuenteTasa: usarReal ? "real" : "estimada", fuenteInc: incRes ? `${incEnt} de ${incRes} cerradas` : "estimada", incRes, incEnt,
       resueltos: res, pendInc, tasaResueltos: res > 0 ? ent / res : null,
-      mix,
+      mix, mixBE, mezcla: { desde: desdeMezcla, n: nm },
       envioMedio: conEnvio > 0 ? envio / conEnvio : null
     };
   }
@@ -835,8 +857,9 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   function breakEven(u, h) {
     const t = h.tasaBE ?? h.tasa;
     const neto = (p) => p.pvp - p.cprod - (h.envioMedio ?? p.log) - p.ivan;
-    const ticket = sumPK((n) => h.mix[n] * u["p" + n].pvp);
-    const netoEnt = sumPK((n) => h.mix[n] * neto(u["p" + n]));
+    const mix = h.mixBE || h.mix;
+    const ticket = sumPK((n) => mix[n] * u["p" + n].pvp);
+    const netoEnt = sumPK((n) => mix[n] * neto(u["p" + n]));
     const benPedido = t * netoEnt - (1 - t) * (u.costeDev - u.ivaDev) - u.comision;
     const cpaBE = benPedido / (1 + u.recargo);
     return { ticket, benPedido, cpaBE, roasBE: cpaBE > 0 ? ticket / cpaBE : null, neto1: neto(u.p1), neto2: neto(u.p2), neto3: neto(u.p3) };
@@ -883,7 +906,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   }
   // días laborables (Dropi y las transportistas no trabajan en fin de semana ni festivo nacional)
   const FESTIVOS = new Set(["2026-10-12", "2026-12-08", "2026-12-25", "2027-01-01", "2027-01-06", "2027-03-26", "2027-10-12", "2027-11-01", "2027-12-06", "2027-12-08"]);
-  const habil = (s) => { const w = parseISO(s).getDay(); return w !== 0 && w !== 6 && !FESTIVOS.has(s); };
+  const habil = (s) => { const w = parseISO(s).getUTCDay(); return w !== 0 && w !== 6 && !FESTIVOS.has(s); };
   function lagHab(desde, hasta) { let n = 0, d = desde; while (d < hasta) { d = iso(addDays(parseISO(d), 1)); if (habil(d)) n++; } return n; }
   function sumaHab(desde, n) { let d = desde, k = 0; while (k < n) { d = iso(addDays(parseISO(d), 1)); if (habil(d)) k++; } return d; }
   // tasa de las incidencias (la fija historico()) e incidencias abiertas por fecha de pedido y pack
@@ -974,12 +997,12 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
 
   function rango(p) {
     if (/^dia:\d{4}-\d{2}-\d{2}$/.test(p)) return [p.slice(4), p.slice(4)];
-    const hoy = new Date(), t = iso(hoy);
+    const t = iso(new Date()), hoy = parseISO(t);
     if (p === "hoy") return [t, t];
     if (p === "ayer") { const a = iso(addDays(hoy, -1)); return [a, a]; }
     if (p === "7d") return [iso(addDays(hoy, -6)), t];
     if (p === "mes") return [t.slice(0, 8) + "01", t];
-    if (p === "mespasado") return [iso(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)), iso(new Date(hoy.getFullYear(), hoy.getMonth(), 0))];
+    if (p === "mespasado") { const fin = addDays(parseISO(t.slice(0, 8) + "01"), -1); return [iso(fin).slice(0, 8) + "01", iso(fin)]; }
     const todas = fechas();
     return [state.cfg.fecha_inicio || todas[0] || t, t];
   }
@@ -1041,7 +1064,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     if (a.H === 0 && a.ads > 0) { k = "FALTAN PEDIDOS"; txt = `Hay ${E(a.ads)} de Ads sin pedidos apuntados en este periodo.`; }
     else if (a.cpa != null && be.cpaBE > 0) {
       const r = a.cpa / be.cpaBE;
-      if (r <= 0.75) { k = "ESCALAR"; txt = "CPA con margen de sobra. Sube presupuesto un 20-30% cada 48 h."; }
+      if (r <= 0.75) { k = "ESCALAR"; txt = "CPA con margen. Si los últimos 3 días también están en verde y la entrega no empeora, sube un 20 % cada 48 h."; }
       else if (r <= 1) { k = "VIGILAR"; txt = "Ganas poco por pedido. Prueba creatividades antes de escalar."; }
       else { k = "CORTAR"; txt = "Cada pedido te cuesta dinero. Cambia ángulo o apaga."; }
     }
@@ -1054,6 +1077,17 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       cur.style.left = Math.min(100, Math.max(0, (a.cpa / be.cpaBE) * 75)) + "%";
       cur.style.background = k === "CORTAR" ? "var(--bad)" : k === "VIGILAR" ? "var(--warn)" : "var(--good)";
     } else cur.hidden = true;
+    const mz = h.mezcla, mb = h.mixBE;
+    $("beInfo").textContent = listo && mz?.n
+      ? `Máximo calculado con tu mezcla de packs desde el ${ddmm(mz.desde)}: ${N(mz.n)} pedidos · Pack 1 ${P(mb[1])} · Pack 2 ${P(mb[2])} · Pack 3 ${P(mb[3])} · ticket ${E(be.ticket)}.`
+      : "";
+    // La regla de decisión: bloques de 3 días completos (sin hoy, que va a medias), sea cual sea el periodo elegido arriba
+    const t3a = iso(addDays(new Date(), -3)), t3b = iso(addDays(new Date(), -1)), a3 = agregar(t3a, t3b, u, h.tasa);
+    let k3 = "SIN DATOS";
+    if (a3.cpa != null && be.cpaBE > 0) { const r3 = a3.cpa / be.cpaBE; k3 = r3 <= 0.75 ? "ESCALAR" : r3 <= 1 ? "VIGILAR" : "CORTAR"; }
+    $("tres").innerHTML = listo
+      ? `<span class="small muted">Para decidir · últimos 3 días (${ddmm(t3a)}–${ddmm(t3b)})</span><span class="chip" data-k="${k3}">${k3}</span><span>CPA <b class="num">${E(a3.cpa)}</b> · ${N(a3.H)} pedidos · ${E(a3.ads)} en Ads</span>`
+      : "";
 
     // kpis
     const kp = [
@@ -1090,7 +1124,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     $("objRows").innerHTML = `
       <dt>Beneficio esperado por pedido (antes de Ads)</dt><dd>${E(be.benPedido)}</dd>
       <dt>Margen por pedido tras Ads (CPA ${E(a.cpa)})</dt><dd>${E(margenPed)}</dd>
-      <dt>Pedidos/día para 10.000 €/mes</dt><dd>${esc(necesarios)}</dd>
+      <dt>Pedidos/día para ${esc(E0(obj))}/mes</dt><dd>${esc(necesarios)}</dd>
       <dt>Inversión diaria en Ads a ese ritmo</dt><dd>${margenPed > 0 ? E0(Math.ceil((obj + a.otros / a.nDias * 30) / 30 / margenPed) * a.cpa) : "—"}</dd>`;
 
     renderCaja(u, h);
@@ -1106,7 +1140,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
 
   function renderLiveShop() {
     const el = $("liveShop"), t = $("liveShopTxt");
-    const hora = state.shopAt ? new Date(state.shopAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
+    const hora = state.shopAt ? new Date(state.shopAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: TZ }) : "";
     const m = { idle: ["idle", "Shopify: esperando"], loading: ["loading", "Leyendo Shopify…"], ok: ["ok", `Shopify en directo · ${hora}`], warn: ["warn", state.shopMsg], bad: ["bad", state.shopMsg] };
     const [st, txt] = m[state.shopStatus] || m.idle;
     el.dataset.s = st; t.textContent = txt;
@@ -1114,7 +1148,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   function renderLive() {
     renderLiveShop();
     const el = $("live"), t = $("liveTxt");
-    const hora = state.metaAt ? new Date(state.metaAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
+    const hora = state.metaAt ? new Date(state.metaAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: TZ }) : "";
     const map = {
       idle: ["idle", "Gasto de Meta: esperando ajustes"], loading: ["loading", "Leyendo Meta Ads…"],
       ok: ["ok", `Meta en directo · ${hora}`], warn: ["warn", state.metaMsg], bad: ["bad", state.metaMsg]
@@ -1558,7 +1592,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
       // Dropi marca en Shopify cada pedido que importa con la etiqueta "Sync OK - Dropi"
       const sync = (x.tags || []).some((t) => /sync ok/i.test(str(t)) && /dropi/i.test(str(t)));
       (byDate[f] ||= []).push({ id: str(x.legacyResourceId), pack: packDe(Number(x.subtotalLineItemsQuantity) || 1), cancelada: !!x.cancelledAt,
-        h: cuando.getHours(), dow: cuando.getDay(), nombre: str(x.name), en: cuando.getTime(), sync });
+        h: horaEs(cuando), dow: diaSemEs(cuando), nombre: str(x.name), en: cuando.getTime(), sync });
     }
     state.shop = { byDate, desde }; state.shopStatus = "ok"; state.shopMsg = "";
     render(); if (state.vista === "cre") pintaCre(); if (state.vista === "hor") renderHoras();
@@ -1572,7 +1606,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     shopKey = desde;
     mcpNs = mcpNs || await window.claude?.use?.("mcp");
     if (!mcpNs) { state.shopStatus = "bad"; state.shopMsg = "Pedidos de Shopify no disponibles en esta vista"; renderLive(); return; }
-    const input = { query: SHOP_QUERY, variables: { q: `created_at:>='${parseISO(desde).toISOString()}'` } };
+    const input = { query: SHOP_QUERY, variables: { q: `created_at:>='${medianocheEs(desde).toISOString()}'` } };
     if (shopUnsub) shopUnsub();
     if (shopTimer) clearInterval(shopTimer);
     state.shopStatus = "loading"; renderLive();
@@ -1790,7 +1824,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const box = $("cPrueba"), pr = state.prueba, p = pr.p || pruebaActual();
     if (state.rol !== "owner" || !p) { box.hidden = true; return; }
     box.hidden = false;
-    const ahora = new Date(), ini = parseISO(p.inicio), fin = p.decision ? parseISO(p.decision) : addDays(ini, 3);
+    const ahora = new Date(), ini = medianocheEs(p.inicio), fin = p.decision ? medianocheEs(p.decision) : addDays(ini, 3);
     const totalDias = Math.max(1, Math.round((fin - ini) / 864e5));
     const horas = Math.max(0, (ahora - ini) / 36e5);
     const dia = Math.min(totalDias, Math.floor(horas / 24) + 1);
@@ -2440,7 +2474,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   function fechaHora(s) {
     const d = new Date(s); if (isNaN(d)) return "";
     const f = iso(d), hoyS = iso(new Date()), ayerS = iso(addDays(new Date(), -1));
-    const h = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    const h = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
     return (f === hoyS ? "hoy" : f === ayerS ? "ayer" : ddmm(f)) + " " + h;
   }
   function mensajeWA(i) {
@@ -2837,3 +2871,5 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   boot();
 })();
 </script>
+
+</body></html>

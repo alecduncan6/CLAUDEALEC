@@ -77,6 +77,11 @@ Historia completa de la asesoría (campañas, decisiones, reglas, pendientes al 
   - La página importa el Excel del almacén ella misma (botón "Subir Excel del almacén", SheetJS en el navegador):
     actualiza `dias` (solo si lo sube el dueño) e `incidencias` (abre nuevas, cierra las entregadas/devueltas).
   - La página lee el gasto de Meta en directo (conector "Meta ADS", tool `ads_get_ad_entities`), con compras del píxel por día.
+  - **Fechas siempre en hora de España** (`TZ = "Europe/Madrid"`, igual que la cuenta de Meta y la tienda): `iso`, `parseISO` (12:00 UTC),
+    `addDays`, `corta`, `horaEs`, `medianocheEs`. Antes usaba la hora del navegador y, viajando, los días se desplazaban
+    (desde Bogotá el 03/11, "Ayer" salía el 01/11 y 7 días daba +97 € en vez de +234 €).
+  - CPA máximo con la mezcla de packs desde el último cambio de oferta (`mezcla_desde` o `p3_desde`, mínimo 40 pedidos) y bloque
+    "Para decidir · últimos 3 días" bajo el semáforo (los añadió otra sesión el 22/10).
   - Periodos: Hoy, Ayer, 7 días, Este mes, Mes pasado, Todo y "Día" (selector de fecha, periodo `dia:AAAA-MM-DD`,
     también en Creatividades; no se guarda en el navegador, al volver se ve el periodo habitual).
   - **Shopify en directo** (solo dueño): conector "Shopify", tool `graphql_query`, pedidos desde `fecha_inicio`
