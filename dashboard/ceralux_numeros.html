@@ -921,8 +921,9 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   }
   // Tasa de entrega de un pendiente SIN incidencia: si el pedido es reciente aún puede caer en incidencia (con lo que
   // queda de q), así que se mezcla la tasa sin incidencia con la de incidencias. Pasados 5 días laborables, la sin incidencia.
-  function tasaNormal(fecha, d, tasa) {
-    const F = incVista(fecha, d), qa = qIncG * (1 - F) / Math.max(1e-9, 1 - qIncG * F);
+  // F = 0 (nada visible) para los pedidos que solo están en Shopify: del almacén aún no sabemos si tienen incidencia.
+  function tasaNormal(fecha, d, tasa, F = incVista(fecha, d)) {
+    const qa = qIncG * (1 - F) / Math.max(1e-9, 1 - qIncG * F);
     return (1 - qa) * tasa + qa * tasaIncG;
   }
   function incPorDia() {
@@ -957,16 +958,18 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     const real = tieneEnvio(d);
     const envEnt = real ? d.envio_ent : sumPK((n) => e[n] * pk(n).log);
     const envPend = real ? d.envio_pend + sumPK((n) => nv[n] * pk(n).log) : sumPK((n) => x[n] * pk(n).log);
-    // pendientes en incidencia: se entregan a su propia tasa, mucho más baja que la del resto
-    const ip = incPorDia()[fecha] || {}, xi = {};
-    for (const n of PK) xi[n] = Math.min(x[n], ip[n] || 0);
-    let resto = Math.min(num(d?.inc), I) - sumPK((n) => xi[n]);
-    for (const n of PK) { if (resto <= 0) break; const k = Math.min(resto, x[n] - xi[n]); xi[n] += k; resto -= k; }
+    // pendientes en incidencia: se entregan a su propia tasa, mucho más baja que la del resto.
+    // w = pendientes que ya están en el Excel del almacén; x − w = los que solo están en Shopify (sin datos de incidencia)
+    const ip = incPorDia()[fecha] || {}, xi = {}, w = {};
+    for (const n of PK) { w[n] = Math.max(0, x[n] - nv[n]); xi[n] = Math.min(w[n], ip[n] || 0); }
+    let resto = Math.min(num(d?.inc), sumPK((n) => w[n])) - sumPK((n) => xi[n]);
+    for (const n of PK) { if (resto <= 0) break; const k = Math.min(resto, w[n] - xi[n]); xi[n] += k; resto -= k; }
     const Ii = sumPK((n) => xi[n]);
     const tN = tasaNormal(fecha, d, tasa); // los recientes aún pueden caer en incidencia
-    for (const n of PK) z[n] = e[n] + (x[n] - xi[n]) * tN + xi[n] * tasaIncG;
-    const Z = dev + (I - Ii) * (1 - tN) + Ii * (1 - tasaIncG);
-    const fracEnt = I > 0 ? ((I - Ii) * tN + Ii * tasaIncG) / I : tN;
+    const tN0 = tasaNormal(fecha, d, tasa, 0); // pedido nuevo: toda la q por delante
+    for (const n of PK) z[n] = e[n] + (w[n] - xi[n]) * tN + (x[n] - w[n]) * tN0 + xi[n] * tasaIncG;
+    const Z = dev + sumPK((n) => (w[n] - xi[n]) * (1 - tN) + (x[n] - w[n]) * (1 - tN0) + xi[n] * (1 - tasaIncG));
+    const fracEnt = I > 0 ? (sumPK((n) => z[n]) - ent) / I : tN0;
     const T = sumPK((n) => z[n] * pk(n).pvp), U = sumPK((n) => z[n] * pk(n).cprod), V = envEnt + envPend * fracEnt;
     const W = Z * u.costeDev, X = sumPK((n) => z[n] * pk(n).ivan) - Z * u.ivaDev, Y = ads * (1 + u.recargo);
     const C = H * u.comision; // el almacén cobra por pedido confirmado, se entregue o no
@@ -978,7 +981,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
     // Lo que entrará de los pendientes = entregas esperadas × (PVP − producto); a los que aún no están en Dropi
     // (solo en Shopify) todavía les falta pagar el envío y Go Verify.
     const entPend = sumPK((n) => z[n] - e[n]);
-    const entraN = sumPK((n) => (x[n] - xi[n]) * tN * (pk(n).pvp - pk(n).cprod)), entraI = sumPK((n) => xi[n] * tasaIncG * (pk(n).pvp - pk(n).cprod));
+    const entraN = sumPK((n) => ((w[n] - xi[n]) * tN + (x[n] - w[n]) * tN0) * (pk(n).pvp - pk(n).cprod)), entraI = sumPK((n) => xi[n] * tasaIncG * (pk(n).pvp - pk(n).cprod));
     const cargo = sumPK((n) => nv[n] * (pk(n).log + u.comision));
     const entra = entraN + entraI - cargo;
     const ivaPend = sumPK((n) => (z[n] - e[n]) * pk(n).ivan);
@@ -1549,7 +1552,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
 
   /* ---------- Shopify en directo ---------- */
   const SHOP = "Shopify", SHOP_TOOL = "graphql_query";
-  const SHOP_QUERY = "query Pedidos($q: String!, $after: String) { orders(first: 250, after: $after, query: $q, sortKey: CREATED_AT) { nodes { legacyResourceId name createdAt cancelledAt test subtotalLineItemsQuantity tags } pageInfo { hasNextPage endCursor } } }";
+  const SHOP_QUERY = "query Pedidos($q: String!, $after: String) { orders(first: 100, after: $after, query: $q, sortKey: CREATED_AT) { nodes { legacyResourceId name createdAt cancelledAt test subtotalLineItemsQuantity tags } pageInfo { hasNextPage endCursor } } }";
   let shopUnsub = null, shopKey = null, shopTimer = null;
   function textoShop(e) {
     const code = e?.code || "upstream_error";
@@ -1575,7 +1578,7 @@ label.camp select { padding: 6px 10px; font-size: 13px; background: var(--surfac
   async function procesarShop(primera, input, desde) {
     const nodos = [...primera.nodes];
     let info = primera.pageInfo, n = 0;
-    while (info?.hasNextPage && n < 10) {
+    while (info?.hasNextPage && n < 20) {
       n++;
       try {
         const res = await mcpNs.callTool(SHOP, SHOP_TOOL, { ...input, variables: { ...input.variables, after: info.endCursor } });

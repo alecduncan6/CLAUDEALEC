@@ -89,6 +89,8 @@ Historia completa de la asesoría (campañas, decisiones, reglas, pendientes al 
     Fecha = día local de `createdAt`. Pack = 1 unidad → Pack 1; 2 → Pack 2; 3 o más → Pack 3. Los pedidos de Shopify cuyo ID no está
     en ningún `shopify_ids` se suman al día como pendientes ("aún no en almacén"); los de `shopify_test` se ignoran.
     Tabla "Cuadre": Shopify vs Meta (píxel) vs almacén por día y % que registra Meta. El #1158 es el pedido de test.
+    **Desde el 05/11 el conector rechaza `first` > 100** ("asks for more than 100 items"): la consulta pide `orders(first: 100)` y
+    pagina (hasta 20 páginas). Con 250 el panel se quedaba sin Shopify y daba 0 pedidos desde el último Excel.
     La consulta pide también `name` y `tags`: Dropi etiqueta cada pedido que importa con "Sync OK - Dropi PRO". Aviso rojo arriba
     si un pedido de Shopify de hace más de 1 h no tiene esa etiqueta ni está en ningún `shopify_ids` (no ha llegado a Dropi).
     `config/main` → `sync_manual`: IDs de Shopify metidos en Dropi a mano o por "Importar CSV Shopify" (no reciben la etiqueta);
@@ -232,7 +234,9 @@ gasto, CPA vs CPA break-even (~11,8 € sin IVA con los datos del 17/10, el que 
   **Pedidos recientes** (desde el 17/10): un pendiente sin incidencia todavía puede caer en incidencia. q = % de pedidos que
   acaban en incidencia = incidencias del tablero ÷ (pedidos × parte ya visible), solo días con ≥70% visible; `INC_CDF` =
   [0,14, 0,30, 0,70, 0,92, 0,98] a 0-4 días laborables (medido con 50 incidencias; a 5, todas). Tasa del pendiente =
-  tasa sin incidencia + (tasa incidencias − tasa sin incidencia) × q(1−F)/(1−qF) (`tasaNormal`). El 17/10: q = 54,6%, pedido
+  tasa sin incidencia + (tasa incidencias − tasa sin incidencia) × q(1−F)/(1−qF) (`tasaNormal`). F se cuenta hasta el
+  `actualizado` del Excel; los pedidos que solo están en Shopify van con F = 0 (pedido nuevo, ~62,6 %), aunque sean de hace días
+  (arreglado el 05/11: antes contaban hasta hoy y, tras 7 días sin Excel, 7 días daban +355 € en vez de +8 €). El 17/10: q = 54,6%, pedido
   nuevo 63,3%, tasa final 65,1%, CPA máx. 11,79 €, beneficio proyectado desde el inicio ~490 € (antes 667 €: se daban
   los pedidos recientes al 90,5%, como si ya hubieran pasado sin incidencia). Excel: Config filas 60-65 (C61 = q, lo calcula
   `desde_dashboard.py`; C62 fecha del último export; C63:G63 INC_CDF; C64:L64 festivos) y Diario AR-AT.
